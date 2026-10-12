@@ -1,0 +1,26 @@
+// Control arm: one agent, one invocation, no coordination to speak of.
+// Against Harbor's own single-agent run this prices the OMAR runtime itself;
+// against a multi-agent topology it is the baseline the team has to beat.
+team Solo[worker : Claude]
+{
+    input task : string
+    input cwd : string
+    output answer : string
+
+    prompt worker(task, cwd) -> answer
+    "
+        The task statement is in the file $(task). Read it in full first, then
+        do the task.
+        The task is graded where it lives on this machine, not in your OMAR
+        workspace. Make its changes in place, at the paths it names, and use
+        $(cwd) as the working directory for anything it leaves relative. Your
+        workspace is for your own notes; nothing in it is graded.
+        When done, set `answer` to your final response to the task: the text
+        it asks you to deliver. If it asks only for changes on disk, one
+        paragraph on what you did and how you checked it.
+    "
+}
+
+main Bench {
+    t = Solo()
+}

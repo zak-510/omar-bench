@@ -1,0 +1,19 @@
+[project]
+name = "omar-bench"
+version = "0.1.0"
+description = "Benchmarks for OMAR: deterministic multi-agent coordination against single agents and other frameworks"
+readme = "README.md"
+requires-python = ">=3.12"
+# Standard library only. Harbor is not a dependency: each suite runs on the
+# Harbor version its publisher pins, fetched by uvx at run time (bench.toml).
+dependencies = []
+
+[project.scripts]
+omar-bench = "omar_bench.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["omar_bench"]

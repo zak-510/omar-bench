@@ -1,0 +1,17 @@
+# Attempts left out of report denominators. Rows stay in attempts/.
+# An exclusion needs a reason someone else can check; "it failed" is not one.
+#
+# [[exclude]]
+# attempt_id = "<run-id>/<trial>"
+# reason = "provider outage 2026-10-12 03:10-04:00 UTC; trial.log shows 529s from the first request"
+# by = "your-handle"
+
+[[exclude]]
+attempt_id = "20261010T041944Z-terminal-bench-omar-solo-haiku-zak-510/photonic-waveguide-routing__EyARK4C"
+reason = "harness fault, not an attempt at the task: OMAR's agent never started in the container (the adapter had left claude off the login shell's PATH and its config where OMAR does not look; fixed 2026-10-10). No model was called: zero tokens on the row; the trial's exception.txt says the agent did not become ready"
+by = "zak-510 (written by Claude Code during the pilot; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261010T042247Z-terminal-bench-omar-plan-build-check-haiku-zak-510/photonic-waveguide-routing__Hqi5aNb"
+reason = "harness fault, not an attempt at the task: OMAR's agent never started in the container (the adapter had left claude off the login shell's PATH and its config where OMAR does not look; fixed 2026-10-10). No model was called: zero tokens on the row; the trial's exception.txt says the agent did not become ready"
+by = "zak-510 (written by Claude Code during the pilot; not yet reviewed by a person)"

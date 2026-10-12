@@ -1,0 +1,130 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  omar-bench runner: one EC2 instance reached over SSM (no inbound ports, no
+  SSH keys) and a versioned bucket that keeps the evidence for every attempt.
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: m7i.4xlarge
+    Description: >-
+      x86_64 only; the benchmarks' task images are linux/amd64. 16 vCPUs is what
+      one SWE Atlas refactoring task asks for.
+  VolumeGiB:
+    Type: Number
+    Default: 300
+    Description: Root volume. Task images are large and Docker keeps them.
+  ImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id
+    Description: Resolved at launch; the AMI actually used is recorded in every run manifest.
+  RepoUrl:
+    Type: String
+    Default: ""
+    Description: >-
+      Public git URL of omar-bench to clone and bootstrap on first boot. Leave
+      empty to copy the code in yourself (see infra/ec2/README.md).
+  RepoRef:
+    Type: String
+    Default: main
+    Description: Branch, tag or commit to check out. Use a commit for a run you will publish.
+
+Resources:
+  Evidence:
+    Type: AWS::S3::Bucket
+    # Outlives the stack: deleting the runner must not delete what it measured.
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: evidence
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Write and read, never delete: with versioning on, the instance cannot lose a run.
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt Evidence.Arn
+                  - !Sub ${Evidence.Arn}/*
+
+  Profile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref Role
+
+  NoInbound:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: omar-bench runner. No inbound rules; access is over SSM.
+
+  Runner:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref Profile
+      SecurityGroupIds:
+        - !GetAtt NoInbound.GroupId
+      # `sudo shutdown -h now` at the end of a run stops the instance and its compute bill.
+      InstanceInitiatedShutdownBehavior: stop
+      MetadataOptions:
+        HttpTokens: required
+        # One hop: task containers cannot reach instance metadata or this role's credentials.
+        HttpPutResponseHopLimit: 1
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref VolumeGiB
+            VolumeType: gp3
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          exec > /var/log/omar-bench-bootstrap.log 2>&1
+          set -eux
+          mkdir -p /etc/omar-bench
+          echo "${Evidence}" > /etc/omar-bench/evidence-bucket
+          apt-get update -y
+          apt-get install -y git
+          snap install aws-cli --classic
+          if [ -n "${RepoUrl}" ]; then
+            sudo -u ubuntu -H git clone "${RepoUrl}" /home/ubuntu/omar-bench
+            sudo -u ubuntu -H git -C /home/ubuntu/omar-bench checkout "${RepoRef}"
+            bash /home/ubuntu/omar-bench/infra/ec2/bootstrap.sh
+          fi
+
+Outputs:
+  InstanceId:
+    Value: !Ref Runner
+  EvidenceBucket:
+    Value: !Ref Evidence
+  Connect:
+    Value: !Sub aws ssm start-session --target ${Runner}

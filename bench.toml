@@ -1,0 +1,232 @@
+# omar-bench: everything a result depends on, in one file.
+#
+# A run refuses to start while a value it needs is "" (see `omar-bench doctor`).
+# The file's sha256 is stamped on every run manifest and every ledger row, so a
+# number can always be traced back to the exact pins that produced it.
+schema = 1
+
+# ---------------------------------------------------------------- OMAR ------
+# Systems under test. Tarball + checksum come from the GitHub release
+# (omar-linux-amd64.tar.gz, checksums.txt).
+
+[omar.candidate]              # deterministic coordination: the launch release
+repo = "omar-os/omar"
+version = "0.4.2"             # latest release on 2026-10-08; replace with the release-candidate tag
+sha256_linux_amd64 = "38ad29433564af4601d237a8e01b08088f982fb92a8480df13af478396570d18"
+
+[omar.pre_dsl]                # self-coordinated swarm: the "before" baseline
+repo = "omar-os/omar"
+version = ""                  # last tag before the DSL runtime
+sha256_linux_amd64 = ""
+
+# ---------------------------------------------------------- agent CLIs ------
+# Exact versions installed inside every task container.
+
+# These are the versions SWE Atlas validates on and bakes into its task images.
+# Terminal-Bench's official rows used claude 2.1.284 (Opus 5.5) and codex 0.149.1
+# to 0.159.0; a newer OpenAI model may need a newer codex than this pin.
+[cli]
+claude = "2.1.293"
+codex = "0.142.1"
+
+# -------------------------------------------------------------- models ------
+# provider/id is what Harbor's -m takes. `backend` is the CLI that runs it and
+# the backend an OMAR topology is rendered for. `api_host` is the one host the
+# agent must reach on suites that allowlist egress.
+
+[models.opus]
+backend = "claude"
+provider = "anthropic"
+id = "claude-opus-5-5"
+api_host = "api.anthropic.com"
+
+[models.haiku]
+backend = "claude"
+provider = "anthropic"
+id = "claude-haiku-5-5"
+api_host = "api.anthropic.com"
+
+[models.glm]                  # GLM 5.3 through Claude Code, Anthropic-compatible endpoint
+backend = "claude"
+provider = "anthropic"
+id = ""
+api_host = ""
+env = { ANTHROPIC_BASE_URL = "" }   # token goes in .env as ANTHROPIC_AUTH_TOKEN
+
+[models.sol]
+backend = "codex"
+provider = "openai"
+id = "gpt-5.6-sol"            # as in omar/tests/benchmarks/workflow.py; confirm
+api_host = ""                 # api.openai.com with an API key; a ChatGPT login uses another host
+
+[models.astra]
+backend = "codex"
+provider = "openai"
+id = ""
+api_host = ""
+
+# -------------------------------------------------------------- suites ------
+# All run on Harbor, each on the Harbor version its publisher pins.
+# `attempts` is Harbor's -k: independent attempts per task.
+# `agent_timeout_sec` is how long the suite lets an agent work. Harbor enforces
+# it on the whole attempt; OMAR arms also use it as the limit on one agent's
+# turn, so OMAR never stops an agent sooner than the suite would.
+# `agent_kwargs` and `agent_env` are per CLI backend and go to every arm alike.
+
+[suites.terminal-bench]
+# Protocol of the official 4.0 leaderboard (harbor-framework/terminal-bench,
+# leaderboard/SUBMIT.md and leaderboard/runs/*.json): every task, 5 attempts,
+# errors score 0, no timeout or resource overrides, effort `max`.
+# Where this differs, and has to:
+#   - 3 of the 66 tasks need a GPU; this instance has none. 63 tasks run.
+#   - Official Claude Code rows set CLAUDE_CODE_SIMPLE=1, which makes the CLI
+#     refuse a subscription login. Not set here, for any arm.
+#   - Official rows ran on Modal with API keys; this is Docker on EC2.
+label = "Terminal-Bench 4.0, CPU subset (63 of 66 tasks)"   # the heading results are reported under
+harbor = "0.24.0"             # all 66 task files load on it; official run configs need >= 0.22
+dataset = "terminal-bench/terminal-bench@v4.0.0"   # sha256:39d9f44b40420cde8fdcc087579c0d72a7e14fa3656d603c3f0d22fb35e27732
+attempts = 5
+agent_timeout_sec = 28800     # every task's own agent timeout
+exclude_tasks = [             # environment.gpus = 1
+  "*fp8-rmsnorm-gemm",
+  "*jax-speedrun-gpu",
+  "*math-eval-grader",
+]
+
+[suites.terminal-bench.agent_kwargs.claude]
+reasoning_effort = "max"
+
+[suites.terminal-bench.agent_kwargs.codex]
+reasoning_effort = "max"
+
+[suites.terminal-bench.agent_env.claude]
+CLAUDE_CODE_MAX_OUTPUT_TOKENS = "128000"
+
+# The older set: 89 tasks that allow an agent 10 minutes to 3 h 20 min, most of
+# them 15 minutes, where every 4.0 task allows 8 hours. Here to check that every
+# arm runs end to end, in minutes. Not the suite the results are for; a report keeps its rows
+# under their own heading. Agents are set up as for 4.0, so a check here runs them
+# the way a 4.0 run will. Two tasks ask for 4 CPUs; the rest fit a 2-CPU machine.
+[suites.terminal-bench-2]
+label = "Terminal-Bench 2.0"
+harbor = "0.24.0"             # all 89 task files load on it
+# Resolved at run time through Harbor's registry.json, which names
+# laude-institute/terminal-bench-2 at 69671fbaac6d67a7ef0dfec016cc38a64ef7a77c.
+# Each row's task_checksum records what ran.
+dataset = "terminal-bench@2.0"
+attempts = 5                  # as 4.0
+agent_timeout_sec = 12000     # the longest of its tasks' own agent timeouts
+
+[suites.terminal-bench-2.agent_kwargs.claude]
+reasoning_effort = "max"
+
+[suites.terminal-bench-2.agent_kwargs.codex]
+reasoning_effort = "max"
+
+[suites.terminal-bench-2.agent_env.claude]
+CLAUDE_CODE_MAX_OUTPUT_TOKENS = "128000"
+
+[suites.apex-agents]
+harbor = "0.20.0"             # pinned by the dataset card
+dataset = "mercor/apex-agents-1-1@1.1.1"
+attempts = 3
+agent_timeout_sec = 10800     # the reference agent's limit
+env_file = true               # the publisher's commands pass --env-file .env
+# The default judge runs on Vercel AI Gateway (VERCEL_AI_GATEWAY_API_KEY), or set
+# GRADING_MODEL. The verifier reads the agent's answer from its ATIF trajectory.
+# Investment-banking tasks only, once the task-id scheme is confirmed:
+include_tasks = []
+
+# The publisher runs this on Modal (`-e modal`); here it runs on local Docker,
+# which their README does not cover. Each task asks for 16 CPUs and 16 GB.
+# Judge: OPENAI_API_KEY, OPENAI_API_BASE, EVAL_MODEL (any OpenAI-compatible endpoint).
+[suites.swe-atlas-rf]
+harbor = "0.22.0"             # pinned by scaleapi/SWE-Atlas
+path = "vendor/SWE-Atlas/data/rf"
+repo = "scaleapi/SWE-Atlas"
+ref = "1991e59e081be6d859ea2119e277f8a9e5dadd9f"   # git -C vendor/SWE-Atlas checkout <ref>
+attempts = 3                  # their pass_k.sh default
+agent_timeout_sec = 10800     # every task's own agent timeout
+allow_agent_host = true       # agent egress is allowlisted; the model's api_host is added
+
+# What run_config/pass_k.sh passes to each CLI. OMAR arms apply the same settings.
+[suites.swe-atlas-rf.agent_kwargs.claude]
+reasoning_effort = "high"
+disallowed_tools = "WebSearch,WebFetch"
+
+[suites.swe-atlas-rf.agent_kwargs.codex]
+reasoning_effort = "high"
+web_search = "disabled"
+
+# ---------------------------------------------------------------- arms ------
+# What is being compared. One task text, one model; only coordination varies.
+
+[arms.solo]                   # one CLI agent, Harbor's own integration
+kind = "harbor"               # agent = the model's backend (claude-code | codex)
+
+[arms.omar-solo]              # one agent through the OMAR runtime: prices the runtime itself
+kind = "omar"
+omar = "candidate"
+topology = "topologies/Solo.omar"
+
+[arms.omar-plan-build-check]  # three roles, one bounded fix round, all routing in the wiring
+kind = "omar"
+omar = "candidate"
+topology = "topologies/PlanBuildCheck.omar"
+
+[arms.omar-swarm]             # pre-DSL OMAR: agents route and terminate themselves
+kind = "todo"
+note = "needs a headless entry point for the legacy EA and a pre-DSL version pin"
+
+[arms.langgraph]
+kind = "todo"
+note = "Harbor ships a `langgraph` agent; confirm what graph it runs before using it as the competitor row"
+
+[arms.adk]
+kind = "todo"
+note = "no Harbor integration; needs an adapter"
+
+[arms.omnigent]
+kind = "todo"
+note = "no Harbor integration; needs an adapter"
+
+# -------------------------------------------------------------- prices ------
+# USD per million tokens, API list price. Subscriptions bill no per-session
+# amount, so cost is tokens (measured) x this table (pinned). A model with no
+# row reports tokens and a null cost; nothing is estimated.
+
+[prices]
+as_of = "2026-10-06"
+source = "Anthropic first-party API list prices; cache write = 1.25x (5m) / 2x (1h) input"
+
+[prices.models."claude-opus-5-5"]
+input = 4.00
+output = 20.00
+cache_read = 0.20
+cache_write_5m = 5.00
+cache_write_1h = 8.00
+
+[prices.models."claude-opus-5"]
+input = 5.00
+output = 25.00
+cache_read = 0.50
+cache_write_5m = 6.25
+cache_write_1h = 10.00
+
+[prices.models."claude-haiku-5-5"]
+input = 0.10
+output = 0.50
+cache_read = 0.01
+cache_write_5m = 0.125
+cache_write_1h = 0.20
+# Requests whose prompt exceeds this many tokens bill at the `long` rates.
+long_over = 100000
+long = { input = 0.50, output = 2.50, cache_read = 0.05, cache_write_5m = 0.625, cache_write_1h = 1.00 }
+
+[prices.models."claude-haiku-4-5"]
+aliases = ["claude-haiku-4-5-20251001"]
+input = 1.00
+output = 5.00
+cache_read = 0.10
+cache_write_5m = 1.25
+cache_write_1h = 2.00

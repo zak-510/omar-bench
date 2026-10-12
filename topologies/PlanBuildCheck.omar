@@ -1,0 +1,114 @@
+// Three roles, one review, one bounded revision: plan, build, check, finalize.
+//
+// Nothing here is routed, awaited or terminated by a model. The wiring is
+// acyclic, so the whole run is one logical tag of exactly four invocations.
+// A model decides only what its role is for: the plan, the work, the review.
+// The builder writes the final answer itself, so no one relays its work.
+team Planner[planner : Claude]
+{
+    input task : string
+    input cwd : string
+    output plan : string
+
+    prompt planner(task, cwd) -> plan
+    "
+        The task statement is in the file $(task). Read it in full. The work
+        will be done in place on this machine, with $(cwd) as the working
+        directory unless the task says otherwise, and not in any OMAR
+        workspace. Look at what is there; change nothing.
+        Set `plan` to a short numbered plan for a colleague to carry out: what
+        to do, in what order, and how to verify that the task's own
+        requirements are met.
+    "
+}
+
+team Builder[builder : Claude]
+{
+    input task : string
+    input cwd : string
+    input plan : string
+    input review : string
+    output work : string
+    output answer : string
+
+    prompt builder(task, cwd, plan) -> work
+    "
+        The task statement is in the file $(task). Read it in full; it is the
+        authority, and this plan is advice:
+
+        $(plan)
+
+        Do the task. It is graded where it lives on this machine, not in
+        your OMAR workspace. Make its changes in place, at the paths it names,
+        and use $(cwd) as the working directory for anything it leaves
+        relative. Your workspace is for your own notes; nothing in it is
+        graded.
+        When done, set `work` to your response to the task as it stands: the
+        text it asks you to deliver, or what you changed on disk, and how you
+        verified it.
+    "
+
+    prompt builder(review) -> answer
+    "
+        A reviewer checked your work on that task:
+
+        $(review)
+
+        Fix each problem it raises, in place as before, or decide it is not
+        one. This is the only revision round.
+        Then set `answer` to your final response to the task: the text it asks
+        you to deliver. If it asks only for changes on disk, one paragraph on
+        the final state.
+    "
+}
+
+team Checker[checker : Claude]
+{
+    input task : string
+    input cwd : string
+    input work : string
+    output review : string
+
+    prompt checker(task, cwd, work) -> review
+    "
+        The task statement is in the file $(task). Read it in full. A
+        colleague did the work in place on this machine, with $(cwd) as the
+        working directory unless the task says otherwise, and reports this
+        result:
+
+        $(work)
+
+        Check it against the task statement by inspecting and running things
+        yourself, there and not in your OMAR workspace. Do not take the report
+        on trust, and change nothing.
+        Set `review` to the single word ACCEPTED if every requirement is met.
+        Otherwise set it to a numbered list of concrete problems.
+    "
+}
+
+team PlanBuildCheck
+{
+    input task : string
+    input cwd : string
+    output answer : string
+
+    p = Planner();
+    b = Builder();
+    c = Checker();
+
+    task -> p.task
+    task -> b.task
+    task -> c.task
+    cwd -> p.cwd
+    cwd -> b.cwd
+    cwd -> c.cwd
+
+    p.plan -> b.plan
+    b.work -> c.work
+    c.review -> b.review
+    b.answer -> answer
+}
+
+main Bench {
+    t = PlanBuildCheck()
+}

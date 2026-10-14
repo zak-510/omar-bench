@@ -1,0 +1,26 @@
+{
+  "arm": "solo",
+  "attempted": 1,
+  "cell_sha256": "1104c56a6d29fb72418eab77e941cf825b4b4715589e4be5e426cc2cb68b514a",
+  "complete": true,
+  "created_at": "2026-10-14T07:02:27.801955+00:00",
+  "harbor_returncode": 0,
+  "interrupted": false,
+  "model": "luna",
+  "operator": "zak-510",
+  "planned": 1,
+  "run_id": "20261014T070227Z-terminal-bench-solo-luna-zak-510",
+  "selection": {
+    "attempts": 1,
+    "concurrency": 1,
+    "harbor_args": [],
+    "limit": null,
+    "tasks": [
+      "*bun-sourcemap-leak"
+    ]
+  },
+  "study": "pilot3",
+  "suite": "terminal-bench",
+  "unstarted": 0,
+  "without_result": []
+}

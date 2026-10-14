@@ -86,6 +86,32 @@ class CodexRollouts(unittest.TestCase):
                 "input": 1000, "cache_read": 4000, "cache_write_5m": 0, "cache_write_1h": 0,
                 "output": 300, "requests": 2}})
 
+    def test_each_response_counts_once_at_the_model_and_rate_it_ran_under(self):
+        def response(rid, **fields):
+            return {"type": "token_usage_record", "payload": {"response_id": rid, "usage": fields}}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            parent = [
+                {"type": "turn_context", "payload": {"model": "luna"}},
+                response("r1", input_tokens=1000, cached_input_tokens=600,
+                         cache_write_input_tokens=300, output_tokens=40),
+                {"type": "turn_context", "payload": {"model": "sol"}},
+                response("r2", input_tokens=300_000, cached_input_tokens=200_000, output_tokens=7),
+                # The running total beside the records must not be added again.
+                {"type": "event_msg", "payload": {"type": "token_count", "info": {
+                    "total_token_usage": {"input_tokens": 301_000, "output_tokens": 47}}}}]
+            write_jsonl(Path(tmp) / "sessions/2026/10/14/rollout-1.jsonl", parent)
+            # A forked session starts with a copy of its parent's records.
+            write_jsonl(Path(tmp) / "sessions/2026/10/14/rollout-2.jsonl", parent + [
+                response("r3", input_tokens=500, cached_input_tokens=0, output_tokens=5)])
+            zero = dict.fromkeys(usage.FIELDS, 0)
+            self.assertEqual(usage.scan(Path(tmp), long_over={"sol": 272_000}), {
+                "luna": {**zero, "input": 100, "cache_read": 600, "cache_write_5m": 300,
+                         "output": 40, "requests": 1},
+                "sol" + usage.LONG: {**zero, "input": 100_000, "cache_read": 200_000,
+                                     "output": 7, "requests": 1},
+                "sol": {**zero, "input": 500, "output": 5, "requests": 1}})
+
 
 class Pricing(unittest.TestCase):
     PRICES = {"as_of": "2026-10-06", "models": {

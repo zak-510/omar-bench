@@ -22,12 +22,13 @@ sha256_linux_amd64 = ""
 # ---------------------------------------------------------- agent CLIs ------
 # Exact versions installed inside every task container.
 
-# These are the versions SWE Atlas validates on and bakes into its task images.
-# Terminal-Bench's official rows used claude 2.1.284 (Opus 5.5) and codex 0.149.1
-# to 0.159.0; a newer OpenAI model may need a newer codex than this pin.
+# claude: the version SWE Atlas validates on and bakes into its task images.
+# codex: the version Terminal-Bench 4.0's official gpt-6 rows used. With a ChatGPT
+# login, SWE Atlas's 0.142.1 is refused for every current model ("requires a newer
+# version of Codex", or "not supported", 2026-10-14).
 [cli]
 claude = "2.1.293"
-codex = "0.142.1"
+codex = "0.159.0"
 
 # -------------------------------------------------------------- models ------
 # provider/id is what Harbor's -m takes. `backend` is the CLI that runs it and
@@ -53,16 +54,24 @@ id = ""
 api_host = ""
 env = { ANTHROPIC_BASE_URL = "" }   # token goes in .env as ANTHROPIC_AUTH_TOKEN
 
-[models.sol]
+# The three below are in Codex's model list for a ChatGPT Plus login (2026-10-14).
+
+[models.sol]                  # Codex's default model for that login
 backend = "codex"
 provider = "openai"
-id = "gpt-5.6-sol"            # as in omar/tests/benchmarks/workflow.py; confirm
+id = "gpt-6.1-sol"
 api_host = ""                 # api.openai.com with an API key; a ChatGPT login uses another host
+
+[models.luna]                 # priced as haiku is
+backend = "codex"
+provider = "openai"
+id = "gpt-6-luna"
+api_host = ""
 
 [models.astra]
 backend = "codex"
 provider = "openai"
-id = ""
+id = "gpt-6-astra"
 api_host = ""
 
 # -------------------------------------------------------------- suites ------
@@ -197,7 +206,9 @@ note = "no Harbor integration; needs an adapter"
 
 [prices]
 as_of = "2026-10-06"
-source = "Anthropic first-party API list prices; cache write = 1.25x (5m) / 2x (1h) input"
+source = """First-party API list prices. Anthropic, read 2026-10-06: cache write = 1.25x (5m) / 2x (1h) \
+input. OpenAI, read 2026-10-14 from developers.openai.com/api/docs/pricing: one cache-write rate, \
+kept here as cache_write_5m."""
 
 [prices.models."claude-opus-5-5"]
 input = 4.00
@@ -230,3 +241,28 @@ output = 5.00
 cache_read = 0.10
 cache_write_5m = 1.25
 cache_write_1h = 2.00
+
+# OpenAI's threshold counts every input token of a request, cached ones included.
+[prices.models."gpt-6.1-sol"]
+input = 2.00
+output = 10.00
+cache_read = 0.10
+cache_write_5m = 2.50
+long_over = 272000
+long = { input = 4.00, output = 15.00, cache_read = 0.20, cache_write_5m = 5.00 }
+
+[prices.models."gpt-6-luna"]
+input = 0.10
+output = 0.50
+cache_read = 0.01
+cache_write_5m = 0.125
+long_over = 272000
+long = { input = 0.20, output = 0.75, cache_read = 0.02, cache_write_5m = 0.25 }
+
+[prices.models."gpt-6-astra"]
+input = 10.00
+output = 50.00
+cache_read = 1.00
+cache_write_5m = 12.50
+long_over = 272000
+long = { input = 20.00, output = 75.00, cache_read = 2.00, cache_write_5m = 25.00 }

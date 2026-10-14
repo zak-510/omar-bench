@@ -101,12 +101,27 @@ class OmarAgent(unittest.TestCase):
         self.assertTrue(linked.command.endswith(
             "ln -sf /root/.local/bin/claude /usr/local/bin/claude"), linked.command)
         self.assertEqual(linked.user, "root")
-        # Already on the system path (an npm install on Alpine), or Codex, which Harbor links itself.
+        # Already on the system path: an npm install on Alpine.
         for container, backend in ((Container(stdout="/usr/local/bin/claude\n"), "claude"),
-                                   (Container(stdout="/root/.nvm/bin/codex\n"), "codex")):
+                                   (Container(stdout="/usr/local/bin/codex\n"), "codex")):
             self.container = container
             asyncio.run(self.agent(backend=backend).install(container))
-            self.assertFalse([e for e in container.execs if "ln -sf" in e.command], backend)
+            self.assertFalse([e for e in container.execs
+                              if "ln -sf" in e.command or "> /usr/local/bin/" in e.command], backend)
+
+    def test_codex_gets_a_launcher_that_loads_its_own_node_as_harbors_agent_does(self):
+        # Harbor's link step runs without nvm and links nothing; `sh -lc` then has no codex.
+        nvm = "/root/.nvm/versions/node/v22.20.0/bin"
+        container = Container(stdout=f"{nvm}/codex\n")
+        asyncio.run(self.agent(backend="codex").install(container))
+        lookup = next(e for e in container.execs if "command -v codex" in e.command)
+        self.assertIn('. "$HOME/.nvm/nvm.sh"', lookup.command)
+        (written,) = [e for e in container.execs if "> /usr/local/bin/codex" in e.command]
+        self.assertEqual(written.user, "root")
+        self.assertIn(f'PATH={nvm}:"$PATH"; export PATH', written.command)
+        self.assertIn(f'exec {nvm}/codex "$@"', written.command)
+        # node itself is not put on the system path, where the task's tests would see it.
+        self.assertFalse([e for e in container.execs if "/usr/local/bin/node" in e.command])
 
     def test_the_suites_cli_settings_reach_a_claude_team(self):
         agent = self.agent(reasoning_effort="high", disallowed_tools="WebSearch,WebFetch")
@@ -210,6 +225,8 @@ class RunScript(unittest.TestCase):
         (ob / "claude-settings.json").write_text("{}")
         (bin_ / "omar").write_text("#!/bin/sh\n" + omar)
         (bin_ / "omar").chmod(0o755)
+        if env.get("OB_BACKEND") == "codex":
+            (ob / "codex-config.toml").write_text('model = "gpt-6-luna"\n')
         ob.chmod(0o555)
         self.addCleanup(ob.chmod, 0o755)
         run = subprocess.run(
@@ -300,6 +317,54 @@ class RunScript(unittest.TestCase):
         run, _, _, logs, _ = self._run(
             self._omar_with((self.WORKING, True), (self.WORKING, True), then='sleep 4; echo done\n'),
             OB_WATCH_SECS="1")
+
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertFalse((logs / "omar-stall.txt").exists())
+
+    # A turn Claude Code finished, as it leaves it.
+    ANSWERED = ('{"type":"user","message":{"content":"go"}}\\n'
+                '{"type":"assistant","message":{"content":[{"type":"text","text":"done"}]}}\\n'
+                '{"type":"system","subtype":"turn_duration"}\\n{"type":"last-prompt"}\\n')
+
+    def test_a_step_no_agent_will_finish_ends_the_attempt(self):
+        # Every turn is over and nobody writes: one agent ended its turn without completing
+        # its OMAR step, and OMAR would wait for it until the time limit.
+        run, _, _, logs, _ = self._run(
+            self._omar_with((self.ANSWERED, True), (self.ANSWERED, True)), OB_WATCH_SECS="1")
+
+        self.assertEqual(run.returncode, 70, run.stderr)
+        stall = (logs / "omar-stall.txt").read_text()
+        self.assertIn("every agent's turn was over", stall)
+        self.assertIn(str(logs / "sessions/projects/p/s1.jsonl"), stall)
+
+    # Codex rollouts: every task_started is closed by a task_complete once the turn is over.
+    CODEX_DONE = ('{"type":"event_msg","payload":{"type":"task_started"}}\\n'
+                  '{"type":"event_msg","payload":{"type":"task_complete"}}\\n')
+    CODEX_IN_TURN = CODEX_DONE + '{"type":"event_msg","payload":{"type":"task_started"}}\\n'
+
+    def _codex_with(self, *rollouts, then="exec sleep 40\n"):
+        script = 'd="$CODEX_HOME/sessions/2026/10/14"; mkdir -p "$d"\n'
+        for n, (text, old) in enumerate(rollouts):
+            script += f"printf '{text}' > \"$d/rollout-{n}.jsonl\"\n"
+            script += f'touch -t 202601010000 "$d/rollout-{n}.jsonl"\n' if old else ""
+        return script + then
+
+    def test_codex_agents_are_watched_the_same_way(self):
+        codex = {"OB_BACKEND": "codex", "OB_MODEL": "gpt-6-luna", "OB_WATCH_SECS": "1"}
+        started = time.monotonic()
+        run, _, _, logs, _ = self._run(
+            self._codex_with((self.CODEX_DONE, True), (self.CODEX_DONE, True)), **codex)
+
+        self.assertLess(time.monotonic() - started, 20)
+        self.assertEqual(run.returncode, 70, run.stderr)
+        stall = (logs / "omar-stall.txt").read_text()
+        self.assertIn("every agent's turn was over", stall)
+        self.assertIn(str(logs / "sessions/2026/10/14/rollout-1.jsonl"), stall)
+
+        # A turn still open, however quiet, is an agent at work: a long build, say.
+        run, _, _, logs, _ = self._run(
+            self._codex_with((self.CODEX_DONE, True), (self.CODEX_IN_TURN, True),
+                             then='sleep 4; echo done\n'), **codex)
 
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertFalse((logs / "omar-stall.txt").exists())

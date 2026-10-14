@@ -89,6 +89,15 @@ class Config(unittest.TestCase):
                     self.assertEqual(config.unpinned(config.cell(cfg, suite, arm, model)), [],
                                      f"{suite} / {arm} / {model}")
 
+    def test_the_codex_models_are_pinned_and_priced_for_terminal_bench(self):
+        cfg = config.load()
+        for model in ("sol", "luna", "astra"):
+            for suite in ("terminal-bench", "terminal-bench-2"):
+                for arm in ("solo", "omar-solo", "omar-plan-build-check"):
+                    self.assertEqual(config.unpinned(config.cell(cfg, suite, arm, model)), [],
+                                     f"{suite} / {arm} / {model}")
+            self.assertIn(cfg["models"][model]["id"], cfg["prices"]["models"], model)
+
     def test_an_allowlisted_suite_needs_the_models_api_host(self):
         cfg = pinned()
         self.assertEqual(config.unpinned(config.cell(cfg, "swe-atlas-rf", "solo", "sol")),
@@ -165,7 +174,7 @@ class HarborCommand(unittest.TestCase):
         cmd = harbor.command(c, Path("runs/r/jobs"), "r")
         self.assertEqual(cmd[:5], ["uvx", "--from", "harbor==0.20.0", "harbor", "run"])
         self.assertEqual(cmd[5:11], ["-d", "mercor/apex-agents-1-1@1.1.1", "-a", "codex",
-                                     "-m", "openai/gpt-5.6-sol"])
+                                     "-m", "openai/gpt-6.1-sol"])
         # Three attempts, Harbor never retries on its own, and never stops to ask.
         self.assertEqual(cmd[11:17], ["-k", "3", "-n", "1", "-r", "0"])
         self.assertIn("-y", cmd)

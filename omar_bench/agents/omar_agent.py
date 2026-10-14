@@ -172,18 +172,34 @@ class OmarAgent(BaseInstalledAgent):
         """Put the CLI where a login shell finds it.
 
         OMAR starts each agent with `sh -lc`, and a login shell resets PATH to the
-        system's. Harbor leaves Claude Code in the agent user's ~/.local/bin, on PATH
-        only for bash; without this OMAR's agent exits with "claude: not found" and
-        OMAR reports that it "did not become ready". Harbor links Codex itself.
+        system's. Without this OMAR's agent exits with "claude: not found" (or
+        "codex: not found") and OMAR reports that it "did not become ready".
+
+        Harbor leaves Claude Code in the agent user's ~/.local/bin, on PATH only for
+        bash. It installs Codex, and the node that runs it, under the agent user's
+        nvm, and its own step that links them into /usr/local/bin looks them up
+        without loading nvm, so it links nothing (Harbor 0.24.0, 2026-10-14). Its own
+        agent loads nvm before every command. Codex gets a launcher that does the
+        same, rather than a link: the node on everyone's PATH, the tests' included,
+        stays the task image's own.
         """
-        if self._backend != "claude":
+        if self._backend == "claude":
+            found = await self.exec_as_agent(
+                environment, command='PATH="$HOME/.local/bin:$PATH" command -v claude')
+            path = (found.stdout or "").strip()
+            if path and path != "/usr/local/bin/claude":
+                await self.exec_as_root(
+                    environment, command=f"ln -sf {shlex.quote(path)} /usr/local/bin/claude")
             return
         found = await self.exec_as_agent(
-            environment, command='PATH="$HOME/.local/bin:$PATH" command -v claude')
+            environment, command='[ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"; command -v codex')
         path = (found.stdout or "").strip()
-        if path and path != "/usr/local/bin/claude":
-            await self.exec_as_root(
-                environment, command=f"ln -sf {shlex.quote(path)} /usr/local/bin/claude")
+        if path and path != "/usr/local/bin/codex":
+            bin_dir = shlex.quote(str(PurePosixPath(path).parent))
+            launcher = f'#!/bin/sh\nPATH={bin_dir}:"$PATH"; export PATH\nexec {shlex.quote(path)} "$@"\n'
+            await self.exec_as_root(environment, command=(
+                f"printf %s {shlex.quote(launcher)} > /usr/local/bin/codex"
+                " && chmod 755 /usr/local/bin/codex"))
 
     def _codex_auth_json(self) -> Path | None:
         """A ChatGPT-subscription login to inject, under Harbor's own two switches."""

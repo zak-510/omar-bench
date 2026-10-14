@@ -15,3 +15,23 @@ by = "zak-510 (written by Claude Code during the pilot; not yet reviewed by a pe
 attempt_id = "20261010T042247Z-terminal-bench-omar-plan-build-check-haiku-zak-510/photonic-waveguide-routing__Hqi5aNb"
 reason = "harness fault, not an attempt at the task: OMAR's agent never started in the container (the adapter had left claude off the login shell's PATH and its config where OMAR does not look; fixed 2026-10-10). No model was called: zero tokens on the row; the trial's exception.txt says the agent did not become ready"
 by = "zak-510 (written by Claude Code during the pilot; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261014T055335Z-terminal-bench-2-omar-solo-luna-zak-510/fix-git__mCr4HfV"
+reason = "harness fault, not an attempt at the task: OMAR's Codex agent never started in the container (Harbor installs codex under nvm and its link into /usr/local/bin finds nothing, so `sh -lc codex` gave 'codex: not found'; the adapter writes a launcher since 2026-10-14). No model was called: zero tokens on the row; omar-run.txt says the agent did not become ready, and three reruns in study `debug` captured the pane's 'codex: not found'"
+by = "zak-510 (written by Claude Code during the Codex trial; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261014T055920Z-terminal-bench-2-omar-solo-luna-zak-510/fix-git__3eqc2Jc"
+reason = "harness fault, not an attempt at the task: a rerun, in study `debug`, of 20261014T055335Z-terminal-bench-2-omar-solo-luna-zak-510/fix-git__mCr4HfV while finding why OMAR's Codex agent never started (codex not found on the login shell's PATH; the adapter writes a launcher since 2026-10-14). No model was called: zero tokens on the row"
+by = "zak-510 (written by Claude Code during the Codex trial; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261014T060329Z-terminal-bench-2-omar-solo-luna-zak-510/fix-git__3FNeuP5"
+reason = "harness fault, not an attempt at the task: a rerun, in study `debug`, of 20261014T055335Z-terminal-bench-2-omar-solo-luna-zak-510/fix-git__mCr4HfV while finding why OMAR's Codex agent never started (codex not found on the login shell's PATH; the adapter writes a launcher since 2026-10-14). No model was called: zero tokens on the row"
+by = "zak-510 (written by Claude Code during the Codex trial; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261014T060820Z-terminal-bench-2-omar-solo-luna-zak-510/fix-git__cA8ikom"
+reason = "harness fault, not an attempt at the task: a rerun, in study `debug`, of 20261014T055335Z-terminal-bench-2-omar-solo-luna-zak-510/fix-git__mCr4HfV while finding why OMAR's Codex agent never started (codex not found on the login shell's PATH; the adapter writes a launcher since 2026-10-14). No model was called: zero tokens on the row"
+by = "zak-510 (written by Claude Code during the Codex trial; not yet reviewed by a person)"

@@ -67,35 +67,58 @@ def claude(paths, long_over: dict[str, int] | None = None) -> dict[str, dict]:
     return out
 
 
-def codex(paths) -> dict[str, dict]:
+def codex(paths, long_over: dict[str, int] | None = None) -> dict[str, dict]:
     """Usage per model from Codex rollouts (rollout-*.jsonl).
 
-    Each rollout carries a running total in its token_count events; the last
-    one is the session's usage. Codex counts cached tokens inside input_tokens
-    and reasoning inside output_tokens.
+    Codex 0.159 writes a token_usage_record for each API response. Each is
+    counted once, keyed by response id, so a rollout copied into a forked
+    session does not count twice, and a response whose prompt is over the
+    model's threshold is priced at its long rate. Older rollouts carry only a
+    running total in token_count events; the last one is the session's usage,
+    all priced short. Codex counts cached reads inside input_tokens, and
+    reasoning inside output_tokens. Cache writes are taken to be inside
+    input_tokens too; no rollout has shown one yet.
     """
-    out: dict[str, dict] = {}
+    long_over = long_over or {}
+    responses: dict[str, tuple[str, dict]] = {}
+    totals: list[tuple[str, dict, int]] = []
     for path in paths:
-        model, total, requests = "unknown", None, 0
+        model, total, events, records = "unknown", None, 0, 0
         for record in _lines(path):
             payload = record.get("payload")
             if not isinstance(payload, dict):
                 continue
-            if record.get("type") == "turn_context" and payload.get("model"):
+            kind = record.get("type")
+            if kind == "turn_context" and payload.get("model"):
                 model = payload["model"]
-            if record.get("type") == "event_msg" and payload.get("type") == "token_count":
+            elif kind == "token_usage_record" and isinstance(payload.get("usage"), dict):
+                responses[payload.get("response_id") or f"{path}:{records}"] = (model, payload["usage"])
+                records += 1
+            elif kind == "event_msg" and payload.get("type") == "token_count":
                 info = payload.get("info") or {}
                 if info.get("total_token_usage"):
                     total = info["total_token_usage"]
-                    requests += 1
-        if total is None:
-            continue
-        cached = total.get("cached_input_tokens") or 0
-        row = out.setdefault(model, _zero())
-        row["input"] += (total.get("input_tokens") or 0) - cached
+                    events += 1
+        if not records and total is not None:
+            totals.append((model, total, events))
+
+    out: dict[str, dict] = {}
+
+    def add(name: str, usage: dict, requests: int) -> None:
+        cached = usage.get("cached_input_tokens") or 0
+        written = usage.get("cache_write_input_tokens") or 0
+        row = out.setdefault(name, _zero())
+        row["input"] += (usage.get("input_tokens") or 0) - cached - written
         row["cache_read"] += cached
-        row["output"] += total.get("output_tokens") or 0
+        row["cache_write_5m"] += written
+        row["output"] += usage.get("output_tokens") or 0
         row["requests"] += requests
+
+    for model, usage in responses.values():
+        prompt = usage.get("input_tokens") or 0
+        add(model + LONG if prompt > long_over.get(model, float("inf")) else model, usage, 1)
+    for model, total, events in totals:
+        add(model, total, events)
     return out
 
 
@@ -105,7 +128,7 @@ def scan(root: Path, long_over: dict[str, int] | None = None) -> dict[str, dict]
     rollouts = [p for p in logs if p.name.startswith("rollout-")]
     transcripts = [p for p in logs if not p.name.startswith("rollout-")]
     out = claude(transcripts, long_over)
-    for model, row in codex(rollouts).items():
+    for model, row in codex(rollouts, long_over).items():
         merged = out.setdefault(model, _zero())
         for field in FIELDS:
             merged[field] += row[field]

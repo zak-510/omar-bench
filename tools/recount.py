@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Recount the ledger from raw run directories, without the harness's own code.
 
-For every attempt it recounts tokens from the agents' transcripts, reprices them
+For every attempt it recounts tokens from the agents' transcripts (Claude Code)
+and rollouts (Codex, from their per-response records), reprices them
 at the prices saved with the run, rereads the score, the exception and the
 times from Harbor's files, and compares each with the ledger row. Where Claude
 Code printed its own end-of-run totals (the `solo` arm), those are compared too.
@@ -52,6 +53,34 @@ def responses(transcripts):
     return best
 
 
+def codex_responses(rollouts):
+    """One usage record per Codex API response, in the shape a Claude transcript uses.
+
+    Codex counts cached reads and cache writes inside input_tokens; a forked
+    session repeats its parent's records, so they are keyed by response id.
+    """
+    best = {}
+    for path in rollouts:
+        model = None
+        for record in records(path):
+            payload = record.get("payload")
+            if not isinstance(payload, dict):
+                continue
+            if record.get("type") == "turn_context" and payload.get("model"):
+                model = payload["model"]
+            usage = payload.get("usage")
+            if record.get("type") != "token_usage_record" or not isinstance(usage, dict) or not model:
+                continue
+            cached = usage.get("cached_input_tokens") or 0
+            written = usage.get("cache_write_input_tokens") or 0
+            best[payload.get("response_id")] = (model, {
+                "input_tokens": (usage.get("input_tokens") or 0) - cached - written,
+                "cache_read_input_tokens": cached, "cache_creation_input_tokens": written,
+                "cache_creation": {"ephemeral_5m_input_tokens": written},
+                "output_tokens": usage.get("output_tokens") or 0})
+    return best
+
+
 def total(best, prices):
     tokens = dict(input=0, cache_read=0, cache_write_5m=0, cache_write_1h=0, output=0, requests=0)
     usd, models = 0.0, set()
@@ -72,7 +101,10 @@ def total(best, prices):
         elif usd is not None:
             prompt = sum(counts.values()) - counts["output"]
             rate = price["long"] if "long_over" in price and prompt > price["long_over"] else price
-            usd += sum(count * rate[name] for name, count in counts.items()) / 1e6
+            if any(count and name not in rate for name, count in counts.items()):
+                usd = None  # tokens of a kind this model has no price for
+            else:
+                usd += sum(count * rate[name] for name, count in counts.items() if count) / 1e6
     return tokens, usd, sorted(models)
 
 
@@ -86,7 +118,10 @@ def check(run_dir):
         if row is None:
             yield f"{run_dir.name}/{trial.name}", {"has a ledger row": False}
             continue
-        tokens, usd, models = total(responses(sorted(trial.glob("agent/sessions/projects/**/*.jsonl"))), prices)
+        rollouts = sorted(trial.glob("agent/sessions/**/rollout-*.jsonl"))
+        best = responses(sorted(trial.glob("agent/sessions/projects/**/*.jsonl")))
+        best.update(codex_responses(rollouts))
+        tokens, usd, models = total(best, prices)
         reward = ((result.get("verifier_result") or {}).get("rewards") or {}).get("reward")
         checks = {
             "tokens": all(tokens[name] == row["tokens"][name] for name in tokens),

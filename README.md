@@ -30,7 +30,7 @@ The three setups being compared (`--arm`).
 | `terminal-bench-2` | Terminal-Bench 2.0, 89 | 15 min for most | tried on one task |
 | `apex-agents`, `swe-atlas-rf` | Graded by a model, which needs an API key | 3 h | set up, not run |
 
-Models: `opus`, `haiku`, `glm` on Claude Code; `sol`, `astra` on Codex.
+Models: `opus`, `haiku`, `glm` on Claude Code; `sol`, `luna`, `astra` on Codex.
 
 ## Prerequisites
 
@@ -54,12 +54,16 @@ uv run omar-bench report      # pass rate, cost per attempt, cost per success
 
 ## Status
 
-Haiku 5.5, one attempt per arm. Times are how long the agents worked.
+One attempt per arm and model. Times are how long the agents worked.
 
-| Task | `solo` | `omar-solo` | `omar-plan-build-check` |
-|------|--------|-------------|-------------------------|
-| 4.0 `photonic-waveguide-routing` | fail, 3 h 59 min | fail, 5 h 17 min | timed out at 8 h |
-| 2.0 `fix-git` | pass, 2 min 19 s | pass, 1 min 20 s | pass, 11 min 31 s |
+| Task | Model | `solo` | `omar-solo` | `omar-plan-build-check` |
+|------|-------|--------|-------------|-------------------------|
+| 4.0 `photonic-waveguide-routing` | `haiku` | fail, 3 h 59 min | fail, 5 h 17 min | timed out at 8 h |
+| 4.0 `bun-sourcemap-leak` | `haiku` | fail 27/36, 11 min 18 s | fail 27/36, 11 min 48 s | fail 22/36, 32 min 58 s |
+| | `luna` | fail 23/36, 3 min 55 s | fail 23/36, 3 min 46 s | fail 23/36, 5 min 28 s |
+| | `sol` | fail 30/36, 27 min 40 s | fail 34/36, 7 min 23 s | fail 31/36, 44 min 44 s |
+| 2.0 `fix-git` | `haiku` | pass, 2 min 19 s | pass, 1 min 20 s | pass, 11 min 31 s |
+| | `luna` | pass, 47 s | pass, 37 s | timed out at 15 min |
 
 Two tasks tried once is not a comparison of the arms.
 
@@ -67,8 +71,6 @@ Two tasks tried once is not a comparison of the arms.
 
 - **A result**: needs many tasks at five attempts each.
 - **Other frameworks**: Google ADK, LangGraph, Omnigent, and the older OMAR where agents coordinate themselves.
-- **Codex**: written, never run.
-- **A revision round**: no run has had the checker reject work.
 
 ## Layout
 

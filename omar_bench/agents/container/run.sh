@@ -53,20 +53,56 @@ fi
 
 printf '[dashboard]\nsession_prefix = "bench-"\n' > "$WORK/config.toml"
 
-# Prints the transcript of an agent whose last word is an API error, once no agent has
-# written anything for OB_DEAD_TURN_MINS. Claude Code ends a turn on such an error (the
-# output cap, a usage limit) and does not take it up again.
-dead_turn() {
-  dead=
-  for f in "$OB_LOGS"/sessions/projects/*/*.jsonl; do
-    [ -f "$f" ] || continue
+# The agents' session logs: Claude Code transcripts, or Codex rollouts.
+session_logs() {
+  if [ "$OB_BACKEND" = claude ]; then
+    find "$OB_LOGS/sessions/projects" -mindepth 2 -maxdepth 2 -name '*.jsonl'
+  else
+    find "$OB_LOGS/sessions" -name 'rollout-*.jsonl'
+  fi 2>/dev/null
+}
+
+# Whether a log's last turn is over. Claude Code writes a turn_duration record when a turn
+# ends (a turn that died on an API error included); Codex closes every task_started with a
+# task_complete or a turn_aborted. An agent that has had no turn yet is not working either.
+turn_over() {
+  case "$1" in
+    */rollout-*.jsonl)
+      [ "$(grep -o -E '"type":"(task_started|task_complete|turn_aborted)"' "$1" | tail -n 1)" \
+        != '"type":"task_started"' ] ;;
+    *)
+      tail -n 40 "$1" | grep -E '"type":"(assistant|user)"|"subtype":"turn_duration"' | tail -n 1 \
+        | grep -q -E '"subtype":"turn_duration"|"isApiErrorMessage":true' ;;
+  esac
+}
+
+# Once no agent has written anything for OB_DEAD_TURN_MINS, prints why OMAR is waiting on
+# a step no agent will finish, and the logs that show it: an agent's turn died on an API
+# error, which Claude Code does not take up again (the output cap, a usage limit); or every
+# agent's turn is over, one having ended without completing its OMAR step.
+stalled() {
+  logs=$(session_logs)
+  [ -n "$logs" ] || return 1
+  dead= over=yes
+  for f in $logs; do
     [ -n "$(find "$f" -mmin +"$OB_DEAD_TURN_MINS")" ] || return 1
     if tail -n 40 "$f" | grep -E '"type":"(assistant|user)"' | tail -n 1 \
         | grep -q '"isApiErrorMessage":true'; then
       dead=$f
     fi
+    turn_over "$f" || over=
   done
-  [ -n "$dead" ] && echo "$dead"
+  if [ -n "$dead" ]; then
+    echo "an agent's turn ended in an API error and"
+    echo "no agent has written for $OB_DEAD_TURN_MINS minutes. Its transcript:"
+    echo "$dead"
+  elif [ -n "$over" ]; then
+    echo "every agent's turn was over and no agent had written for"
+    echo "$OB_DEAD_TURN_MINS minutes, while OMAR still waited on a step. Their session logs:"
+    echo "$logs"
+  else
+    return 1
+  fi
 }
 
 # Run from $WORK so the runtime leaves nothing in the task's directory.
@@ -77,24 +113,19 @@ omar -c "$WORK/config.toml" run "$WORK/topology.omar" \
   --replace --fast --timeout-seconds "$OB_INVOCATION_TIMEOUT" \
   > "$OB_LOGS/omar-run.txt" 2>&1 &
 omar_pid=$!
-# OMAR 0.4.2 waits out the whole time limit for an agent whose turn died. `claude --print`
-# would have exited on the same error, so the attempt is over: end it rather than wait.
-if [ "$OB_BACKEND" = claude ]; then
-  (
-    while sleep "$OB_WATCH_SECS" && kill -0 "$omar_pid" 2>/dev/null; do
-      if f=$(dead_turn); then
-        {
-          echo "omar-bench ended this attempt: an agent's turn ended in an API error and"
-          echo "no agent has written for $OB_DEAD_TURN_MINS minutes. Its transcript:"
-          echo "$f"
-        } > "$OB_LOGS/omar-stall.txt"
-        kill "$omar_pid" 2>/dev/null || true
-        break
-      fi
-    done
-  ) > /dev/null 2>&1 &
-  watch_pid=$!
-fi
+# OMAR 0.4.2 waits out the whole time limit for a step whose agent's turn has ended without
+# completing it. `claude --print` and `codex exec` exit when their turn ends, so the attempt
+# is over: end it rather than wait. The task is graded on disk either way.
+(
+  while sleep "$OB_WATCH_SECS" && kill -0 "$omar_pid" 2>/dev/null; do
+    if why=$(stalled); then
+      printf 'omar-bench ended this attempt: %s\n' "$why" > "$OB_LOGS/omar-stall.txt"
+      kill "$omar_pid" 2>/dev/null || true
+      break
+    fi
+  done
+) > /dev/null 2>&1 &
+watch_pid=$!
 status=0
 wait "$omar_pid" || status=$?
 [ -z "${watch_pid:-}" ] || kill "$watch_pid" 2>/dev/null || true

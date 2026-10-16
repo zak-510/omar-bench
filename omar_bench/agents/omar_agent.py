@@ -68,7 +68,9 @@ def claude_settings(model: str, disallowed_tools) -> str:
 
 
 def codex_config(model: str, mcp_servers, reasoning_effort=None, web_search=None) -> str:
-    lines = [f"model = {json.dumps(model)}"]
+    # OMAR runs Codex's full-screen client, which stops at an "Update available" prompt
+    # once it has seen a newer release; OMAR then reports that the agent "did not become ready".
+    lines = [f"model = {json.dumps(model)}", "check_for_update_on_startup = false"]
     if reasoning_effort:
         lines.append(f"model_reasoning_effort = {json.dumps(reasoning_effort)}")
     if web_search:

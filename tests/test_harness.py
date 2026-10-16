@@ -172,11 +172,11 @@ class HarborCommand(unittest.TestCase):
     def test_solo_arm_runs_harbors_own_agent_at_the_suites_harbor_version(self):
         c = config.cell(pinned(), "apex-agents", "solo", "sol")
         cmd = harbor.command(c, Path("runs/r/jobs"), "r")
-        self.assertEqual(cmd[:5], ["uvx", "--from", "harbor==0.20.0", "harbor", "run"])
-        self.assertEqual(cmd[5:11], ["-d", "mercor/apex-agents-1-1@1.1.1", "-a", "codex",
+        self.assertEqual(cmd[:7], ["uvx", "--from", "harbor==0.20.0", "--python", "3.12", "harbor", "run"])
+        self.assertEqual(cmd[7:13], ["-d", "mercor/apex-agents-1-1@1.1.1", "-a", "codex",
                                      "-m", "openai/gpt-6.1-sol"])
         # Three attempts, Harbor never retries on its own, and never stops to ask.
-        self.assertEqual(cmd[11:17], ["-k", "3", "-n", "1", "-r", "0"])
+        self.assertEqual(cmd[13:19], ["-k", "3", "-n", "1", "-r", "0"])
         self.assertIn("-y", cmd)
         self.assertNotIn("--allow-agent-host", cmd)
         self.assertEqual(cmd[-2:], ["--ak", "version=0.142.1"])
@@ -186,7 +186,7 @@ class HarborCommand(unittest.TestCase):
         cmd = harbor.command(c, Path("runs/r/jobs"), "r", attempts=1, tasks=["task-69*"], limit=2,
                              extra=["--override-cpus", "8"])
         self.assertEqual(cmd[2], "harbor==0.22.0")
-        self.assertEqual(cmd[5:9], ["-p", "vendor/SWE-Atlas/data/rf", "-a",
+        self.assertEqual(cmd[7:11], ["-p", "vendor/SWE-Atlas/data/rf", "-a",
                                     "omar_bench.agents.omar_agent:OmarAgent"])
         for expected in (["-k", "1"], ["-i", "task-69*"], ["-l", "2"],
                          ["--allow-agent-host", "api.anthropic.com"],

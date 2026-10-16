@@ -9,6 +9,8 @@ from pathlib import Path
 from . import pricing, usage
 from .config import ROOT
 
+PYTHON = (ROOT / ".python-version").read_text().strip()
+
 
 def command(c: dict, jobs_dir: Path, job_name: str, *, attempts: int | None = None,
             concurrency: int = 1, tasks: list[str] = (), limit: int | None = None,
@@ -17,7 +19,9 @@ def command(c: dict, jobs_dir: Path, job_name: str, *, attempts: int | None = No
     s, m = c["suite_cfg"], c["model_cfg"]
     extras = f"[{s['harbor_extras']}]" if s.get("harbor_extras") else ""
     version = f"=={s['harbor']}" if s.get("harbor") else ""  # empty only under --allow-unpinned
-    cmd = ["uvx", "--from", f"harbor{extras}{version}", "harbor", "run"]
+    # The Python the repo pins: left to itself uv takes the newest, where Harbor's
+    # dependencies may not install yet (fastuuid had no 3.15 wheel on 2026-10-14).
+    cmd = ["uvx", "--from", f"harbor{extras}{version}", "--python", PYTHON, "harbor", "run"]
     cmd += ["-p", s["path"]] if "path" in s else ["-d", s["dataset"]]
     cmd += ["-a", c["agent"], "-m", f"{m['provider']}/{m['id'] or '<unset>'}"]
     # Harbor's own retries are off: a retry is a new run with its own rows, never a replacement.

@@ -88,5 +88,5 @@ tests/          unit tests
 
 ```bash
 PYTHONPATH=. python3 -m unittest discover -s tests                        # core
-PYTHONPATH=. uv run --with harbor python -m unittest discover -s tests    # plus the OMAR adapter
+PYTHONPATH=. uv run --with harbor==0.24.0 python -m unittest discover -s tests    # plus the OMAR adapter
 ```

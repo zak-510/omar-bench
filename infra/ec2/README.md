@@ -62,6 +62,8 @@ Other tasks, arms, models or attempt counts:
 ```bash
 STUDY=mine TASKS="fix-git prove-plus-comm" K=5 MODEL=haiku \
   tmux new -d -s queue infra/ec2/queue.sh
+STUDY=mine SUITE=terminal-bench TASKS=bun-sourcemap-leak MODEL=sol \
+  tmux new -d -s queue infra/ec2/queue.sh      # a Terminal-Bench 4.0 task
 ```
 
 ## Good to know

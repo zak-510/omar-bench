@@ -138,7 +138,8 @@ class OmarAgent(unittest.TestCase):
         asyncio.run(agent.install(self.container))
         self.assertEqual(self.container.files[OB + "topology.omar"].count(": Codex]"), 3)
         self.assertEqual(tomllib.loads(self.container.files[OB + "codex-config.toml"]), {
-            "model": "gpt-5.6-sol", "model_reasoning_effort": "high", "web_search": "disabled",
+            "model": "gpt-5.6-sol", "check_for_update_on_startup": False,
+            "model_reasoning_effort": "high", "web_search": "disabled",
             "mcp_servers": {"fs": {"command": "fs-server", "args": ["--ro"]}}})
 
     def test_run_hands_over_the_task_text_and_only_this_backends_credentials(self):

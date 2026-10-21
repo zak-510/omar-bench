@@ -52,10 +52,10 @@ uv run omar-bench doctor --topologies    # tools, login, versions; compiles the 
 
 ```bash
 STUDY=mine tmux new -d -s queue infra/ec2/queue.sh
-tail -f ~/queue.log
+tail -f ~/queue-haiku.log
 ```
 
-Runs `fix-git` (15-minute limit) once per arm. After each attempt it copies results to the bucket. At the end it writes `~/queue-report.md` and stops the machine 30 minutes later.
+Runs `fix-git` (15-minute limit) once per arm. After each attempt it copies results to the bucket. At the end it writes `~/queue-report-haiku.md` and stops the machine 30 minutes later.
 
 Other tasks, arms, models or attempt counts:
 
@@ -66,9 +66,11 @@ STUDY=mine SUITE=terminal-bench TASKS=bun-sourcemap-leak MODEL=sol \
   tmux new -d -s queue infra/ec2/queue.sh      # a Terminal-Bench 4.0 task
 ```
 
+A Claude and a Codex queue can run at once, each in its own tmux session (`-s queue-haiku`, `-s queue-luna`). The last one to end stops the machine.
+
 ## Good to know
 
-- **Subscription limits**: runs draw on the same allowance as your own daily use. The queue pauses at 80% of the five-hour window and stops at 85% of the week.
+- **Subscription limits**: runs draw on the same allowance as your own daily use. The queue pauses at 80% of the five-hour window and stops at 85% of the week. If the limit runs out mid-attempt, it waits for the reset and runs that attempt again; the cut-short attempt is listed in `~/queue-limit-hits-<model>.txt`, to exclude.
 - **Watching a team work**: `docker ps`, then `docker exec -it <id> tmux ls` and `tmux attach -t <name>` inside it. `Ctrl-b d` leaves.
 - **Interrupted run**: `uv run omar-bench ingest --interrupted runs/<run-id>` records the unfinished attempts as errors.
 - **Big tasks**: Terminal-Bench 4.0 tasks allow 8 hours each, and some ask for up to 16 CPUs.

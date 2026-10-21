@@ -4,8 +4,8 @@
 # 30 minutes after it ends (`sudo shutdown -c` cancels). One queue per model can run at
 # once; the last to end stops the machine. Log: ~/queue-<model>.log
 #
-#   STUDY=mine tmux new -d -s queue infra/ec2/queue.sh
-#   STUDY=mine TASKS="fix-git prove-plus-comm" K=5 tmux new -d -s queue infra/ec2/queue.sh
+#   tmux new -d -s queue "STUDY=mine infra/ec2/queue.sh"
+#   tmux new -d -s queue "STUDY=mine TASKS='fix-git prove-plus-comm' K=5 infra/ec2/queue.sh"
 : "${STUDY:?set STUDY: the name these attempts are reported under}"
 cd "$(dirname "$0")/../.." || exit 1
 SUITE=${SUITE:-terminal-bench-2}

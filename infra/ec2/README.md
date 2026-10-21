@@ -51,7 +51,7 @@ uv run omar-bench doctor --topologies    # tools, login, versions; compiles the 
 #### Step 5: Run
 
 ```bash
-STUDY=mine tmux new -d -s queue infra/ec2/queue.sh
+tmux new -d -s queue "STUDY=mine infra/ec2/queue.sh"
 tail -f ~/queue-haiku.log
 ```
 
@@ -60,11 +60,11 @@ Runs `fix-git` (15-minute limit) once per arm. After each attempt it copies resu
 Other tasks, arms, models or attempt counts:
 
 ```bash
-STUDY=mine TASKS="fix-git prove-plus-comm" K=5 MODEL=haiku \
-  tmux new -d -s queue infra/ec2/queue.sh
-STUDY=mine SUITE=terminal-bench TASKS=bun-sourcemap-leak MODEL=sol \
-  tmux new -d -s queue infra/ec2/queue.sh      # a Terminal-Bench 4.0 task
+tmux new -d -s queue "STUDY=mine TASKS='fix-git prove-plus-comm' K=5 MODEL=haiku infra/ec2/queue.sh"
+tmux new -d -s queue-sol "STUDY=mine SUITE=terminal-bench TASKS=bun-sourcemap-leak MODEL=sol infra/ec2/queue.sh"   # a Terminal-Bench 4.0 task
 ```
+
+Settings go inside the quotes: a tmux server that is already running ignores the ones written before `tmux`.
 
 A Claude and a Codex queue can run at once, each in its own tmux session (`-s queue-haiku`, `-s queue-luna`). The last one to end stops the machine.
 

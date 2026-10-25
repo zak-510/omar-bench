@@ -539,7 +539,7 @@ class Topologies(unittest.TestCase):
         for path in sorted((ROOT / "topologies").glob("*.omar")):
             source = path.read_text()
             self.assertRegex(source, r"main Bench \{\s+t = \w+\(\)\s+\}", path.name)
-            for port in ("input task : string", "input cwd : string", "output answer : string"):
+            for port in ("input statement : string", "input cwd : string", "output answer : string"):
                 self.assertIn(port, source, path.name)
 
     def test_whoever_does_the_work_is_told_it_is_graded_outside_the_omar_workspace(self):

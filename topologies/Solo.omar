@@ -3,13 +3,13 @@
 // against a multi-agent topology it is the baseline the team has to beat.
 team Solo[worker : Claude]
 {
-    input task : string
+    input statement : string
     input cwd : string
     output answer : string
 
-    prompt worker(task, cwd) -> answer
+    task worker(statement, cwd) -> answer
     "
-        The task statement is in the file $(task). Read it in full first, then
+        The task statement is in the file $(statement). Read it in full first, then
         do the task.
         The task is graded where it lives on this machine, not in your OMAR
         workspace. Make its changes in place, at the paths it names, and use

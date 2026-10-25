@@ -11,8 +11,8 @@ schema = 1
 
 [omar.candidate]              # deterministic coordination: the launch release
 repo = "omar-os/omar"
-version = "0.4.2"             # latest release on 2026-10-08; replace with the release-candidate tag
-sha256_linux_amd64 = "38ad29433564af4601d237a8e01b08088f982fb92a8480df13af478396570d18"
+version = "0.4.3"             # latest release on 2026-10-25 (published 2026-10-18); replace with the release-candidate tag
+sha256_linux_amd64 = "06116409375faa1c631acb721d8999c76d46f231e0f4ba52638f2c2c4b80235d"
 
 [omar.pre_dsl]                # self-coordinated swarm: the "before" baseline
 repo = "omar-os/omar"
@@ -39,6 +39,12 @@ codex = "0.159.0"
 backend = "claude"
 provider = "anthropic"
 id = "claude-opus-5-5"
+api_host = "api.anthropic.com"
+
+[models.sonnet]
+backend = "claude"
+provider = "anthropic"
+id = "claude-sonnet-5-5"
 api_host = "api.anthropic.com"
 
 [models.haiku]
@@ -223,6 +229,13 @@ output = 25.00
 cache_read = 0.50
 cache_write_5m = 6.25
 cache_write_1h = 10.00
+
+[prices.models."claude-sonnet-5-5"]
+input = 2.00
+output = 10.00
+cache_read = 0.20
+cache_write_5m = 2.50
+cache_write_1h = 4.00
 
 [prices.models."claude-haiku-5-5"]
 input = 0.10

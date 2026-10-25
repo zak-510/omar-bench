@@ -30,7 +30,7 @@ The three setups being compared (`--arm`).
 | `terminal-bench-2` | Terminal-Bench 2.0, 89 | 15 min for most | tried on one task |
 | `apex-agents`, `swe-atlas-rf` | Graded by a model, which needs an API key | 3 h | set up, not run |
 
-Models: `opus`, `haiku`, `glm` on Claude Code; `sol`, `luna`, `astra` on Codex.
+Models: `opus`, `sonnet`, `haiku`, `glm` on Claude Code; `sol`, `luna`, `astra` on Codex.
 
 ## Prerequisites
 

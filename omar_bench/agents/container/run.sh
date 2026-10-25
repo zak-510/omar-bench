@@ -35,7 +35,7 @@ if [ "$OB_BACKEND" = claude ]; then
   fi
   ln -sfn "$OB_LOGS/sessions/projects" "$HOME/.claude/projects"
   export ANTHROPIC_MODEL="$OB_MODEL"
-  # Agents start in $WORK. Trusting it here skips a dialog OMAR 0.4.2 leaves unanswered.
+  # Trusting $WORK skips a dialog OMAR 0.4.2 left unanswered; 0.4.3 answers it itself.
   sed "s|@WORKSPACE@|$WORK|" "$OB/claude.json" > "$HOME/.claude.json"
   cp "$OB/claude-settings.json" "$HOME/.claude/settings.json"
 else
@@ -107,15 +107,27 @@ stalled() {
 
 # Run from $WORK so the runtime leaves nothing in the task's directory.
 cd "$WORK"
-omar -c "$WORK/config.toml" run "$WORK/topology.omar" \
-  --input "t.task=$WORK/instruction.md" \
+# Since 0.4.3 a topology runs in a background OMAR session, and a session `omar run` makes
+# for itself is removed, workspaces and all, the moment the run ends. The attempt makes its
+# own, to list the workspaces after the run and to end every agent before the tests start.
+# --fg waits for the run's end. Checkpoints only serve pause and rollback, never used here,
+# and a failed one holds the run at its boundary: off, as there were none before 0.4.3.
+session=bench
+if ! omar -c "$WORK/config.toml" up --no-ea --name "$session" > "$OB_LOGS/omar-up.txt" 2>&1; then
+  cat "$OB_LOGS/omar-up.txt"
+  exit 1
+fi
+omar -s "$session" run "$WORK/topology.omar" \
+  --input "t.statement=$WORK/instruction.md" \
   --input "t.cwd=$TASK_CWD" \
   --replace --fast --timeout-seconds "$OB_INVOCATION_TIMEOUT" \
+  --fg --keep-workspaces --checkpoint-period off \
   > "$OB_LOGS/omar-run.txt" 2>&1 &
 omar_pid=$!
-# OMAR 0.4.2 waits out the whole time limit for a step whose agent's turn has ended without
+# OMAR waits out the whole time limit for a step whose agent's turn has ended without
 # completing it. `claude --print` and `codex exec` exit when their turn ends, so the attempt
-# is over: end it rather than wait. The task is graded on disk either way.
+# is over: end it rather than wait. The task is graded on disk either way. Ending `omar run
+# --fg` only stops the watching; removing the session below ends the run.
 (
   while sleep "$OB_WATCH_SECS" && kill -0 "$omar_pid" 2>/dev/null; do
     if why=$(stalled); then
@@ -129,18 +141,15 @@ watch_pid=$!
 status=0
 wait "$omar_pid" || status=$?
 [ -z "${watch_pid:-}" ] || kill "$watch_pid" 2>/dev/null || true
-if [ -e "$OB_LOGS/omar-stall.txt" ]; then
-  # The agents' sessions outlive OMAR; nothing should still be running when tests start.
-  tmux ls -F '#{session_name}' 2>/dev/null | grep '^bench-' | while read -r name; do
-    tmux kill-session -t "$name" 2>/dev/null || true
-  done
-  status=70
-fi
+[ ! -e "$OB_LOGS/omar-stall.txt" ] || status=70
 # OMAR tells each agent to keep its files in its own workspace; the task is graded on
 # its own directory. Record what was left behind, so work done in the wrong place can
 # be told from a task that was not solved.
-find "$HOME/.omar/workspaces" -path '*/worktree/*' -type f ! -name .git 2>/dev/null \
-  | sort > "$OB_LOGS/omar-workspace-files.txt" || true
+find "$HOME/.omar/sessions/$session/workspaces" -path '*/worktree/*' -type f ! -name .git \
+  2>/dev/null | sort > "$OB_LOGS/omar-workspace-files.txt" || true
+# Ends the runtime and every agent in it (they have a tmux server of their own); nothing
+# should still be running when tests start.
+omar -s "$session" rm >> "$OB_LOGS/omar-up.txt" 2>&1 || true
 cat "$OB_LOGS/omar-run.txt"
 [ ! -e "$OB_LOGS/omar-stall.txt" ] || cat "$OB_LOGS/omar-stall.txt"
 exit "$status"

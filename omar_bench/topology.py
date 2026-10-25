@@ -1,9 +1,10 @@
 """OMAR programs as benchmark treatments.
 
 Contract between a topology and the harness: `main` instantiates one team as
-`t`; it takes `t.task` (path to the task statement) and `t.cwd` (the task's
-working directory) and writes `t.answer`, the team's final response to the
-task. Suites that grade a written answer (APEX-Agents) grade that.
+`t`; it takes `t.statement` (path to the task statement) and `t.cwd` (the
+task's working directory) and writes `t.answer`, the team's final response to
+the task. Suites that grade a written answer (APEX-Agents) grade that. (The
+port was `t.task` until OMAR 0.4.3 made `task` a keyword.)
 """
 from __future__ import annotations
 

@@ -71,7 +71,7 @@ A Claude and a Codex queue can run at once, each in its own tmux session (`-s qu
 ## Good to know
 
 - **Subscription limits**: runs draw on the same allowance as your own daily use. The queue pauses at 80% of the five-hour window and stops at 85% of the week. If the limit runs out mid-attempt, it waits for the reset and runs that attempt again; the cut-short attempt is listed in `~/queue-limit-hits-<model>.txt`, to exclude.
-- **Watching a team work**: `docker ps`, then `docker exec -it <id> tmux ls` and `tmux attach -t <name>` inside it. `Ctrl-b d` leaves.
+- **Watching a team work**: `docker ps`, then `docker exec -it <id> omar -s bench attach --tui` (as the task's agent user, if not root). `z` leaves; `Q` stops the session and ends the attempt. Since OMAR 0.4.3 the agents run on a tmux server of the session's own, so a plain `tmux ls` no longer shows them.
 - **Interrupted run**: `uv run omar-bench ingest --interrupted runs/<run-id>` records the unfinished attempts as errors.
 - **Big tasks**: Terminal-Bench 4.0 tasks allow 8 hours each, and some ask for up to 16 CPUs.
 - **OMAR needs a recent base image**: Debian 12+ or Ubuntu 22.04+, not Alpine. A task on an older image has to be left out for every arm.

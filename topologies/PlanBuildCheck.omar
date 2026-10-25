@@ -6,13 +6,13 @@
 // The builder writes the final answer itself, so no one relays its work.
 team Planner[planner : Claude]
 {
-    input task : string
+    input statement : string
     input cwd : string
     output plan : string
 
-    prompt planner(task, cwd) -> plan
+    task planner(statement, cwd) -> plan
     "
-        The task statement is in the file $(task). Read it in full. The work
+        The task statement is in the file $(statement). Read it in full. The work
         will be done in place on this machine, with $(cwd) as the working
         directory unless the task says otherwise, and not in any OMAR
         workspace. Look at what is there; change nothing.
@@ -24,16 +24,16 @@ team Planner[planner : Claude]
 
 team Builder[builder : Claude]
 {
-    input task : string
+    input statement : string
     input cwd : string
     input plan : string
     input review : string
     output work : string
     output answer : string
 
-    prompt builder(task, cwd, plan) -> work
+    task builder(statement, cwd, plan) -> work
     "
-        The task statement is in the file $(task). Read it in full; it is the
+        The task statement is in the file $(statement). Read it in full; it is the
         authority, and this plan is advice:
 
         $(plan)
@@ -48,7 +48,7 @@ team Builder[builder : Claude]
         verified it.
     "
 
-    prompt builder(review) -> answer
+    task builder(review) -> answer
     "
         A reviewer checked your work on that task:
 
@@ -64,14 +64,14 @@ team Builder[builder : Claude]
 
 team Checker[checker : Claude]
 {
-    input task : string
+    input statement : string
     input cwd : string
     input work : string
     output review : string
 
-    prompt checker(task, cwd, work) -> review
+    task checker(statement, cwd, work) -> review
     "
-        The task statement is in the file $(task). Read it in full. A
+        The task statement is in the file $(statement). Read it in full. A
         colleague did the work in place on this machine, with $(cwd) as the
         working directory unless the task says otherwise, and reports this
         result:
@@ -88,7 +88,7 @@ team Checker[checker : Claude]
 
 team PlanBuildCheck
 {
-    input task : string
+    input statement : string
     input cwd : string
     output answer : string
 
@@ -96,9 +96,9 @@ team PlanBuildCheck
     b = Builder();
     c = Checker();
 
-    task -> p.task
-    task -> b.task
-    task -> c.task
+    statement -> p.statement
+    statement -> b.statement
+    statement -> c.statement
     cwd -> p.cwd
     cwd -> b.cwd
     cwd -> c.cwd

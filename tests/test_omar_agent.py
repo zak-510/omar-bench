@@ -224,7 +224,9 @@ class RunScript(unittest.TestCase):
         # Left by the CLI's installer; OMAR will look for sessions here and nowhere else.
         (tmp / ".claude/downloads").mkdir(parents=True)
         (ob / "claude-settings.json").write_text("{}")
-        (bin_ / "omar").write_text("#!/bin/sh\n" + omar)
+        # Every call is logged; only `run` is the run, the session commands just succeed.
+        (bin_ / "omar").write_text('#!/bin/sh\necho "$*" >> "$RECORD.calls"\n'
+                                   'case " $* " in *" run "*) ;; *) exit 0 ;; esac\n' + omar)
         (bin_ / "omar").chmod(0o755)
         if env.get("OB_BACKEND") == "codex":
             (ob / "codex-config.toml").write_text('model = "gpt-6-luna"\n')
@@ -243,7 +245,7 @@ class RunScript(unittest.TestCase):
         run, tmp, ob, logs, task = self._run(
             'printf "%s\\n" "$PWD" "$@" > "$RECORD"\n'
             # An agent that followed OMAR's own instructions and kept its work in its workspace.
-            'w="$HOME/.omar/workspaces/w1/worktree"; mkdir -p "$w"\n'
+            'w="$HOME/.omar/sessions/bench/workspaces/w1/worktree"; mkdir -p "$w"\n'
             'echo pointer > "$w/.git"; echo work > "$w/solution.py"\n'
             # What the CLI writes: a transcript, and files of its own.
             'mkdir -p "$HOME/.claude/projects/p" "$HOME/.claude/plugins"\n'
@@ -256,8 +258,16 @@ class RunScript(unittest.TestCase):
         self.assertNotEqual(cwd, str(ob))
         self.assertIn(f"t.cwd={task}", args)
         self.assertEqual(args[args.index("--timeout-seconds") + 1], "28800")
-        (task_input,) = [a for a in args if a.startswith("t.task=")]
-        self.assertEqual(Path(task_input.removeprefix("t.task=")).read_text(), "Fix it.\n")
+        # Waits for the run, keeps its workspaces to list them, takes no checkpoints.
+        self.assertEqual(args[args.index("--checkpoint-period") + 1], "off")
+        self.assertLessEqual({"--fg", "--keep-workspaces"}, set(args))
+        # In a session of the attempt's own, made first and removed last.
+        up, run_call, rm = (tmp / "rec.calls").read_text().splitlines()
+        self.assertEqual(up, f"-c {cwd}/config.toml up --no-ea --name bench")
+        self.assertTrue(run_call.startswith("-s bench run "), run_call)
+        self.assertEqual(rm, "-s bench rm")
+        (task_input,) = [a for a in args if a.startswith("t.statement=")]
+        self.assertEqual(Path(task_input.removeprefix("t.statement=")).read_text(), "Fix it.\n")
         # Nothing was added beside the uploads.
         self.assertEqual(sorted(p.name for p in ob.iterdir()),
                          ["claude-settings.json", "claude.json", "instruction.md", "topology.omar"])
@@ -274,7 +284,7 @@ class RunScript(unittest.TestCase):
         self.assertFalse((logs / "omar-stall.txt").exists())
         # Work left in an OMAR workspace, where no grader looks, is on record.
         self.assertEqual((logs / "omar-workspace-files.txt").read_text(),
-                         f"{tmp}/.omar/workspaces/w1/worktree/solution.py\n")
+                         f"{tmp}/.omar/sessions/bench/workspaces/w1/worktree/solution.py\n")
 
     # A transcript as Claude Code leaves it: the last thing said, then its own bookkeeping.
     WORKING = ('{"type":"user","message":{"content":"go"}}\\n'
@@ -295,12 +305,14 @@ class RunScript(unittest.TestCase):
     def test_an_agent_that_died_on_an_api_error_ends_the_attempt_instead_of_the_time_limit(self):
         # OMAR goes on waiting for it; here that would be 40 seconds, and for real 8 hours.
         started = time.monotonic()
-        run, _, _, logs, _ = self._run(self._omar_with((self.WORKING, True), (self.DIED, True)),
-                                       OB_WATCH_SECS="1")
+        run, tmp, _, logs, _ = self._run(self._omar_with((self.WORKING, True), (self.DIED, True)),
+                                         OB_WATCH_SECS="1")
 
         self.assertLess(time.monotonic() - started, 20)
         self.assertEqual(run.returncode, 70, run.stderr)
         self.assertIn("ended in an API error", run.stdout)
+        # Ending `omar run --fg` leaves the run going; removing the session ends it.
+        self.assertEqual((tmp / "rec.calls").read_text().splitlines()[-1], "-s bench rm")
         self.assertEqual((logs / "omar-stall.txt").read_text().splitlines()[-1],
                          str(logs / "sessions/projects/p/s1.jsonl"))
 

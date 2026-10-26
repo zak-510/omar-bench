@@ -94,7 +94,12 @@ stalled() {
   done
   if [ -n "$dead" ]; then
     echo "an agent's turn ended in an API error and"
-    echo "no agent has written for $OB_DEAD_TURN_MINS minutes. Its transcript:"
+    echo "no agent has written for $OB_DEAD_TURN_MINS minutes. The error, as Claude Code gave it:"
+    # Harbor names an attempt's error after the last one it knows in what this script
+    # prints, so a safety refusal or the output cap is named here as it is for `solo`.
+    tail -n 40 "$dead" | grep '"isApiErrorMessage":true' | tail -n 1 \
+      | grep -o '"text":"API Error:[^"]*' | sed 's/^"text":"//' || true
+    echo "Its transcript:"
     echo "$dead"
   elif [ -n "$over" ]; then
     echo "every agent's turn was over and no agent had written for"

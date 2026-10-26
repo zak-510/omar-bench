@@ -316,6 +316,34 @@ class RunScript(unittest.TestCase):
         self.assertEqual((logs / "omar-stall.txt").read_text().splitlines()[-1],
                          str(logs / "sessions/projects/p/s1.jsonl"))
 
+    def test_a_safety_refusal_is_named_as_it_is_for_solo(self):
+        # What Claude Code wrote when Haiku 5.5's classifier declined atrx-vep-crispr (2026-10-22).
+        refused = json.dumps({"type": "assistant", "error": "invalid_request", "isApiErrorMessage": True,
+                              "message": {"content": [{"type": "text", "text":
+                                  "API Error: Haiku 5.5 can't help with this. Start a new session to continue."
+                                  "\n\nLearn more: https://www.anthropic.com/legal/aup\n\nDetails: `[bio]`"}]}},
+                             separators=(",", ":"))  # compact, as Claude Code writes it
+        fixture = Path(self.enterContext(tempfile.TemporaryDirectory())) / "refused.jsonl"
+        fixture.write_text(refused + '\n{"type":"system","subtype":"turn_duration"}\n')
+        run, _, _, logs, _ = self._run(
+            self._omar_with((self.WORKING, True),
+                            then='cp "$FIXTURE" "$d/s1.jsonl"; touch -t 202601010000 "$d/s1.jsonl"\n'
+                                 'exec sleep 40\n'),
+            OB_WATCH_SECS="1", FIXTURE=str(fixture))
+
+        self.assertEqual(run.returncode, 70, run.stderr)
+        stall = (logs / "omar-stall.txt").read_text().splitlines()
+        self.assertIn("can't help with this", "\n".join(stall))
+        self.assertEqual(stall[-1], str(logs / "sessions/projects/p/s1.jsonl"))
+        # Harbor's own classifier, on what the script printed, as it runs on `solo`'s output.
+        agent = omar_agent.OmarAgent(
+            logs_dir=logs, model_name="anthropic/claude-haiku-5-5", backend="claude",
+            topology=str(ROOT / "topologies/PlanBuildCheck.omar"), omar_version="0.4.3",
+            omar_sha256="f" * 64, cli_version="2.1.293", invocation_timeout_sec="28800")
+        error = agent._classify_exec_error(
+            "sh run.sh", SimpleNamespace(return_code=70, stdout=run.stdout, stderr=run.stderr))
+        self.assertEqual(type(error).__name__, "AgentSafetyRefusalError")
+
     def test_a_dead_turn_ends_nothing_while_another_agent_is_still_writing(self):
         run, _, _, logs, _ = self._run(
             self._omar_with((self.DIED, True), (self.WORKING, False), then='sleep 4; echo done\n'),

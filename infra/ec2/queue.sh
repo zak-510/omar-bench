@@ -37,6 +37,8 @@ if (agent / "omar-stall.txt").exists():
                     stall = json.loads(line).get("error") or "unknown"
         except OSError:
             pass
+if r["error_type"] == "AgentSafetyRefusalError":
+    stall = "refusal"    # the provider's classifier declined; Claude Code calls it invalid_request
 def limited(line):
     # Claude Code marks the error on the message; its stream also reports the plan's status.
     # Codex reports the limit in the plan use it logs, or says so in an error.
@@ -130,8 +132,9 @@ for t in $TASKS; do for a in $ARMS; do tries=0; while :; do
     sleep "$wait"; continue
   fi
   # Raised within ten minutes: a broken setup, or a task this setup cannot run. Skip the
-  # task; a second one in a row means the setup.
-  if [ "$2" != "-" ] && [ "$4" -lt 600 ]; then
+  # task; a second one in a row means the setup. A safety refusal is neither: it is the
+  # model's outcome on that attempt, and the task's other arms still run.
+  if [ "$2" != "-" ] && [ "$2" != AgentSafetyRefusalError ] && [ "$4" -lt 600 ]; then
     quick=$((quick + 1))
     if [ "$quick" -ge 2 ]; then echo "$(now) raised within ten minutes on two tasks in a row: stopping the queue"; break 3; fi
     echo "$(now) raised within ten minutes: skipping the rest of $t"; continue 3
@@ -139,7 +142,8 @@ for t in $TASKS; do for a in $ARMS; do tries=0; while :; do
   quick=0
   # A turn that died on anything but the output cap would die again.
   # An agent that left its step open is the system under test, not the setup: go on.
-  case "$5" in -|max_output_tokens|idle) ;; *) echo "$(now) a turn died on '$5': stopping the queue"; break 3;; esac
+  # So is a refusal: it fails that attempt, scored like `solo`'s, and the queue goes on.
+  case "$5" in -|max_output_tokens|idle|refusal) ;; *) echo "$(now) a turn died on '$5': stopping the queue"; break 3;; esac
   break
 done; done; done
 uv run omar-bench report --study "$STUDY" > ~/queue-report-"$MODEL".md 2>&1

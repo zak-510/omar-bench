@@ -102,6 +102,19 @@ for path in sorted(logs, key=os.path.getmtime, reverse=True):
         break
 PY
 }
+login_left() {   # seconds until Codex's ChatGPT login on this machine runs out; nothing otherwise
+  python3 - "$MODEL" <<'PY'
+import base64, json, os, sys, time, tomllib
+if tomllib.load(open("bench.toml", "rb"))["models"][sys.argv[1]]["backend"] != "codex":
+    sys.exit()
+path = os.environ.get("CODEX_AUTH_JSON_PATH") or os.path.expanduser("~/.codex/auth.json")
+try:
+    token = json.load(open(path))["tokens"]["access_token"].split(".")[1]
+    print(int(json.loads(base64.urlsafe_b64decode(token + "=" * (-len(token) % 4)))["exp"] - time.time()))
+except (OSError, ValueError, KeyError, TypeError, AttributeError, IndexError):
+    pass   # an API key, or no login: nothing runs out
+PY
+}
 quick=0
 for t in $TASKS; do for a in $ARMS; do tries=0; while :; do
   # Before every attempt, from the newest log that reports plan use (an earlier run's, at first).
@@ -113,6 +126,11 @@ for t in $TASKS; do for a in $ARMS; do tries=0; while :; do
       wait=$(( $3 - $(date +%s) + 120 )); [ "$wait" -gt 0 ] && [ "$wait" -lt 19000 ] && { echo "$(now) five-hour window at $1: waiting ${wait}s for its reset"; sleep "$wait"; }
     fi
   fi
+  # Each container gets a copy of the login. One that finds it run out refreshes its copy,
+  # and that spends the refresh token this machine's copy holds: every later attempt is
+  # refused (2026-10-26). So stop while it still has longer than an attempt's 8 hours.
+  left=$(login_left)
+  if [ -n "$left" ] && [ "$left" -lt 32400 ]; then echo "$(now) Codex's login here runs out in ${left}s: stopping the queue. Sign in again with 'codex login --device-auth'"; break 3; fi
   echo "$(now) start $a on $t"
   before=$(newest "$a")
   uv run omar-bench run "$SUITE" --arm "$a" --model "$MODEL" --study "$STUDY" -k "$K" --tasks "*$t" > ~/queue-"$MODEL-$t-$a".log 2>&1
@@ -131,6 +149,8 @@ for t in $TASKS; do for a in $ARMS; do tries=0; while :; do
     echo "$(now) the plan's usage limit cut that attempt short ($id, listed in ~/queue-limit-hits-$MODEL.txt): waiting ${wait}s, then running it again"
     sleep "$wait"; continue
   fi
+  # A refused login refuses every attempt after it, however long the CLI took to give up.
+  if [ "$2" = AgentAuthenticationError ]; then echo "$(now) the login was refused: stopping the queue"; break 3; fi
   # Raised within ten minutes: a broken setup, or a task this setup cannot run. Skip the
   # task; a second one in a row means the setup. A safety refusal is neither: it is the
   # model's outcome on that attempt, and the task's other arms still run.

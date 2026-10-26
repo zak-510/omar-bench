@@ -35,3 +35,33 @@ by = "zak-510 (written by Claude Code during the Codex trial; not yet reviewed b
 attempt_id = "20261014T060820Z-terminal-bench-2-omar-solo-luna-zak-510/fix-git__cA8ikom"
 reason = "harness fault, not an attempt at the task: a rerun, in study `debug`, of 20261014T055335Z-terminal-bench-2-omar-solo-luna-zak-510/fix-git__mCr4HfV while finding why OMAR's Codex agent never started (codex not found on the login shell's PATH; the adapter writes a launcher since 2026-10-14). No model was called: zero tokens on the row"
 by = "zak-510 (written by Claude Code during the Codex trial; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261026T014806Z-terminal-bench-omar-solo-sol-zak-510/session-window-debug__nFLqyYt"
+reason = "harness fault, not an attempt at the task: the machine's Codex login had been spent (its access token ran out 2026-10-24 05:46 UTC, and a container's refresh used up the refresh token the machine's copy held; D48). No model was called: zero tokens on the row. omar-run.txt says 'no delivery channel available' for the Codex agent and no rollout was written; the `solo` attempt in the same window failed on the spent login"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261026T015138Z-terminal-bench-omar-solo-sol-zak-510/mvcc-lsm-compaction__8AiVS6F"
+reason = "harness fault, not an attempt at the task: the machine's Codex login had been spent (its access token ran out 2026-10-24 05:46 UTC, and a container's refresh used up the refresh token the machine's copy held; D48). No model was called: zero tokens on the row. omar-run.txt says 'no delivery channel available' for the Codex agent and no rollout was written; the `solo` attempt in the same window failed on the spent login"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261026T020600Z-terminal-bench-solo-sol-zak-510/mvcc-lsm-compaction__3tVCTTt"
+reason = "harness fault, not an attempt at the task: the machine's Codex login had been spent (its access token ran out 2026-10-24 05:46 UTC, and a container's refresh used up the refresh token the machine's copy held; D48). No model was called: zero tokens on the row. codex.txt says 'refresh token was already used' and 'unauthorized (401)'"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261026T022012Z-terminal-bench-omar-plan-build-check-sol-zak-510/mvcc-lsm-compaction__NhmUtt6"
+reason = "harness fault, not an attempt at the task: the machine's Codex login had been spent (its access token ran out 2026-10-24 05:46 UTC, and a container's refresh used up the refresh token the machine's copy held; D48). No model was called: zero tokens on the row. omar-run.txt says 'no delivery channel available' for the Codex agent and no rollout was written; the `solo` attempt in the same window failed on the spent login"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261026T023442Z-terminal-bench-omar-solo-sol-zak-510/ontology-kg-querying__4YMzJ2v"
+reason = "harness fault, not an attempt at the task: the machine's Codex login had been spent (its access token ran out 2026-10-24 05:46 UTC, and a container's refresh used up the refresh token the machine's copy held; D48). No model was called: zero tokens on the row. omar-run.txt says 'no delivery channel available' for the Codex agent and no rollout was written; the `solo` attempt in the same window failed on the spent login"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261026T023730Z-terminal-bench-omar-solo-sol-zak-510/sound-change-cascade__4dmRXrb"
+reason = "harness fault, not an attempt at the task: the machine's Codex login had been spent (its access token ran out 2026-10-24 05:46 UTC, and a container's refresh used up the refresh token the machine's copy held; D48). No model was called: zero tokens on the row. omar-run.txt says 'no delivery channel available' for the Codex agent and no rollout was written; the `solo` attempt in the same window failed on the spent login"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"

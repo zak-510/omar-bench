@@ -37,7 +37,7 @@ cd ~/omar-bench && cp .env.example .env
 
 ```bash
 claude setup-token    # paste the token into .env as CLAUDE_CODE_OAUTH_TOKEN
-codex login           # only for Codex
+codex login --device-auth   # only for Codex; good for 10 days
 ```
 
 In `.env`, set `OMAR_BENCH_OPERATOR` to your GitHub handle. Never commit `.env`.
@@ -71,6 +71,7 @@ A Claude and a Codex queue can run at once, each in its own tmux session (`-s qu
 ## Good to know
 
 - **Subscription limits**: runs draw on the same allowance as your own daily use. The queue pauses at 80% of the five-hour window and stops at 85% of the week. If the limit runs out mid-attempt, it waits for the reset and runs that attempt again; the cut-short attempt is listed in `~/queue-limit-hits-<model>.txt`, to exclude.
+- **Codex's login runs out after 10 days**: once it has, the first container to refresh it uses up the machine's copy, and every later Codex attempt is refused. A Codex queue stops when the login has less than 9 hours left; sign in again with `codex login --device-auth` and start the queue again.
 - **Watching a team work**: `docker ps`, then `docker exec -it <id> omar -s bench attach --tui` (as the task's agent user, if not root). `z` leaves; `Q` stops the session and ends the attempt. Since OMAR 0.4.3 the agents run on a tmux server of the session's own, so a plain `tmux ls` no longer shows them.
 - **Interrupted run**: `uv run omar-bench ingest --interrupted runs/<run-id>` records the unfinished attempts as errors.
 - **Big tasks**: Terminal-Bench 4.0 tasks allow 8 hours each, and some ask for up to 16 CPUs.

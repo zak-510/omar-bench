@@ -80,6 +80,8 @@ def claude(line):   # Claude Code reports it only in the solo arm's output
 def codex(line):    # Codex reports it in every rollout's token_count events
     rl = json.loads(line)["payload"]["rate_limits"]
     by = {w.get("window_minutes"): w for w in (rl.get("primary"), rl.get("secondary")) if w}
+    if not by:      # the "premium" record logged as the limit hits has no windows: read the one before
+        raise ValueError
     five, week = by.get(300) or {}, by.get(10080) or {}
     return ((five.get("used_percent") or 0) / 100, (week.get("used_percent") or 0) / 100,
             int(five.get("resets_at") or 0), rl.get("rate_limit_reached_type") or "allowed")
@@ -160,6 +162,14 @@ for t in $TASKS; do for a in $ARMS; do tries=0; while :; do
     echo "$(now) raised within ten minutes: skipping the rest of $t"; continue 3
   fi
   quick=0
+  # A pass stands though a turn died on the plan's limit (a failure is run again, above);
+  # the next attempt waits out the reset rather than meet the limit too.
+  if [ "$5" = rate_limit ]; then
+    set -- $(limits); wait=$(( ${3:-0} - $(date +%s) + 120 ))
+    [ "$wait" -gt 0 ] && [ "$wait" -lt 19000 ] || wait=3600
+    echo "$(now) a turn died on the plan's usage limit after the attempt passed: waiting ${wait}s for the reset"
+    sleep "$wait"; break
+  fi
   # A turn that died on anything but the output cap would die again.
   # An agent that left its step open is the system under test, not the setup: go on.
   # So is a refusal: it fails that attempt, scored like `solo`'s, and the queue goes on.

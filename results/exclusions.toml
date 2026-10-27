@@ -65,3 +65,8 @@ by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by 
 attempt_id = "20261026T023730Z-terminal-bench-omar-solo-sol-zak-510/sound-change-cascade__4dmRXrb"
 reason = "harness fault, not an attempt at the task: the machine's Codex login had been spent (its access token ran out 2026-10-24 05:46 UTC, and a container's refresh used up the refresh token the machine's copy held; D48). No model was called: zero tokens on the row. omar-run.txt says 'no delivery channel available' for the Codex agent and no rollout was written; the `solo` attempt in the same window failed on the spent login"
 by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261026T182411Z-terminal-bench-omar-solo-sonnet-zak-510/ontology-kg-querying__Z7jXPMY"
+reason = "harness fault, not an attempt at the task: OMAR's Claude agent never started. omar-run.txt says 'agent t.worker did not become ready' 62 s into the agent phase; no transcript was written and no model was called: zero tokens on the row. Cause not found (the pane is gone with the session). Sonnet's other OMAR attempts in study tb4-043 started, and so did Sol's on this task. Run again at the end of the queue"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"

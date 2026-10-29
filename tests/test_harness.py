@@ -198,6 +198,24 @@ class HarborCommand(unittest.TestCase):
             self.assertIn(expected, [cmd[i:i + 2] for i in range(len(cmd) - 1)])
         self.assertEqual(cmd[-2:], ["--override-cpus", "8"])
 
+    def test_mission_control_gets_the_brief_and_the_build_of_its_commit(self):
+        c = config.cell(pinned(), "terminal-bench", "mission-control", "sol")
+        cmd = harbor.command(c, Path("j"), "r")
+        pairs = [cmd[i:i + 2] for i in range(len(cmd) - 1)]
+        for expected in (["--ak", f"brief={ROOT / 'topologies/mission-control.md'}"],
+                         ["--ak", "max_mutations=3"], ["--ak", "backend=codex"],
+                         ["--ak", f"omar_tarball={ROOT / 'vendor/omar/omar-03633ed-linux-amd64.tar.gz'}"],
+                         ["--ak", f"omar_spec={ROOT / 'vendor/omar/omar-03633ed-spec.md'}"],
+                         # The suite's eight hours per turn, as on every OMAR arm.
+                         ["--ak", "invocation_timeout_sec=28800"]):
+            self.assertIn(expected, pairs)
+        self.assertNotIn("topology=", " ".join(cmd))
+        # A build of a commit names the commit and its reference among its pins.
+        cfg = pinned()
+        cfg["omar"]["main"].update(commit="", spec="")
+        self.assertEqual(config.unpinned(config.cell(cfg, "terminal-bench", "mission-control", "sol")),
+                         ["omar.main.commit", "omar.main.spec"])
+
     def test_every_arm_gets_the_suites_own_cli_settings(self):
         # SWE Atlas runs its agents at high effort with web tools off; a team must not get more.
         settings = [["--ak", "reasoning_effort=high"], ["--ak", "disallowed_tools=WebSearch,WebFetch"]]

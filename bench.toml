@@ -14,6 +14,16 @@ repo = "omar-os/omar"
 version = "0.4.3"             # latest release on 2026-10-25 (published 2026-10-18); replace with the release-candidate tag
 sha256_linux_amd64 = "06116409375faa1c631acb721d8999c76d46f231e0f4ba52638f2c2c4b80235d"
 
+[omar.main]                   # unreleased: Mission Control's designer can change a live run (#338)
+repo = "omar-os/omar"
+version = "main-03633ed"      # what the arm records as the agent's version
+commit = "03633ed9f8d6e02787e041a95a711c11d126ea3e"   # main on 2026-10-29; no release has #338 yet
+# No release tarball exists for a commit: infra/omar-build/build.sh builds one from it,
+# the way the release workflow does, into vendor/omar/ (not in git; a copy is in the bucket).
+tarball = "vendor/omar/omar-03633ed-linux-amd64.tar.gz"
+spec = "vendor/omar/omar-03633ed-spec.md"   # lang/spec.md at that commit: what its compiler takes
+sha256_linux_amd64 = ""
+
 [omar.pre_dsl]                # self-coordinated swarm: the "before" baseline
 repo = "omar-os/omar"
 version = ""                  # last tag before the DSL runtime
@@ -188,6 +198,12 @@ topology = "topologies/Solo.omar"
 kind = "omar"
 omar = "candidate"
 topology = "topologies/PlanBuildCheck.omar"
+
+[arms.mission-control]        # OMAR's own assistant designs each task's team, and may change it as it runs
+kind = "omar"
+omar = "main"
+brief = "topologies/mission-control.md"   # what the operator's stand-in tells the assistant
+max_mutations = 3             # every one restarts the whole team with fresh conversations
 
 [arms.omar-swarm]             # pre-DSL OMAR: agents route and terminate themselves
 kind = "todo"

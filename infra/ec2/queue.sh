@@ -10,7 +10,7 @@
 cd "$(dirname "$0")/../.." || exit 1
 SUITE=${SUITE:-terminal-bench-2}
 TASKS=${TASKS:-fix-git}
-ARMS=${ARMS:-omar-solo solo omar-plan-build-check}
+ARMS=${ARMS:-solo mission-control}
 MODEL=${MODEL:-haiku}
 K=${K:-1}
 exec >> ~/queue-"$MODEL".log 2>&1

@@ -1,7 +1,13 @@
 #!/bin/sh
-# Runs one OMAR topology on the task. Harbor invokes this as the agent user,
-# from the task's working directory.
+# Runs OMAR on the task. Harbor invokes this as the agent user, from the task's
+# working directory.
+#   run.sh           one topology, start to end
+#   run.sh up        a session with Mission Control's assistant; prints url=, work=, cwd=
+#   run.sh stalled   why the team can make no more progress, or nothing
+#   run.sh down      ends the session; prints what the attempt left
+# The last three are the mission-control arm's steps, which the adapter drives.
 set -eu
+stage=${1:-run}
 : "${OB_BACKEND:?}" "${OB_MODEL:?}" "${OB_LOGS:?}" "${OB_INVOCATION_TIMEOUT:?}"
 # How long every agent must have been silent before a turn that ended in an API error
 # ends the attempt, and how often to look. Longer than the longest quiet stretch of a
@@ -9,49 +15,54 @@ set -eu
 : "${OB_DEAD_TURN_MINS:=15}" "${OB_WATCH_SECS:=30}"
 OB="${OB_DIR:-/installed-agent/omar-bench}"
 TASK_CWD=$(pwd)
-# The adapter's uploads are read here. Everything written goes to WORK: some
-# tasks run the agent as a user who cannot write under /installed-agent.
-WORK=$(mktemp -d "${TMPDIR:-/tmp}/omar-bench.XXXXXX")
-cp "$OB/topology.omar" "$OB/instruction.md" "$WORK/"
+session=bench
 export PATH="$HOME/.local/bin:/usr/local/bin:$PATH"
-export TERM="${TERM:-xterm-256color}" LANG="${LANG:-C.UTF-8}"
-# The CLI version is a pin; it must not update itself mid-run.
-export DISABLE_AUTOUPDATER=1 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
-# Lets Claude Code skip permission prompts as root, as Harbor's own agent does.
-export IS_SANDBOX=1
 
-# Session logs are written straight into the directory Harbor syncs to the host,
-# so an attempt that times out still has its full token record.
-mkdir -p "$OB_LOGS/sessions"
-if [ "$OB_BACKEND" = claude ]; then
-  # OMAR finds the session it delivers a prompt to under ~/.claude and nowhere else, so
-  # the CLI keeps its default config directory. Only its transcripts are linked into the
-  # synced one; the CLI's own files (plugins, config backups, a hash of the login) stay here.
-  unset CLAUDE_CONFIG_DIR
-  mkdir -p "$HOME/.claude" "$OB_LOGS/sessions/projects"
-  if [ -d "$HOME/.claude/projects" ] && [ ! -L "$HOME/.claude/projects" ]; then
-    cp -R "$HOME/.claude/projects/." "$OB_LOGS/sessions/projects/"
-    rm -rf "$HOME/.claude/projects"
-  fi
-  ln -sfn "$OB_LOGS/sessions/projects" "$HOME/.claude/projects"
-  export ANTHROPIC_MODEL="$OB_MODEL"
-  # Trusting $WORK skips a dialog OMAR 0.4.2 left unanswered; 0.4.3 answers it itself.
-  sed "s|@WORKSPACE@|$WORK|" "$OB/claude.json" > "$HOME/.claude.json"
-  cp "$OB/claude-settings.json" "$HOME/.claude/settings.json"
-else
-  # Credentials stay out of the synced directory; only sessions/ points into it.
-  export CODEX_HOME="$WORK/codex-home"
-  mkdir -p "$CODEX_HOME"
-  ln -sfn "$OB_LOGS/sessions" "$CODEX_HOME/sessions"
-  cp "$OB/codex-config.toml" "$CODEX_HOME/config.toml"
-  if [ -f /tmp/codex-secrets/auth.json ]; then
-    ln -sf /tmp/codex-secrets/auth.json "$CODEX_HOME/auth.json"
-  elif [ -n "${OPENAI_API_KEY:-}" ]; then
-    (umask 077 && printf '{"OPENAI_API_KEY": "%s"}\n' "$OPENAI_API_KEY" > "$CODEX_HOME/auth.json")
-  fi
-fi
+# The agents' CLI, configured as every arm's is. The adapter's uploads are read from OB;
+# everything written goes to WORK: some tasks run the agent as a user who cannot write
+# under /installed-agent.
+setup() {
+  WORK=$(mktemp -d "${TMPDIR:-/tmp}/omar-bench.XXXXXX")
+  cp "$OB/instruction.md" "$WORK/"
+  export TERM="${TERM:-xterm-256color}" LANG="${LANG:-C.UTF-8}"
+  # The CLI version is a pin; it must not update itself mid-run.
+  export DISABLE_AUTOUPDATER=1 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+  # Lets Claude Code skip permission prompts as root, as Harbor's own agent does.
+  export IS_SANDBOX=1
 
-printf '[dashboard]\nsession_prefix = "bench-"\n' > "$WORK/config.toml"
+  # Session logs are written straight into the directory Harbor syncs to the host,
+  # so an attempt that times out still has its full token record.
+  mkdir -p "$OB_LOGS/sessions"
+  if [ "$OB_BACKEND" = claude ]; then
+    # OMAR finds the session it delivers a prompt to under ~/.claude and nowhere else, so
+    # the CLI keeps its default config directory. Only its transcripts are linked into the
+    # synced one; the CLI's own files (plugins, config backups, a hash of the login) stay here.
+    unset CLAUDE_CONFIG_DIR
+    mkdir -p "$HOME/.claude" "$OB_LOGS/sessions/projects"
+    if [ -d "$HOME/.claude/projects" ] && [ ! -L "$HOME/.claude/projects" ]; then
+      cp -R "$HOME/.claude/projects/." "$OB_LOGS/sessions/projects/"
+      rm -rf "$HOME/.claude/projects"
+    fi
+    ln -sfn "$OB_LOGS/sessions/projects" "$HOME/.claude/projects"
+    export ANTHROPIC_MODEL="$OB_MODEL"
+    # Trusting $WORK skips a dialog OMAR 0.4.2 left unanswered; 0.4.3 answers it itself.
+    sed "s|@WORKSPACE@|$WORK|" "$OB/claude.json" > "$HOME/.claude.json"
+    cp "$OB/claude-settings.json" "$HOME/.claude/settings.json"
+  else
+    # Credentials stay out of the synced directory; only sessions/ points into it.
+    export CODEX_HOME="$WORK/codex-home"
+    mkdir -p "$CODEX_HOME"
+    ln -sfn "$OB_LOGS/sessions" "$CODEX_HOME/sessions"
+    cp "$OB/codex-config.toml" "$CODEX_HOME/config.toml"
+    if [ -f /tmp/codex-secrets/auth.json ]; then
+      ln -sf /tmp/codex-secrets/auth.json "$CODEX_HOME/auth.json"
+    elif [ -n "${OPENAI_API_KEY:-}" ]; then
+      (umask 077 && printf '{"OPENAI_API_KEY": "%s"}\n' "$OPENAI_API_KEY" > "$CODEX_HOME/auth.json")
+    fi
+  fi
+
+  printf '[dashboard]\nsession_prefix = "bench-"\n' > "$WORK/config.toml"
+}
 
 # The agents' session logs: Claude Code transcripts, or Codex rollouts.
 session_logs() {
@@ -110,14 +121,67 @@ stalled() {
   fi
 }
 
+# OMAR tells each agent to keep its files in its own workspace; the task is graded on
+# its own directory. Record what was left behind, so work done in the wrong place can
+# be told from a task that was not solved. Then end the runtime and every agent in it
+# (they have a tmux server of their own): nothing should still be running when tests start.
+finish() {
+  find "$HOME/.omar/sessions/$session/workspaces" -path '*/worktree/*' -type f ! -name .git \
+    2>/dev/null | sort > "$OB_LOGS/omar-workspace-files.txt" || true
+  omar -s "$session" rm >> "$OB_LOGS/omar-up.txt" 2>&1 || true
+}
+
+case "$stage" in
+  run | up) ;;
+  stalled)
+    if why=$(stalled); then
+      printf 'omar-bench ended this attempt: %s\n' "$why" > "$OB_LOGS/omar-stall.txt"
+      cat "$OB_LOGS/omar-stall.txt"
+    fi
+    exit 0 ;;
+  down)
+    finish
+    [ ! -e "$OB_LOGS/omar-run.txt" ] || cat "$OB_LOGS/omar-run.txt"
+    # The driver's account of an attempt that never got a team running.
+    if [ -e "$OB_LOGS/omar-mission-failed.txt" ]; then cat "$OB_LOGS/omar-mission-failed.txt"; exit 71; fi
+    if [ -e "$OB_LOGS/omar-stall.txt" ]; then cat "$OB_LOGS/omar-stall.txt"; exit 70; fi
+    exit 0 ;;
+  *) echo "run.sh: no step '$stage'" >&2; exit 2 ;;
+esac
+
+setup
 # Run from $WORK so the runtime leaves nothing in the task's directory.
 cd "$WORK"
+
+if [ "$stage" = up ]; then
+  # The assistant runs on the arm's CLI, whichever OMAR would have found first.
+  if [ "$OB_BACKEND" = claude ]; then
+    assistant="claude --dangerously-skip-permissions"
+  else
+    assistant="codex --dangerously-bypass-approvals-and-sandbox"
+  fi
+  printf '\n[agent]\ndefault_command = "%s"\n' "$assistant" >> "$WORK/config.toml"
+  # The language reference of the build that compiles its designs.
+  cp "$OB/spec.md" "$WORK/"
+  if ! omar -c "$WORK/config.toml" up --name "$session" --json > "$OB_LOGS/omar-up.txt" 2>&1; then
+    cat "$OB_LOGS/omar-up.txt"
+    exit 1
+  fi
+  url=$(sed -n 's/.*"url": *"\([^"]*\)".*/\1/p' "$OB_LOGS/omar-up.txt" | head -n 1)
+  if [ -z "$url" ]; then
+    echo "omar up gave no address:"; cat "$OB_LOGS/omar-up.txt"
+    exit 1
+  fi
+  printf 'url=%s\nwork=%s\ncwd=%s\n' "$url" "$WORK" "$TASK_CWD"
+  exit 0
+fi
+
 # Since 0.4.3 a topology runs in a background OMAR session, and a session `omar run` makes
 # for itself is removed, workspaces and all, the moment the run ends. The attempt makes its
 # own, to list the workspaces after the run and to end every agent before the tests start.
 # --fg waits for the run's end. Checkpoints only serve pause and rollback, never used here,
 # and a failed one holds the run at its boundary: off, as there were none before 0.4.3.
-session=bench
+cp "$OB/topology.omar" "$WORK/"
 if ! omar -c "$WORK/config.toml" up --no-ea --name "$session" > "$OB_LOGS/omar-up.txt" 2>&1; then
   cat "$OB_LOGS/omar-up.txt"
   exit 1
@@ -147,14 +211,7 @@ status=0
 wait "$omar_pid" || status=$?
 [ -z "${watch_pid:-}" ] || kill "$watch_pid" 2>/dev/null || true
 [ ! -e "$OB_LOGS/omar-stall.txt" ] || status=70
-# OMAR tells each agent to keep its files in its own workspace; the task is graded on
-# its own directory. Record what was left behind, so work done in the wrong place can
-# be told from a task that was not solved.
-find "$HOME/.omar/sessions/$session/workspaces" -path '*/worktree/*' -type f ! -name .git \
-  2>/dev/null | sort > "$OB_LOGS/omar-workspace-files.txt" || true
-# Ends the runtime and every agent in it (they have a tmux server of their own); nothing
-# should still be running when tests start.
-omar -s "$session" rm >> "$OB_LOGS/omar-up.txt" 2>&1 || true
+finish
 cat "$OB_LOGS/omar-run.txt"
 [ ! -e "$OB_LOGS/omar-stall.txt" ] || cat "$OB_LOGS/omar-stall.txt"
 exit "$status"

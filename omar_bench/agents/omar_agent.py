@@ -1,4 +1,4 @@
-"""OMAR as a Harbor agent: run a topology inside the task container.
+"""OMAR as a Harbor agent: run a team inside the task container.
 
 Terminal-Bench, APEX-Agents and SWE Atlas all publish on Harbor, so this one
 adapter puts an OMAR team on all three:
@@ -6,6 +6,8 @@ adapter puts an OMAR team on all three:
     harbor run -d <dataset> -a omar_bench.agents.omar_agent:OmarAgent -m anthropic/<model> \
         --ak topology=topologies/PlanBuildCheck.omar --ak omar_version=<pin> ...
 
+The team is a fixed topology, or (`--ak brief=...`) the one Mission Control's assistant
+designs for the task, which it may change as the team runs (see mission.py).
 `omar-bench run` builds that command from bench.toml.
 """
 from __future__ import annotations
@@ -28,10 +30,12 @@ except ImportError:  # harbor < 0.23, which APEX-Agents and SWE Atlas pin
     AgentCapabilities = None
 
 from .. import usage
-from ..topology import render
+from ..topology import BACKENDS, render
+from .mission import Mission
 
 HERE = Path(__file__).resolve().parent / "container"
 OB = PurePosixPath("/installed-agent/omar-bench")
+TARBALL = "/tmp/omar-bench-omar.tar.gz"
 CODEX_SECRETS = PurePosixPath("/tmp/codex-secrets")
 # Harbor's own integration installs the CLI, so every arm gets it the same way.
 CLI = {"claude": ClaudeCode, "codex": Codex}
@@ -101,16 +105,28 @@ class OmarAgent(BaseInstalledAgent):
     if AgentCapabilities is not None:
         capabilities = AgentCapabilities(atif=True, mcp_servers=True)
 
-    def __init__(self, logs_dir: Path, *args, topology: str, omar_version: str,
-                 omar_repo: str = "omar-os/omar", omar_sha256: str = "", backend: str = "claude",
+    def __init__(self, logs_dir: Path, *args, omar_version: str, topology: str | None = None,
+                 brief: str | None = None, max_mutations: int = 0,
+                 omar_repo: str = "omar-os/omar", omar_sha256: str = "", omar_tarball: str = "",
+                 omar_spec: str = "", backend: str = "claude",
                  cli_version: str | None = None, invocation_timeout_sec: int,
                  reasoning_effort: str | None = None, disallowed_tools=None,
                  web_search: str | None = None,
                  extra_env: dict[str, str] | None = None, **kwargs):
         super().__init__(logs_dir, *args, extra_env=extra_env, **kwargs)
-        self._topology = Path(topology)
+        if (topology is None) == (brief is None):
+            raise ValueError("give a topology to run, or a brief for Mission Control: one of the two")
+        self._topology = Path(topology) if topology else None
+        self._brief = Path(brief) if brief else None
+        self._max_mutations = int(max_mutations)
         self._omar = {"OMAR_REPO": omar_repo, "OMAR_VERSION": str(omar_version),
                       "OMAR_SHA256": str(omar_sha256)}
+        # A build of a commit, which no release carries: uploaded rather than downloaded,
+        # with the language reference its compiler implements.
+        self._omar_tarball = Path(omar_tarball) if omar_tarball else None
+        self._omar_spec = Path(omar_spec) if omar_spec else None
+        if self._brief and not self._omar_spec:
+            raise ValueError("Mission Control needs omar_spec: the reference of the build it runs on")
         self._backend = backend
         # `omar run --timeout-seconds`: the limit on one agent's turn, not on the attempt.
         # No default: a short one would stop OMAR's agents before the suite stops anyone else's.
@@ -148,13 +164,22 @@ class OmarAgent(BaseInstalledAgent):
 
     async def install(self, environment: BaseEnvironment) -> None:
         await environment.upload_file(HERE / "install-root.sh", "/tmp/omar-bench-install-root.sh")
+        omar = dict(self._omar)
+        if self._omar_tarball:
+            await environment.upload_file(self._omar_tarball, TARBALL)
+            omar["OMAR_TARBALL"] = TARBALL
         await self.exec_as_root(environment, command="sh /tmp/omar-bench-install-root.sh",
-                                env=self._omar)
+                                env=omar)
         await self._cli.install(environment)
         await self._link_cli(environment)
 
-        await self._upload(environment, "topology.omar",
-                           render(self._topology.read_text(), self._backend))
+        if self._topology:
+            await self._upload(environment, "topology.omar",
+                               render(self._topology.read_text(), self._backend))
+        else:
+            await self._upload(environment, "spec.md", self._omar_spec.read_text())
+            self._local.mkdir(parents=True, exist_ok=True)
+            (self._local / "brief.md").write_text(self._brief.read_text())
         await environment.upload_file(HERE / "run.sh", str(OB / "run.sh"))
         if self._backend == "claude":
             await self._upload(environment, "claude.json", claude_json(self.mcp_servers))
@@ -229,10 +254,47 @@ class OmarAgent(BaseInstalledAgent):
         }
         result = None
         try:
-            result = await self.exec_as_agent(environment, command=f"sh {OB / 'run.sh'}", env=env)
+            if self._topology:
+                result = await self.exec_as_agent(environment, command=f"sh {OB / 'run.sh'}",
+                                                  env=env)
+            else:
+                result = await self._mission(environment, env)
         finally:
             # Also on failure or timeout: an attempt with no answer is graded as one, not lost.
             await self._write_trajectory(environment, instruction, result)
+
+    async def _mission(self, environment: BaseEnvironment, env: dict[str, str]):
+        """A session with Mission Control's assistant; the team it designs, watched to its
+        end; the session ended. Returns what `run.sh down` printed."""
+        # Only the session's start needs the credentials: the runtime and its agents keep them.
+        steps = {name: value for name, value in env.items() if name.startswith("OB_")}
+        try:
+            up = await self.exec_as_agent(environment, command=f"sh {OB / 'run.sh'} up", env=env)
+            where = dict(line.split("=", 1) for line in (up.stdout or "").splitlines()
+                         if line.split("=", 1)[0] in ("url", "work", "cwd"))
+            hours = self._invocation_timeout_sec / 3600
+            brief = (self._brief.read_text()
+                     .replace("@STATEMENT@", f"{where['work']}/instruction.md")
+                     .replace("@CWD@", where["cwd"])
+                     .replace("@SPEC@", f"{where['work']}/spec.md")
+                     .replace("@BACKEND@", BACKENDS[self._backend])
+                     .replace("@TURN_HOURS@", f"{hours:g}"))
+
+            async def shell(command: str) -> str:
+                return (await self.exec_as_agent(environment, command=command, env=steps)).stdout or ""
+
+            async def upload(name: str, text: str) -> str:
+                await self._upload(environment, f"mission-{name}", text)
+                return str(OB / f"mission-{name}")
+
+            await Mission(shell, upload, Path(self.logs_dir), url=where["url"], brief=brief,
+                          max_mutations=self._max_mutations,
+                          turn_timeout_sec=self._invocation_timeout_sec,
+                          stalled_command=f"sh {OB / 'run.sh'} stalled").run()
+        finally:
+            down = await self.exec_as_agent(environment, command=f"sh {OB / 'run.sh'} down",
+                                            env=steps)
+        return down
 
     async def _write_trajectory(self, environment: BaseEnvironment, instruction: str,
                                 result) -> None:

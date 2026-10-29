@@ -1,6 +1,6 @@
 #!/bin/sh
 # Runs as root inside a task container: tmux, git and ps for the OMAR runtime, then
-# the pinned `omar` and `omarc` release binaries. The agent CLI is installed
+# the pinned `omar` and `omarc` binaries (a release's, or a build the adapter uploaded). The agent CLI is installed
 # separately, by Harbor's own integration, so every arm gets the same CLI.
 #
 # The 0.4.2 `omar` binary links glibc >= 2.34 and OpenSSL 3 (libssl.so.3), so it
@@ -33,7 +33,13 @@ case "$(uname -m)" in
   *) echo "omar-bench: unsupported architecture $(uname -m)" >&2; exit 1 ;;
 esac
 TARBALL="omar-linux-$ARCH.tar.gz"
-curl -fsSL "https://github.com/$OMAR_REPO/releases/download/v$OMAR_VERSION/$TARBALL" -o "/tmp/$TARBALL"
+if [ -n "${OMAR_TARBALL:-}" ]; then
+  # A build of a commit, uploaded by the adapter: there is no release to download.
+  [ "$ARCH" = amd64 ] || { echo "omar-bench: the uploaded OMAR build is for amd64, not $ARCH" >&2; exit 1; }
+  cp "$OMAR_TARBALL" "/tmp/$TARBALL"
+else
+  curl -fsSL "https://github.com/$OMAR_REPO/releases/download/v$OMAR_VERSION/$TARBALL" -o "/tmp/$TARBALL"
+fi
 # The pin in bench.toml is the amd64 tarball's checksum.
 if [ -n "${OMAR_SHA256:-}" ] && [ "$ARCH" = amd64 ]; then
   echo "$OMAR_SHA256  /tmp/$TARBALL" | sha256sum -c - >/dev/null

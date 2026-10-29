@@ -211,6 +211,10 @@ def cmd_run(args) -> int:
         print("refusing to run with unpinned values (set them in bench.toml, or pass "
               "--allow-unpinned for a smoke test):\n  " + "\n  ".join(missing), file=sys.stderr)
         return 2
+    tarball = (c["omar"] or {}).get("tarball")
+    if tarball and not (ROOT / tarball).exists():
+        raise config.ConfigError(f"{tarball} is missing: build it with infra/omar-build/build.sh "
+                                 f"{c['omar']['commit']}")
 
     env = _env()
     # Results from several people end up in one ledger; each row says whose run it was.
@@ -231,7 +235,8 @@ def cmd_run(args) -> int:
                          concurrency=args.concurrency, tasks=args.tasks, limit=args.limit,
                          extra=args.harbor_args)
     env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(ROOT), env.get("PYTHONPATH")]))
-    topology = c["arm_cfg"].get("topology")
+    # The program a team runs, or the brief its program is designed from.
+    topology = c["arm_cfg"].get("topology") or c["arm_cfg"].get("brief")
     topology_sha256 = (hashlib.sha256((ROOT / topology).read_bytes()).hexdigest()
                        if topology else None)
     manifest = {

@@ -48,6 +48,26 @@ class Container:
         return SimpleNamespace(return_code=1 if self.fail else 0, stdout=self.stdout, stderr="")
 
 
+class MissionContainer(Container):
+    """A container whose OMAR session is the stand-in Mission Control of test_mission."""
+
+    def __init__(self, session):
+        super().__init__()
+        self.session = session
+        session.files = self.files
+
+    async def exec(self, command, cwd=None, env=None, timeout_sec=None, user=None):
+        self.execs.append(SimpleNamespace(command=command, env=env or {}, user=user))
+        out = ""
+        if command.endswith("run.sh up"):
+            out = "url=http://127.0.0.1:4100\nwork=/w\ncwd=/app\n"
+        elif command.endswith("run.sh down"):
+            out = 'Output t.answer = "done"\n'
+        elif "curl" in command:
+            out = await self.session.shell(command.removeprefix("set -o pipefail; "))
+        return SimpleNamespace(return_code=0, stdout=out, stderr="")
+
+
 @unittest.skipIf(omar_agent is None, "harbor is not installed")
 class OmarAgent(unittest.TestCase):
     def setUp(self):
@@ -209,10 +229,71 @@ class OmarAgent(unittest.TestCase):
         self.assertEqual(context.metadata["omar_bench_usage"]["claude-opus-5-5"]["requests"], 3)
 
 
+    def mission(self, backend="sol"):
+        tmp = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        (tmp / "omar.tar.gz").write_text("a build")
+        (tmp / "spec.md").write_text("# OMAR language\n")
+        cli = "codex" if backend == "sol" else "claude"
+        agent = omar_agent.OmarAgent(
+            logs_dir=self.logs, model_name="openai/gpt-6.1-sol" if cli == "codex" else
+            "anthropic/claude-sonnet-5-5", backend=cli, brief=str(ROOT / "topologies/mission-control.md"),
+            max_mutations="3", omar_version="main-03633ed", omar_sha256="f" * 64,
+            omar_tarball=str(tmp / "omar.tar.gz"), omar_spec=str(tmp / "spec.md"),
+            cli_version="0.159.0", invocation_timeout_sec="28800",
+            extra_env={"OPENAI_API_KEY": "key"})
+
+        async def cli_install(environment):
+            self.container.execs.append(SimpleNamespace(command="<cli install>", env={}, user=None))
+        agent._cli.install = cli_install
+        return agent
+
+    def test_mission_control_installs_the_build_of_its_commit_and_its_reference(self):
+        asyncio.run(self.mission().install(self.container))
+        first = self.container.execs[0]
+        self.assertEqual(first.env["OMAR_TARBALL"], "/tmp/omar-bench-omar.tar.gz")
+        self.assertEqual(self.container.files["/tmp/omar-bench-omar.tar.gz"], "a build")
+        self.assertEqual(self.container.files[OB + "spec.md"], "# OMAR language\n")
+        self.assertNotIn(OB + "topology.omar", self.container.files)
+        self.assertEqual(self.mission().version(), "main-03633ed")
+
+    def test_it_runs_a_topology_or_a_brief_never_both(self):
+        for kwargs in ({}, {"topology": str(ROOT / "topologies/Solo.omar"),
+                            "brief": str(ROOT / "topologies/mission-control.md")}):
+            with self.assertRaises(ValueError):
+                omar_agent.OmarAgent(logs_dir=self.logs, model_name="anthropic/claude-opus-5-5",
+                                     omar_version="x", invocation_timeout_sec="1", **kwargs)
+
+    def test_mission_control_is_brought_up_driven_and_brought_down(self):
+        from tests.test_mission import DESIGN, Session, said
+        session = Session([said("Here it is.", DESIGN)], runs=[{"status": "completed",
+                          "outputs": {"t.answer": "done"}}], snapshots=[{"ports": [], "reactions": []}])
+        container = MissionContainer(session)
+        self.container = container
+        agent = self.mission()
+        asyncio.run(agent.run("Fix the parser.", container, AgentContext()))
+
+        steps = [e.command.split("run.sh")[-1].strip() for e in container.execs if "run.sh" in e.command]
+        self.assertEqual(steps, ["up", "down"])
+        brief = session.sent()[0]
+        # The brief, filled in with where this attempt's task is.
+        for expected in ("/w/instruction.md", "/app", "/w/spec.md", "`Codex` agent", "8 hours"):
+            self.assertIn(expected, brief)
+        self.assertNotRegex(brief, r"@[A-Z_]+@")
+        # Credentials go to the session's start only; the runtime keeps them from there.
+        up, *later = [e for e in container.execs if e.command != "<cli install>"]
+        self.assertEqual(up.env["OPENAI_API_KEY"], "key")
+        self.assertTrue(later)
+        self.assertTrue(all(set(e.env) <= {"OB_BACKEND", "OB_MODEL", "OB_LOGS",
+                                           "OB_INVOCATION_TIMEOUT"} for e in later))
+        written = json.loads((self.logs / "trajectory.json").read_text())
+        self.assertEqual(written["steps"][-1]["message"], "done")
+        self.assertTrue((self.logs / "mission-control/design-1.omar").exists())
+
+
 class RunScript(unittest.TestCase):
     """container/run.sh, executed for real against a stand-in `omar`."""
 
-    def _run(self, omar, **env):
+    def _run(self, omar, stage=None, before=None, **env):
         tmp = Path(self.enterContext(tempfile.TemporaryDirectory())).resolve()
         # The script puts $HOME/.local/bin first, so the stand-in wins over any installed omar.
         ob, logs, bin_, task = tmp / "ob", tmp / "logs", tmp / ".local/bin", tmp / "task"
@@ -224,16 +305,23 @@ class RunScript(unittest.TestCase):
         # Left by the CLI's installer; OMAR will look for sessions here and nowhere else.
         (tmp / ".claude/downloads").mkdir(parents=True)
         (ob / "claude-settings.json").write_text("{}")
-        # Every call is logged; only `run` is the run, the session commands just succeed.
+        if stage == "up":
+            (ob / "spec.md").write_text("# OMAR language\n")
+        if before:
+            before(tmp, logs)
+        # Every call is logged; only `run` is the run, the session commands just succeed
+        # (`up` printing what the runtime says of itself, when asked).
         (bin_ / "omar").write_text('#!/bin/sh\necho "$*" >> "$RECORD.calls"\n'
-                                   'case " $* " in *" run "*) ;; *) exit 0 ;; esac\n' + omar)
+                                   'case " $* " in *" run "*) ;; *" up "*) printf "%s\\n" "${UP_JSON:-}"; exit 0 ;;'
+                                   ' *) exit 0 ;; esac\n' + omar)
         (bin_ / "omar").chmod(0o755)
         if env.get("OB_BACKEND") == "codex":
             (ob / "codex-config.toml").write_text('model = "gpt-6-luna"\n')
         ob.chmod(0o555)
         self.addCleanup(ob.chmod, 0o755)
         run = subprocess.run(
-            ["sh", str(ROOT / "omar_bench/agents/container/run.sh")], cwd=task,
+            ["sh", str(ROOT / "omar_bench/agents/container/run.sh"), *([stage] if stage else [])],
+            cwd=task,
             capture_output=True, text=True, timeout=60, env={
                 "PATH": os.environ["PATH"], "HOME": str(tmp), "TMPDIR": str(tmp),
                 "OB_DIR": str(ob), "OB_BACKEND": "claude", "OB_MODEL": "claude-haiku-5-5",
@@ -409,6 +497,60 @@ class RunScript(unittest.TestCase):
 
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertFalse((logs / "omar-stall.txt").exists())
+
+
+    UP = '{\n  "name": "bench",\n  "url": "http://127.0.0.1:4100",\n  "state": "ready"\n}'
+
+    def test_up_starts_a_session_with_mission_controls_assistant_on_the_arms_cli(self):
+        for backend, assistant in (("claude", "claude --dangerously-skip-permissions"),
+                                   ("codex", "codex --dangerously-bypass-approvals-and-sandbox")):
+            run, tmp, ob, logs, task = self._run("", stage="up", UP_JSON=self.UP, OB_BACKEND=backend)
+            self.assertEqual(run.returncode, 0, run.stderr)
+            said = dict(line.split("=", 1) for line in run.stdout.splitlines())
+            self.assertEqual(said["url"], "http://127.0.0.1:4100")
+            self.assertEqual(said["cwd"], str(task))
+            work = Path(said["work"])
+            # With its assistant this time; nothing is run yet: the adapter drives it from here.
+            (up,) = (tmp / "rec.calls").read_text().splitlines()
+            self.assertEqual(up, f"-c {work}/config.toml up --name bench --json")
+            self.assertIn(f'[agent]\ndefault_command = "{assistant}"', (work / "config.toml").read_text())
+            self.assertEqual((work / "spec.md").read_text(), "# OMAR language\n")
+            self.assertEqual((work / "instruction.md").read_text(), "Fix it.\n")
+
+    def test_up_without_an_address_is_an_error(self):
+        run, *_ = self._run("", stage="up", UP_JSON="Started")
+        self.assertEqual(run.returncode, 1)
+        self.assertIn("omar up gave no address", run.stdout)
+
+    def test_stalled_says_why_and_leaves_the_reason_where_the_queue_reads_it(self):
+        def transcripts(tmp, logs, old=True):
+            d = logs / "sessions/projects/p"
+            d.mkdir(parents=True)
+            for n in range(2):
+                (d / f"s{n}.jsonl").write_text(self.ANSWERED.replace("\\n", "\n"))
+                if old:
+                    os.utime(d / f"s{n}.jsonl", (1767225600, 1767225600))
+
+        run, _, _, logs, _ = self._run("", stage="stalled", before=transcripts)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertIn("every agent's turn was over", run.stdout)
+        self.assertIn("every agent's turn was over", (logs / "omar-stall.txt").read_text())
+        run, _, _, logs, _ = self._run("", stage="stalled",
+                                       before=lambda tmp, logs: transcripts(tmp, logs, old=False))
+        self.assertEqual((run.returncode, run.stdout), (0, ""))
+        self.assertFalse((logs / "omar-stall.txt").exists())
+
+    def test_down_ends_the_session_and_says_how_the_attempt_ended(self):
+        for left, code in ((None, 0), ("omar-stall.txt", 70), ("omar-mission-failed.txt", 71)):
+            def leave(tmp, logs):
+                (logs / "omar-run.txt").write_text('Output t.answer = "ok"\n')
+                if left:
+                    (logs / left).write_text(f"omar-bench ended this attempt: {left}\n")
+            run, tmp, _, logs, _ = self._run("", stage="down", before=leave)
+            self.assertEqual(run.returncode, code, left)
+            self.assertIn('Output t.answer = "ok"', run.stdout)
+            self.assertEqual((tmp / "rec.calls").read_text().splitlines(), ["-s bench rm"])
+            self.assertTrue((logs / "omar-workspace-files.txt").exists())
 
 
 if __name__ == "__main__":

@@ -83,4 +83,7 @@ def unpinned(c: dict) -> list[str]:
         which = c["arm_cfg"]["omar"]
         need[f"omar.{which}.version"] = c["omar"].get("version")
         need[f"omar.{which}.sha256_linux_amd64"] = c["omar"].get("sha256_linux_amd64")
+        if "tarball" in c["omar"]:
+            need[f"omar.{which}.commit"] = c["omar"].get("commit")
+            need[f"omar.{which}.spec"] = c["omar"].get("spec")
     return sorted(k for k, v in need.items() if not v)

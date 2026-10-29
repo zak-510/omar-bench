@@ -45,16 +45,21 @@ def command(c: dict, jobs_dir: Path, job_name: str, *, attempts: int | None = No
     if c["omar"] is None:
         kwargs = {"version": c["cli_version"]}
     else:
-        kwargs = {
-            "topology": str(ROOT / c["arm_cfg"]["topology"]),
+        a, o = c["arm_cfg"], c["omar"]
+        # A fixed team, or the brief Mission Control's assistant designs one from.
+        kwargs = ({"topology": str(ROOT / a["topology"])} if "topology" in a else
+                  {"brief": str(ROOT / a["brief"]), "max_mutations": a.get("max_mutations")})
+        kwargs |= {
             "backend": c["backend"],
             "cli_version": c["cli_version"],
-            "omar_repo": c["omar"]["repo"],
-            "omar_version": c["omar"]["version"],
-            "omar_sha256": c["omar"]["sha256_linux_amd64"],
+            "omar_repo": o["repo"],
+            "omar_version": o["version"],
+            "omar_sha256": o["sha256_linux_amd64"],
             # OMAR's limit is per agent turn; Harbor's is on the attempt and still applies.
             "invocation_timeout_sec": s.get("agent_timeout_sec"),
         }
+        if o.get("tarball"):  # a build of a commit, not a release
+            kwargs |= {"omar_tarball": str(ROOT / o["tarball"]), "omar_spec": str(ROOT / o["spec"])}
     # The suite's own CLI settings (effort, disabled tools) go to every arm alike.
     kwargs |= s.get("agent_kwargs", {}).get(c["backend"], {})
     for key, value in kwargs.items():

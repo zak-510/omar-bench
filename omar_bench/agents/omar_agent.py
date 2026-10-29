@@ -107,6 +107,7 @@ class OmarAgent(BaseInstalledAgent):
 
     def __init__(self, logs_dir: Path, *args, omar_version: str, topology: str | None = None,
                  brief: str | None = None, max_mutations: int = 0,
+                 checkin_minutes: float = 15, test_mutation: bool | str = False,
                  omar_repo: str = "omar-os/omar", omar_sha256: str = "", omar_tarball: str = "",
                  omar_spec: str = "", backend: str = "claude",
                  cli_version: str | None = None, invocation_timeout_sec: int,
@@ -119,6 +120,9 @@ class OmarAgent(BaseInstalledAgent):
         self._topology = Path(topology) if topology else None
         self._brief = Path(brief) if brief else None
         self._max_mutations = int(max_mutations)
+        # Shakedowns only (`--ak`): check in sooner, and ask for a change at the first one.
+        self._checkin_sec = float(checkin_minutes) * 60
+        self._test_mutation = str(test_mutation).lower() in ("true", "1", "yes")
         self._omar = {"OMAR_REPO": omar_repo, "OMAR_VERSION": str(omar_version),
                       "OMAR_SHA256": str(omar_sha256)}
         # A build of a commit, which no release carries: uploaded rather than downloaded,
@@ -288,7 +292,8 @@ class OmarAgent(BaseInstalledAgent):
                 return str(OB / f"mission-{name}")
 
             await Mission(shell, upload, Path(self.logs_dir), url=where["url"], brief=brief,
-                          max_mutations=self._max_mutations,
+                          max_mutations=self._max_mutations, checkin_sec=self._checkin_sec,
+                          test_mutation=self._test_mutation,
                           turn_timeout_sec=self._invocation_timeout_sec,
                           stalled_command=f"sh {OB / 'run.sh'} stalled").run()
         finally:

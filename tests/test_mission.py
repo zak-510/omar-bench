@@ -10,7 +10,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from omar_bench.agents.mission import NUDGE, Mission
+from omar_bench.agents.mission import IN_PLACE, NUDGE, TEST_CHANGE, Mission
 
 STALLED = "sh run.sh stalled"
 DESIGN = {"program": "main Bench { t = Team() }", "files": {"schemas/x.json": "{}"},
@@ -24,12 +24,18 @@ def said(text, design=None, progress=False):
 class Session:
     """Mission Control's server as the driver sees it, and the assistant behind it."""
 
-    def __init__(self, *answers, runs=(), snapshots=(), deploy_errors=(), stall_at=None):
+    def __init__(self, *answers, runs=(), snapshots=(), deploy_errors=(), mutate_errors=(),
+                 stall_at=None, edits_in_place=False):
         self.answers = list(answers)       # one list of messages per operator message
         self.runs = list(runs)             # the run's record on successive reads; the last stays
         self.snapshots = list(snapshots)   # its snapshot on successive reads; the last stays
         self.deploy_errors = list(deploy_errors)
+        self.mutate_errors = list(mutate_errors)
         self.stall_at = stall_at           # the clock time from which the team counts as stalled
+        # An assistant that edits the run's program file before it proposes the result.
+        self.edits_in_place = edits_in_place
+        self.staged = None                 # the run's program file
+        self.restored = 0
         self.messages, self.pending, self.busy = [], [], False
         self.calls, self.files = [], {}
         self.now = 0.0
@@ -39,6 +45,11 @@ class Session:
         if command == STALLED:
             stalled = self.stall_at is not None and self.now >= self.stall_at
             return "omar-bench ended this attempt: every agent's turn was over\n" if stalled else ""
+        if command.startswith("set -- "):  # the program file put back
+            assert "/serve/r1/*.omar" in command, command
+            self.staged = self.files[shlex.split(command.split("&& cp ")[1])[0]]
+            self.restored += 1
+            return "restored\n"
         args = shlex.split(command.removesuffix(" || true"))
         method = args[args.index("-X") + 1]
         body = None
@@ -73,6 +84,8 @@ class Session:
         if (method, path) == ("GET", "/v1/chat"):
             for message in self.pending:
                 self.append(dict(message))
+                if message["design"] and self.edits_in_place and self.staged is not None:
+                    self.staged = message["design"]["program"]
                 if not message["progress"] or message["design"]:
                     self.busy = False
             self.pending = []
@@ -80,7 +93,17 @@ class Session:
         if (method, path) == ("POST", "/v1/runs"):
             if self.deploy_errors:
                 return 400, {"error": self.deploy_errors.pop(0)}
+            self.staged = body["program"]
             return 201, {"run_id": "r1", "status": "running"}
+        if path == "/v1/runs/r1/program":
+            return 200, {"filename": "program.omar", "program": self.staged}
+        if path == "/v1/runs/r1/mutate":
+            # Planned from the run's program file, as the runtime plans it.
+            if body["program"] == self.staged:
+                return 200, {"changes": []}
+            if self.mutate_errors:
+                return 400, {"error": self.mutate_errors.pop(0)}
+            return 202, {"run_id": "r1", "status": "running", "mutation": {"status": "pending"}}
         if path == "/v1/runs/r1":
             record = self.runs.pop(0) if len(self.runs) > 1 else self.runs[0]
             return 200, {"run_id": "r1", **record}
@@ -112,6 +135,12 @@ def port(name, value, at):
 
 RUNNING, DONE = {"status": "running"}, {"status": "completed", "outputs": {"t.answer": "done"}}
 QUIET = {"ports": [port("plan", None, None)], "reactions": []}
+WROTE = {"ports": [port("plan", "Split the parser out first.", 7)],
+         "reactions": [{"name": "build", "instance": "t", "status": "running"}]}
+CHANGED = {"program": "main Bench { t = Team(); r = Reviewer() }", "files": {}}
+PENDING = {"status": "running", "mutation": {"status": "pending"}}
+APPLIED = {"status": "running", "mutation": {"status": "applied", "checkpoint": "m1",
+                                             "changes": ["declare_instance r = Reviewer"]}}
 
 
 class MissionControl(unittest.TestCase):
@@ -171,25 +200,71 @@ class MissionControl(unittest.TestCase):
         self.assertTrue((self.logs / "mission-control/design-2.omar").exists())
 
     def test_new_results_go_to_the_assistant_and_its_change_is_applied(self):
-        changed = {"program": "main Bench { t = Team(); r = Reviewer() }", "files": {}}
-        wrote = {"ports": [port("plan", "Split the parser out first.", 7)],
-                 "reactions": [{"name": "build", "instance": "t", "status": "running"}]}
-        session = Session([said("ok", DESIGN)], [said("Adding a reviewer.", changed)],
-                          runs=[RUNNING] * 40 + [{"status": "running", "mutation": {"status": "pending"}}] * 5
-                          + [DONE], snapshots=[wrote])
+        session = Session([said("ok", DESIGN)], [said("Adding a reviewer.", CHANGED)],
+                          runs=[RUNNING] * 40 + [PENDING] * 5 + [APPLIED, DONE], snapshots=[WROTE])
         self.assertEqual(self.drive(session), "completed")
 
         brief, check_in = session.sent()
         self.assertIn("t.plan (string): Split the parser out first.", check_in)
         self.assertIn("Steps still running: t.build.", check_in)
+        self.assertIn(IN_PLACE, check_in)
         (mutated,) = session.posted("/v1/runs/r1/mutate")
-        self.assertEqual(mutated["program"], changed["program"])
-        self.assertEqual(self.mission.mutations, 1)
+        self.assertEqual(mutated["program"], CHANGED["program"])
+        self.assertEqual((self.mission.mutations, self.mission.applied), (1, 1))
         self.assertEqual((self.logs / "mission-control/mutation-1.omar").read_text(),
-                         changed["program"])
+                         CHANGED["program"])
+        self.assertIn("mutation 1 applied: checkpoint m1, 1 change(s)",
+                      (self.logs / "mission-control/log.txt").read_text())
         # Not before a check-in was due.
         deployed_at, = session.when("/v1/runs")
         self.assertGreaterEqual(session.when("/v1/chat")[1] - deployed_at, 900)
+
+    def test_a_program_edited_in_place_is_put_back_before_the_change_is_planned(self):
+        session = Session([said("ok", DESIGN)], [said("Adding a reviewer.", CHANGED)],
+                          runs=[RUNNING] * 40 + [PENDING, APPLIED, DONE], snapshots=[WROTE],
+                          edits_in_place=True)
+        self.assertEqual(self.drive(session), "completed")
+        self.assertEqual(session.restored, 1)
+        self.assertEqual(len(session.posted("/v1/runs/r1/mutate")), 1)
+        self.assertEqual(self.mission.applied, 1)
+
+    def test_a_proposal_that_changes_nothing_is_not_a_mutation(self):
+        session = Session([said("ok", DESIGN)], [said("Same again.", DESIGN)],
+                          runs=[RUNNING] * 40 + [DONE], snapshots=[WROTE])
+        self.assertEqual(self.drive(session), "completed")
+        self.assertEqual((self.mission.mutations, self.mission.applied), (0, 0))
+        self.assertIn("changes nothing", (self.logs / "mission-control/log.txt").read_text())
+
+    def test_a_refused_change_goes_back_once_with_the_error(self):
+        fixed = {**CHANGED, "program": "main Bench { t = Team(); r = Fixed() }"}
+        session = Session([said("ok", DESIGN)], [said("v1", CHANGED)], [said("v2", fixed)],
+                          runs=[RUNNING] * 40 + [PENDING, APPLIED, DONE], snapshots=[WROTE],
+                          mutate_errors=["the new program renames main"])
+        self.assertEqual(self.drive(session), "completed")
+        self.assertIn("the new program renames main", session.sent()[2])
+        self.assertEqual([b["program"] for b in session.posted("/v1/runs/r1/mutate")],
+                         [CHANGED["program"], fixed["program"]])
+        self.assertEqual((self.mission.mutations, self.mission.applied), (1, 1))
+
+    def test_a_change_the_run_could_not_apply_is_recorded_as_failed(self):
+        failed = {"status": "paused", "mutation": {"status": "failed", "error": "plan check"}}
+        session = Session([said("ok", DESIGN)], [said("Adding a reviewer.", CHANGED)],
+                          runs=[RUNNING] * 40 + [PENDING, failed, RUNNING, DONE], snapshots=[WROTE])
+        self.assertEqual(self.drive(session), "completed")
+        self.assertEqual((self.mission.mutations, self.mission.applied), (1, 0))
+        self.assertIn("mutation 1 failed: plan check",
+                      (self.logs / "mission-control/log.txt").read_text())
+        self.assertEqual(session.posted("/v1/runs/r1/resume"), [{}])
+
+    def test_a_shakedown_asks_for_a_change_at_the_first_check_in(self):
+        session = Session([said("ok", DESIGN)], [said("Adding a check.", CHANGED)],
+                          runs=[RUNNING] * 5 + [PENDING, APPLIED] + [RUNNING] * 100 + [DONE],
+                          snapshots=[QUIET])
+        self.assertEqual(self.drive(session, checkin_sec=60, test_mutation=True), "completed")
+        brief, check_in = session.sent()  # once only, and not again without results
+        self.assertIn("the team wrote:\nnothing yet", check_in)
+        self.assertIn(TEST_CHANGE, check_in)
+        self.assertEqual(self.mission.applied, 1)
 
     def test_without_new_results_there_is_no_check_in(self):
         session = Session([said("ok", DESIGN)], runs=[RUNNING] * 100 + [DONE], snapshots=[QUIET])
@@ -208,7 +283,8 @@ class MissionControl(unittest.TestCase):
         changed = {"program": "main Bench { t = Other() }", "files": {}}
         snapshots = [{"ports": [port("plan", f"step {n}", n)], "reactions": []} for n in range(1, 50)]
         session = Session([said("ok", DESIGN)], [said("change", changed)], [said("again", changed)],
-                          runs=[RUNNING] * 300 + [DONE], snapshots=snapshots)
+                          runs=[RUNNING] * 40 + [PENDING, APPLIED] + [RUNNING] * 300 + [DONE],
+                          snapshots=snapshots)
         self.assertEqual(self.drive(session, max_mutations=1), "completed")
         self.assertEqual(len(session.posted("/v1/runs/r1/mutate")), 1)
         self.assertEqual(len(session.sent()), 2)

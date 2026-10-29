@@ -13,7 +13,9 @@ the task's changes in place, at those paths, and to use its workspace only for i
 own notes.
 
 Agents. Only @BACKEND@ is installed here: every agent is a `@BACKEND@` agent. Do not
-add Jev steps: they need an API key this machine does not have.
+add Jev steps: they need an API key this machine does not have. There is no Rust
+toolchain either, so no code reactions (`{= ... =}` bodies): they are compiled with
+cargo when the run starts. Every reaction is an agent's task.
 
 The language. Your compiler is the one in this program's version, whose reference is
 @SPEC@. Read that file rather than the copy online when you need more than your

@@ -14,6 +14,9 @@ policy, through the HTTP API the web app itself uses:
   the topology arms: a mutation lands only at a tag boundary, which such a team never
   reaches.
 
+A shakedown can ask for a change at the first check-in instead (`test_mutation`), to
+see a mutation through on a task the first design would finish unchanged.
+
 It sees what an operator in Mission Control sees, never the task's tests. Every
 message, design and mutation is kept beside the trial's logs, in mission-control/.
 """
@@ -33,6 +36,16 @@ NUDGE = ("Nobody can answer questions here. Decide what you would assume, say so
          "propose the complete program with omar_propose_design.")
 VALUE_CHARS = 1500     # of any one port's value, in a check-in
 CHECKIN_CHARS = 12000  # of all of them
+# Mission Control tells the assistant to edit the run's program and propose the result;
+# the runtime plans the change from that same file, so an edit made there in place leaves
+# nothing to change.
+IN_PLACE = ("Put the changed program in omar_propose_design. Do not edit the program file "
+            "the run is using: the runtime works out the change by comparing your proposal "
+            "with that file.")
+TEST_CHANGE = ("This attempt tests changing a live run, so propose a changed program now, "
+               "keeping main's name: a small change that leaves the team able to complete "
+               "the task, such as one more step that checks the result before the program "
+               "finishes. Every agent restarts with a fresh conversation when it is applied.")
 
 
 class Mission:
@@ -42,6 +55,7 @@ class Mission:
                  poll_sec: float = 30,
                  checkin_sec: float = 900, reply_timeout_sec: float = 1800,
                  design_timeout_sec: float = 2700, max_nudges: int = 2,
+                 test_mutation: bool = False,
                  clock: Callable[[], float] = time.monotonic,
                  sleep: Callable[[float], Awaitable[None]] = asyncio.sleep):
         """`shell` runs a command in the task container and returns its output; `upload`
@@ -54,10 +68,14 @@ class Mission:
         self._poll, self._checkin, self._reply_timeout = poll_sec, checkin_sec, reply_timeout_sec
         self._design_timeout, self._max_nudges = design_timeout_sec, max_nudges
         self._clock, self._sleep = clock, sleep
+        self._test = test_mutation
         self._logs = Path(logs)
         self._dir = self._logs / "mission-control"
         self._dir.mkdir(parents=True, exist_ok=True)
-        self.mutations = 0
+        self.mutations = 0   # sent to the run: the cap counts these
+        self.applied = 0     # of those, the ones the run took
+        self._program = ""   # what the run is running
+        self._pending: tuple[int, str] | None = None  # a sent mutation, until the run says
 
     # ------------------------------------------------------------ record --------
 
@@ -177,9 +195,9 @@ class Mission:
 
     # ------------------------------------------------------------- watch --------
 
-    async def _report(self, run_id: str, seen: set) -> tuple[str, str] | None:
+    async def _report(self, run_id: str, seen: set, always: bool = False) -> tuple[str, str] | None:
         """What the team has written since the last check-in, for the assistant; None if
-        nothing. `seen` collects what has been shown."""
+        nothing, unless `always`. `seen` collects what has been shown."""
         status, snapshot = await self._call("GET", f"/v1/runs/{run_id}/snapshot")
         if status != 200 or not isinstance(snapshot, dict):
             return None
@@ -194,11 +212,11 @@ class Mission:
                 value = value[:VALUE_CHARS] + f" [... {len(value) - VALUE_CHARS} more characters]"
             written.append(f"- {port.get('instance') or ''}{'.' if port.get('instance') else ''}"
                            f"{port.get('name')} ({port.get('type')}): {value}")
-        if not written:
+        if not written and not always:
             return None
         running = [f"{r.get('instance') or ''}{'.' if r.get('instance') else ''}{r.get('name')}"
                    for r in snapshot.get("reactions", []) if r.get("status") == "running"]
-        report = "\n".join(written)
+        report = "\n".join(written) or "nothing yet"
         if len(report) > CHECKIN_CHARS:
             report = report[:CHECKIN_CHARS] + "\n[... cut]"
         return report, ", ".join(running) or "none"
@@ -206,28 +224,79 @@ class Mission:
     async def _check_in(self, run_id: str, report, started: float) -> None:
         written, running = report
         minutes = int((self._clock() - started) / 60)
-        after = await self._say(
-            f"Check-in, {minutes} minutes into the run. Nobody can answer questions.\n\n"
-            f"Since the last check-in the team wrote:\n{written}\n\n"
-            f"Steps still running: {running}.\n\n"
-            "If this shows the design will not complete the task, propose the changed "
-            "program now, keeping main's name: it is applied to the running team, and every "
-            "agent restarts with a fresh conversation. Otherwise reply with omar_reply that "
-            "no change is needed.", patience=0)
-        if after is None:
-            return
-        design, _ = await self._answer(after, self._reply_timeout, run_id)
-        if design is None:
-            return
+        ask = (TEST_CHANGE if self._test else
+               "If this shows the design will not complete the task, propose the changed "
+               "program now, keeping main's name: it is applied to the running team, and "
+               "every agent restarts with a fresh conversation. Otherwise reply with "
+               "omar_reply that no change is needed.")
+        self._test = False
+        text = (f"Check-in, {minutes} minutes into the run. Nobody can answer questions.\n\n"
+                f"Since the last check-in the team wrote:\n{written}\n\n"
+                f"Steps still running: {running}.\n\n{ask} {IN_PLACE}")
+        for _ in range(2):
+            after = await self._say(text, patience=0)
+            if after is None:
+                return
+            design, _ = await self._answer(after, self._reply_timeout, run_id)
+            if design is None:
+                return
+            error = await self._mutate(run_id, design)
+            if error is None:
+                return
+            text = (f"That change was refused: {error}\nFix it and propose the complete "
+                    f"program again, or reply with omar_reply that no change is needed. "
+                    f"{IN_PLACE}")
+
+    async def _mutate(self, run_id: str, design: dict) -> str | None:
+        """Sends the assistant's program to the run; why the run refused it, or None."""
+        program = design.get("program", "")
         n = self.mutations + 1
         self._keep(f"mutation-{n}", design)
+        await self._restore(run_id)
         status, result = await self._call("POST", f"/v1/runs/{run_id}/mutate", {
-            "program": design.get("program", ""), "files": design.get("files") or {}})
-        if 200 <= status < 300:
-            self.mutations = n
-            self._note(f"mutation {n} applied for: {json.dumps(result)[:500]}")
+            "program": program, "files": design.get("files") or {}})
+        said = json.dumps(result)[:500]
+        if status == 200 and isinstance(result, dict) and "changes" in result:
+            self._note(f"mutation {n} changes nothing: not sent")
+            return None
+        if not 200 <= status < 300:
+            self._note(f"mutation {n} refused ({status}): {said}")
+            return result.get("error") if isinstance(result, dict) else str(result)
+        self.mutations = n
+        self._pending = (n, program)
+        self._note(f"mutation {n} sent: {said}")
+        if (result.get("mutation") or {}).get("status") in ("applied", "failed"):
+            self._settle(result)  # a paused run takes it at once
+        return None
+
+    async def _restore(self, run_id: str) -> None:
+        """Puts the run's program file back as the run is running it, should the assistant
+        have edited it in place, so the runtime plans the change from what is running."""
+        status, staged = await self._call("GET", f"/v1/runs/{run_id}/program")
+        if status != 200 or not isinstance(staged, dict) or staged.get("program") == self._program:
+            return
+        kept = await self._upload("running.omar", self._program)
+        out = await self._shell(
+            f"set -- \"$HOME\"/.omar/sessions/*/ea/*/serve/{shlex.quote(run_id)}/*.omar; "
+            f"[ $# -eq 1 ] && [ -f \"$1\" ] && cp {shlex.quote(kept)} \"$1\" && echo restored")
+        self._note("the run's program file had been edited in place: "
+                   + ("put back as the run is running it" if "restored" in out
+                      else "could not put it back"))
+
+    def _settle(self, record: dict) -> None:
+        """Records how a sent mutation ended, once the run says."""
+        mutation = record.get("mutation") or {}
+        if self._pending is None or mutation.get("status") not in ("applied", "failed"):
+            return
+        n, program = self._pending
+        self._pending = None
+        if mutation["status"] == "applied":
+            self.applied += 1
+            self._program = program
+            self._note(f"mutation {n} applied: checkpoint {mutation.get('checkpoint')}, "
+                       f"{len(mutation.get('changes') or [])} change(s)")
         else:
-            self._note(f"mutation {n} refused ({status}): {json.dumps(result)[:500]}")
+            self._note(f"mutation {n} failed: {mutation.get('error')}")
 
     async def _watch(self, run_id: str) -> str:
         started = last = self._clock()
@@ -235,6 +304,7 @@ class Mission:
         while True:
             record = await self._run(run_id)
             status = record.get("status")
+            self._settle(record)
             if record and status not in ACTIVE:
                 self._end(record)
                 return status
@@ -249,7 +319,7 @@ class Mission:
                 await self._call("POST", f"/v1/runs/{run_id}/resume", {})
             elif (status == "running" and not pending and self.mutations < self._max_mutations
                   and self._clock() - last >= self._checkin):
-                report = await self._report(run_id, seen)
+                report = await self._report(run_id, seen, always=self._test)
                 if report is not None:
                     last = self._clock()
                     await self._check_in(run_id, report, started)
@@ -264,7 +334,8 @@ class Mission:
         lines += [f"Output {port} = {json.dumps(value)}"
                   for port, value in (record.get("outputs") or {}).items()]
         (self._logs / "omar-run.txt").write_text("\n".join(lines) + "\n")
-        self._note(f"run ended {record.get('status')} after {self.mutations} mutation(s)")
+        self._note(f"run ended {record.get('status')}; mutations sent {self.mutations}, "
+                   f"applied {self.applied}")
 
     # --------------------------------------------------------------- run --------
 
@@ -284,6 +355,7 @@ class Mission:
                 self._keep(f"design-{tries + 1}", design)
                 run_id, error = await self._deploy(design)
                 if run_id is not None:
+                    self._program = design.get("program", "")
                     self._note(f"deployed design-{tries + 1} as run {run_id}")
                     return await self._watch(run_id)
                 self._note(f"design-{tries + 1} would not start: {error}")

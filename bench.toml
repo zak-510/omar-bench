@@ -22,7 +22,9 @@ commit = "03633ed9f8d6e02787e041a95a711c11d126ea3e"   # main on 2026-10-29; no r
 # the way the release workflow does, into vendor/omar/ (not in git; a copy is in the bucket).
 tarball = "vendor/omar/omar-03633ed-linux-amd64.tar.gz"
 spec = "vendor/omar/omar-03633ed-spec.md"   # lang/spec.md at that commit: what its compiler takes
-sha256_linux_amd64 = ""
+# Built 2026-10-29 on the bench instance (omar-03633ed-build.txt: rustc 1.99.1, Lean 4.31.0,
+# node 22.13.1); OMAR's own tests/ci/team_mutation.py passed against it.
+sha256_linux_amd64 = "52b427276323ae912da29b0ed6ab091ce6cb6fb79ce79f1d4dc43906e32f6f1b"
 
 [omar.pre_dsl]                # self-coordinated swarm: the "before" baseline
 repo = "omar-os/omar"

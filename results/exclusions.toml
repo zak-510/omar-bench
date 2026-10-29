@@ -70,3 +70,43 @@ by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by 
 attempt_id = "20261026T182411Z-terminal-bench-omar-solo-sonnet-zak-510/ontology-kg-querying__Z7jXPMY"
 reason = "harness fault, not an attempt at the task: OMAR's Claude agent never started. omar-run.txt says 'agent t.worker did not become ready' 62 s into the agent phase; no transcript was written and no model was called: zero tokens on the row. Cause not found (the pane is gone with the session). Sonnet's other OMAR attempts in study tb4-043 started, and so did Sol's on this task. Run again at the end of the queue"
 by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261026T220215Z-terminal-bench-omar-plan-build-check-sol-zak-510/ontology-kg-querying__6tgf2hD"
+reason = "the plan's five-hour usage limit cut it short, so it says nothing about the task: the attempt failed, and queue.sh found the plan's limit in its logs (its row() check: a usage-limit error, or the plan reported at its limit). queue.sh listed it in queue-limit-hits-sol.txt and ran the same attempt again after the reset; that later attempt is the one counted"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261027T001710Z-terminal-bench-omar-plan-build-check-sol-zak-510/ontology-kg-querying__RRo3As8"
+reason = "the plan's five-hour usage limit cut it short, so it says nothing about the task: the attempt failed, and queue.sh found the plan's limit in its logs (its row() check: a usage-limit error, or the plan reported at its limit). queue.sh listed it in queue-limit-hits-sol.txt and ran the same attempt again after the reset; that later attempt is the one counted"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261027T092208Z-terminal-bench-omar-plan-build-check-sol-zak-510/kv-live-surgery__5YHDULb"
+reason = "the plan's five-hour usage limit cut it short, so it says nothing about the task: the attempt failed, and queue.sh found the plan's limit in its logs (its row() check: a usage-limit error, or the plan reported at its limit). queue.sh listed it in queue-limit-hits-sol.txt and ran the same attempt again after the reset; that later attempt is the one counted"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261026T024404Z-terminal-bench-solo-sonnet-zak-510/session-window-debug__VK9pU5K"
+reason = "the plan's five-hour usage limit cut it short, so it says nothing about the task: the attempt failed, and queue.sh found the plan's limit in its logs (its row() check: a usage-limit error, or the plan reported at its limit). queue.sh listed it in queue-limit-hits-sonnet.txt and ran the same attempt again after the reset; that later attempt is the one counted"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261026T064201Z-terminal-bench-solo-sonnet-zak-510/session-window-debug__GEv5eEK"
+reason = "the plan's five-hour usage limit cut it short, so it says nothing about the task: the attempt failed, and queue.sh found the plan's limit in its logs (its row() check: a usage-limit error, or the plan reported at its limit). queue.sh listed it in queue-limit-hits-sonnet.txt and ran the same attempt again after the reset; that later attempt is the one counted"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261026T140113Z-terminal-bench-solo-sonnet-zak-510/mvcc-lsm-compaction__MsdKdyy"
+reason = "the plan's five-hour usage limit cut it short, so it says nothing about the task: the attempt failed, and queue.sh found the plan's limit in its logs (its row() check: a usage-limit error, or the plan reported at its limit). queue.sh listed it in queue-limit-hits-sonnet.txt and ran the same attempt again after the reset; that later attempt is the one counted"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261026T193646Z-terminal-bench-solo-sonnet-zak-510/sound-change-cascade__L2R6cdF"
+reason = "the plan's five-hour usage limit cut it short, so it says nothing about the task: the attempt failed, and queue.sh found the plan's limit in its logs (its row() check: a usage-limit error, or the plan reported at its limit). queue.sh listed it in queue-limit-hits-sonnet.txt and ran the same attempt again after the reset; that later attempt is the one counted"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261027T102608Z-terminal-bench-solo-sonnet-zak-510/nextjs-performance__TpA8Hfe"
+reason = "the plan's five-hour usage limit cut it short, so it says nothing about the task: the attempt failed, and queue.sh found the plan's limit in its logs (its row() check: a usage-limit error, or the plan reported at its limit). queue.sh listed it in queue-limit-hits-sonnet.txt and ran the same attempt again after the reset; that later attempt is the one counted"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"

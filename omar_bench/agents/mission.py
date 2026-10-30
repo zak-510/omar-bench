@@ -217,12 +217,13 @@ class Mission:
             value = port["value"] if isinstance(port["value"], str) else json.dumps(port["value"])
             if len(value) > VALUE_CHARS:
                 value = value[:VALUE_CHARS] + f" [... {len(value) - VALUE_CHARS} more characters]"
-            written.append(f"- {port.get('instance') or ''}{'.' if port.get('instance') else ''}"
-                           f"{port.get('name')} ({port.get('type')}): {value}")
+            # A port's name, like a reaction's, already carries its instance's path.
+            written.append(f"- {port.get('name')} ({port.get('type')}): {value}")
         if not written and not always:
             return None
-        running = [f"{r.get('instance') or ''}{'.' if r.get('instance') else ''}{r.get('name')}"
-                   for r in snapshot.get("reactions", []) if r.get("status") == "running"]
+        # A reaction's name already carries its instance's path.
+        running = [r.get("name") or "" for r in snapshot.get("reactions", [])
+                   if r.get("status") == "running"]
         report = "\n".join(written) or "nothing yet"
         if len(report) > CHECKIN_CHARS:
             report = report[:CHECKIN_CHARS] + "\n[... cut]"

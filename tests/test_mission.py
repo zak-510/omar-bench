@@ -131,14 +131,14 @@ class Session:
 
 
 def port(name, value, at):
-    return {"id": f"t.{name}", "name": name, "instance": "t", "type": "string", "value": value,
+    return {"id": f"port::t.{name}", "name": f"t.{name}", "instance": "t", "type": "string", "value": value,
             "last_tag": {"timestamp": at, "microstep": 0}}
 
 
 RUNNING, DONE = {"status": "running"}, {"status": "completed", "outputs": {"t.answer": "done"}}
 QUIET = {"ports": [port("plan", None, None)], "reactions": []}
 WROTE = {"ports": [port("plan", "Split the parser out first.", 7)],
-         "reactions": [{"name": "build", "instance": "t", "status": "running"}]}
+         "reactions": [{"name": "t.reaction.0", "instance": "t", "status": "running"}]}
 CHANGED = {"program": "main Bench { t = Team(); r = Reviewer() }", "files": {}}
 PENDING = {"status": "running", "mutation": {"status": "pending"}}
 APPLIED = {"status": "running", "mutation": {"status": "applied", "checkpoint": "m1",
@@ -208,7 +208,7 @@ class MissionControl(unittest.TestCase):
 
         brief, check_in = session.sent()
         self.assertIn("t.plan (string): Split the parser out first.", check_in)
-        self.assertIn("Steps still running: t.build.", check_in)
+        self.assertIn("Steps still running: t.reaction.0.", check_in)
         self.assertIn(IN_PLACE, check_in)
         (mutated,) = session.posted("/v1/runs/r1/mutate")
         self.assertEqual(mutated["program"], CHANGED["program"])

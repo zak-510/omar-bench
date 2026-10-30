@@ -6,6 +6,7 @@
 #
 #   tmux new -d -s queue "STUDY=mine infra/ec2/queue.sh"
 #   tmux new -d -s queue "STUDY=mine TASKS='fix-git prove-plus-comm' K=5 infra/ec2/queue.sh"
+#   tmux new -d -s queue "STUDY=mine WEEK_STOP=0.93 infra/ec2/queue.sh"   (spend more of the week)
 : "${STUDY:?set STUDY: the name these attempts are reported under}"
 cd "$(dirname "$0")/../.." || exit 1
 SUITE=${SUITE:-terminal-bench-2}
@@ -13,6 +14,7 @@ TASKS=${TASKS:-fix-git}
 ARMS=${ARMS:-solo mission-control}
 MODEL=${MODEL:-haiku}
 K=${K:-1}
+WEEK_STOP=${WEEK_STOP:-0.85}   # the share of the plan's week at which no attempt starts
 exec >> ~/queue-"$MODEL".log 2>&1
 mkdir -p ~/.queues && touch ~/.queues/$$ && trap 'rm -f ~/.queues/$$' EXIT
 now() { date -u +'%a %H:%M:%S'; }
@@ -140,7 +142,7 @@ for t in $TASKS; do for a in $ARMS; do tries=0; while :; do
   set -- $(limits)
   if [ -n "${1:-}" ]; then
     echo "$(now) plan use: five-hour $1, week $2, status $4"
-    if python3 -c "import sys; sys.exit(0 if float('$2') >= 0.85 else 1)"; then echo "$(now) the week is at $2: stopping the queue to leave room"; break 3; fi
+    if python3 -c "import sys; sys.exit(0 if float('$2') >= $WEEK_STOP else 1)"; then echo "$(now) the week is at $2: stopping the queue to leave room"; break 3; fi
     if python3 -c "import sys; sys.exit(0 if float('$1') >= 0.80 else 1)"; then
       wait=$(( $3 - $(date +%s) + 120 )); [ "$wait" -gt 0 ] && [ "$wait" -lt 19000 ] && { echo "$(now) five-hour window at $1: waiting ${wait}s for its reset"; sleep "$wait"; }
     fi

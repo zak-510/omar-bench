@@ -13,6 +13,9 @@ stage=${1:-run}
 # ends the attempt, and how often to look. Longer than the longest quiet stretch of a
 # working agent: one response or one tool call, ten minutes each at most.
 : "${OB_DEAD_TURN_MINS:=15}" "${OB_WATCH_SECS:=30}"
+# Where finish() looks for links into a workspace: the whole machine, as a deliverable can
+# be anywhere the task names.
+: "${OB_LINK_ROOT:=/}"
 OB="${OB_DIR:-/installed-agent/omar-bench}"
 TASK_CWD=$(pwd)
 session=bench
@@ -126,8 +129,33 @@ stalled() {
 # be told from a task that was not solved. Then end the runtime and every agent in it
 # (they have a tmux server of their own): nothing should still be running when tests start.
 finish() {
-  find "$HOME/.omar/sessions/$session/workspaces" -path '*/worktree/*' -type f ! -name .git \
+  ws="$HOME/.omar/sessions/$session/workspaces"
+  find "$ws" -path '*/worktree/*' -type f ! -name .git \
     2>/dev/null | sort > "$OB_LOGS/omar-workspace-files.txt" || true
+  # Agents told both to keep their files in the workspace and to make the task's changes
+  # in place have done both: the file in the workspace, a link to it at the task's path
+  # (2026-10-30). Removing the session leaves that link pointing at nothing, and a grader
+  # in another container cannot follow it at all; Harbor fails copying it out. So each
+  # such link becomes a copy of what it pointed at, and is listed with the attempt.
+  : > "$OB_LOGS/omar-linked-files.txt"
+  find "$OB_LINK_ROOT" \( -path /proc -o -path /sys -o -path /dev -o -path "$HOME/.omar" \
+      -o -path "$OB_LOGS" \) -prune -o -type l -print 2>/dev/null |
+    while IFS= read -r link; do
+      target=$(readlink -f "$link") || continue
+      case "$target" in "$ws"/*) ;; *) continue ;; esac
+      copy="$link.omar-bench-copy"
+      cp -RLp "$link" "$copy" 2>/dev/null && rm -f "$link" && mv "$copy" "$link" || continue
+      printf '%s -> %s\n' "$link" "$target" >> "$OB_LOGS/omar-linked-files.txt"
+    done || true
+  # An assistant that never took a message: what its terminal and the runtime last said.
+  server=$(sed -n 's/.*"tmux_server": *"\([^"]*\)".*/\1/p' "$OB_LOGS/omar-up.txt" 2>/dev/null | head -n 1)
+  if [ -e "$OB_LOGS/omar-mission-failed.txt" ]; then
+    for pane in $(tmux -L "${server:-none}" list-panes -a -F '#{pane_id}' 2>/dev/null); do
+      echo "== $(tmux -L "$server" display -p -t "$pane" '#{session_name}' 2>/dev/null)"
+      tmux -L "$server" capture-pane -p -t "$pane" 2>/dev/null
+    done > "$OB_LOGS/omar-panes.txt" || true
+    cp "$HOME/.omar/sessions/$session/logs/runtime.log" "$OB_LOGS/omar-runtime.log" 2>/dev/null || true
+  fi
   omar -s "$session" rm >> "$OB_LOGS/omar-up.txt" 2>&1 || true
 }
 

@@ -326,7 +326,7 @@ class RunScript(unittest.TestCase):
                 "PATH": os.environ["PATH"], "HOME": str(tmp), "TMPDIR": str(tmp),
                 "OB_DIR": str(ob), "OB_BACKEND": "claude", "OB_MODEL": "claude-haiku-5-5",
                 "OB_LOGS": str(logs), "OB_INVOCATION_TIMEOUT": "28800", "RECORD": str(tmp / "rec"),
-                **env})
+                "OB_LINK_ROOT": str(tmp), **env})
         return run, tmp, ob, logs, task
 
     def test_it_runs_where_the_agent_user_cannot_write_to_the_install_directory(self):
@@ -551,6 +551,30 @@ class RunScript(unittest.TestCase):
             self.assertIn('Output t.answer = "ok"', run.stdout)
             self.assertEqual((tmp / "rec.calls").read_text().splitlines(), ["-s bench rm"])
             self.assertTrue((logs / "omar-workspace-files.txt").exists())
+
+    def test_down_turns_links_into_a_workspace_into_the_files_they_point_at(self):
+        def leave(tmp, logs):
+            w = tmp / ".omar/sessions/bench/workspaces/w1/worktree"
+            (w / "out").mkdir(parents=True)
+            (w / "answers.csv").write_text("Answers\n42\n")
+            (w / "out/rules.json").write_text("[]\n")
+            (tmp / "results").mkdir()
+            (tmp / "results/answers.csv").symlink_to(w / "answers.csv")
+            (tmp / "task/out").symlink_to(w / "out", target_is_directory=True)
+            # A link the task came with, to somewhere else, stays a link.
+            (tmp / "task/data").symlink_to(tmp / "results")
+        run, tmp, _, logs, task = self._run("", stage="down", before=leave)
+
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertFalse((tmp / "results/answers.csv").is_symlink())
+        self.assertEqual((tmp / "results/answers.csv").read_text(), "Answers\n42\n")
+        self.assertFalse((task / "out").is_symlink())
+        self.assertEqual((task / "out/rules.json").read_text(), "[]\n")
+        self.assertTrue((task / "data").is_symlink())
+        w = tmp / ".omar/sessions/bench/workspaces/w1/worktree"
+        self.assertEqual(sorted((logs / "omar-linked-files.txt").read_text().splitlines()),
+                         [f"{tmp}/results/answers.csv -> {w}/answers.csv", f"{task}/out -> {w}/out"])
+        self.assertEqual(sorted(p.name for p in (tmp / "results").iterdir()), ["answers.csv"])
 
 
 if __name__ == "__main__":

@@ -3,7 +3,9 @@ Design an OMAR team that will complete the task described below, and propose it 
 
 Nobody is watching this chat and nobody can answer a question. Where something is
 unclear, decide, and say in your proposal what you assumed. Do not do the task
-yourself and do not spawn agents: propose one complete program.
+yourself and do not spawn agents: propose one complete program. You may read the
+task's files to design the team, but do not try the solution, in place or in a copy:
+that is the team's work.
 
 The task. Its statement is in the file @STATEMENT@: read it in full before you design
 anything. It is graded on this machine, by tests you cannot see, in the place the

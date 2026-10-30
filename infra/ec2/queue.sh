@@ -69,11 +69,26 @@ print(r["outcome"], r["error_type"] or "-", r["tokens"]["requests"], int(r["wall
       r["attempt_id"])
 PY
 }
+meter() {   # Claude Code reports the plan's use only in `claude -p` output, which only `solo`
+            # writes: before another arm's attempt, one tiny request on the plan reads it
+  uv run python - "$MODEL" > ~/queue-meter-claude.txt 2>&1 <<'PY'
+import os, subprocess, sys, tomllib
+from omar_bench.cli import _dotenv
+model = tomllib.load(open("bench.toml", "rb"))["models"][sys.argv[1]]
+if model["backend"] != "claude":
+    sys.exit()
+# The subscription's login alone, as the attempts bill to it: never a key.
+env = {k: v for k, v in os.environ.items() if k not in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")}
+env["CLAUDE_CODE_OAUTH_TOKEN"] = _dotenv()["CLAUDE_CODE_OAUTH_TOKEN"]
+subprocess.run(["claude", "-p", "Reply with the word ok.", "--model", model["id"], "--max-turns", "1",
+                "--output-format", "stream-json", "--verbose"], env=env, timeout=120)
+PY
+}
 limits() {   # plan use as of the newest attempt that logged it: five-hour, weekly, five-hour reset (epoch)
   python3 - "$MODEL" <<'PY'
 import glob, json, os, sys, tomllib
 backend = tomllib.load(open("bench.toml", "rb"))["models"][sys.argv[1]]["backend"]
-def claude(line):   # Claude Code reports it only in the solo arm's output
+def claude(line):   # Claude Code reports it only in the solo arm's output, and meter()'s
     info = json.loads(line)["rate_limit_info"]; w = info.get("unifiedWindows", {})
     five, week = w.get("five_hour") or {}, w.get("seven_day") or {}
     return five.get("utilization", 0), week.get("utilization", 0), int(five.get("resetsAt") or 0), info.get("status")
@@ -86,7 +101,8 @@ def codex(line):    # Codex reports it in every rollout's token_count events
     return ((five.get("used_percent") or 0) / 100, (week.get("used_percent") or 0) / 100,
             int(five.get("resets_at") or 0), rl.get("rate_limit_reached_type") or "allowed")
 if backend == "claude":
-    logs, marker, read = glob.glob("runs/*-solo-*/jobs/*/*/agent/claude-code.txt"), '"rate_limit_event"', claude
+    logs = glob.glob("runs/*-solo-*/jobs/*/*/agent/claude-code.txt") + glob.glob(os.path.expanduser("~/queue-meter-claude.txt"))
+    marker, read = '"rate_limit_event"', claude
 else:
     logs = glob.glob("runs/*/jobs/*/*/agent/sessions/**/rollout-*.jsonl", recursive=True)
     marker, read = '"rate_limits"', codex
@@ -120,6 +136,7 @@ PY
 quick=0
 for t in $TASKS; do for a in $ARMS; do tries=0; while :; do
   # Before every attempt, from the newest log that reports plan use (an earlier run's, at first).
+  [ "$a" = solo ] || meter
   set -- $(limits)
   if [ -n "${1:-}" ]; then
     echo "$(now) plan use: five-hour $1, week $2, status $4"

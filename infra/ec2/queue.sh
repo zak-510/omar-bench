@@ -143,7 +143,10 @@ for t in $TASKS; do for a in $ARMS; do tries=0; while :; do
   if [ -n "${1:-}" ]; then
     echo "$(now) plan use: five-hour $1, week $2, status $4"
     if python3 -c "import sys; sys.exit(0 if float('$2') >= $WEEK_STOP else 1)"; then echo "$(now) the week is at $2: stopping the queue to leave room"; break 3; fi
-    if python3 -c "import sys; sys.exit(0 if float('$1') >= 0.80 else 1)"; then
+    # A team's attempt has taken up to half a five-hour window (Sol, 2026-10-30): one
+    # starts with that much left, or waits for the reset.
+    five=0.80; [ "$a" = solo ] || five=0.50
+    if python3 -c "import sys; sys.exit(0 if float('$1') >= $five else 1)"; then
       wait=$(( $3 - $(date +%s) + 120 )); [ "$wait" -gt 0 ] && [ "$wait" -lt 19000 ] && { echo "$(now) five-hour window at $1: waiting ${wait}s for its reset"; sleep "$wait"; }
     fi
   fi

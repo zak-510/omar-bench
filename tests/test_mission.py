@@ -55,7 +55,7 @@ class Session:
         body = None
         if "--data-binary" in args:
             body = json.loads(self.files[args[args.index("--data-binary") + 1].removeprefix("@")])
-        path = args[-1].removeprefix("http://127.0.0.1:4100")
+        path = args[-1].removeprefix("http://127.0.0.1:4100").replace("http://127.0.0.1:5200", "diagram:")
         self.calls.append((method, path, body, self.now))
         status, answer = self.handle(method, path, body)
         return f"{json.dumps(answer)}\n{status}"
@@ -106,9 +106,11 @@ class Session:
             return 202, {"run_id": "r1", "status": "running", "mutation": {"status": "pending"}}
         if path == "/v1/runs/r1":
             record = self.runs.pop(0) if len(self.runs) > 1 else self.runs[0]
-            return 200, {"run_id": "r1", **record}
-        if path == "/v1/runs/r1/snapshot":
+            return 200, {"run_id": "r1", "diagram_address": "127.0.0.1:5200", **record}
+        if path == "diagram:/v1/diagram":  # the live diagram, on the run's own server
             return 200, self.snapshots.pop(0) if len(self.snapshots) > 1 else self.snapshots[0]
+        if path == "/v1/runs/r1/snapshot":
+            return 404, {"error": "no snapshot kept for this run"}
         if method == "POST" and path.startswith("/v1/runs/r1/"):
             return 202, {"status": "pending"}
         return 404, {"error": "unknown"}

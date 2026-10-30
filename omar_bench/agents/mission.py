@@ -101,14 +101,15 @@ class Mission:
 
     # -------------------------------------------------------------- http --------
 
-    async def _call(self, method: str, path: str, body=None) -> tuple[int, object]:
-        """One request to the session's server from inside the container. Status 0 when
-        nothing answered."""
+    async def _call(self, method: str, path: str, body=None, base: str | None = None
+                    ) -> tuple[int, object]:
+        """One request to the session's server (or to `base`) from inside the container.
+        Status 0 when nothing answered."""
         command = f"curl -sS -X {method} -w '\\n%{{http_code}}'"
         if body is not None:
             request = await self._upload("request.json", json.dumps(body))
             command += f" -H 'content-type: application/json' --data-binary @{shlex.quote(request)}"
-        out = await self._shell(f"{command} {shlex.quote(self._url + path)} || true")
+        out = await self._shell(f"{command} {shlex.quote((base or self._url) + path)} || true")
         text, _, code = out.rstrip("\n").rpartition("\n")
         status = int(code) if code.strip().isdigit() else 0
         try:
@@ -195,11 +196,17 @@ class Mission:
 
     # ------------------------------------------------------------- watch --------
 
-    async def _report(self, run_id: str, seen: set, always: bool = False) -> tuple[str, str] | None:
+    async def _report(self, record: dict, seen: set, always: bool = False) -> tuple[str, str] | None:
         """What the team has written since the last check-in, for the assistant; None if
         nothing, unless `always`. `seen` collects what has been shown."""
-        status, snapshot = await self._call("GET", f"/v1/runs/{run_id}/snapshot")
+        # The run's own server has the live diagram; the session's /snapshot holds only
+        # the one a paused run left behind.
+        if not record.get("diagram_address"):
+            return None
+        status, snapshot = await self._call("GET", "/v1/diagram",
+                                            base=f"http://{record['diagram_address']}")
         if status != 200 or not isinstance(snapshot, dict):
+            self._note(f"the run's diagram did not answer ({status}): {str(snapshot)[:200]}")
             return None
         written = []
         for port in snapshot.get("ports", []):
@@ -301,9 +308,13 @@ class Mission:
     async def _watch(self, run_id: str) -> str:
         started = last = self._clock()
         seen: set = set()
+        was = None
         while True:
             record = await self._run(run_id)
             status = record.get("status")
+            if status != was:
+                self._note(f"run {status or 'did not answer'}")
+                was = status
             self._settle(record)
             if record and status not in ACTIVE:
                 self._end(record)
@@ -319,7 +330,7 @@ class Mission:
                 await self._call("POST", f"/v1/runs/{run_id}/resume", {})
             elif (status == "running" and not pending and self.mutations < self._max_mutations
                   and self._clock() - last >= self._checkin):
-                report = await self._report(run_id, seen, always=self._test)
+                report = await self._report(record, seen, always=self._test)
                 if report is not None:
                     last = self._clock()
                     await self._check_in(run_id, report, started)

@@ -28,4 +28,8 @@ finish once the task is done.
 
 While it runs you will get check-ins with what the team has produced so far. Change
 the workflow only when that work shows the design will not complete the task: a
-change restarts every agent with a fresh conversation.
+change restarts every agent with a fresh conversation. A change is applied between
+tags, and a plain connection (`a -> b`) delivers within the tag it was written in, so
+stages joined by plain connections run as one tag that nothing can change until it
+ends. Join each agent's stage to the next with `after 0` (`a -> b after 0`): it costs
+no time, starts a new tag, and makes that stage's result visible to the check-ins.

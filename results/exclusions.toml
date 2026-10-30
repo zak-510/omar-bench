@@ -110,3 +110,28 @@ by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by 
 attempt_id = "20261027T102608Z-terminal-bench-solo-sonnet-zak-510/nextjs-performance__TpA8Hfe"
 reason = "the plan's five-hour usage limit cut it short, so it says nothing about the task: the attempt failed, and queue.sh found the plan's limit in its logs (its row() check: a usage-limit error, or the plan reported at its limit). queue.sh listed it in queue-limit-hits-sonnet.txt and ran the same attempt again after the reset; that later attempt is the one counted"
 by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261030T062658Z-terminal-bench-mission-control-sol-zak-510/heat-pump-warranty__4JBrA62"
+reason = "the plan's five-hour usage limit cut it short, so it says nothing about the task: the decision agent's turn ended at 07:08 UTC on Codex's usage-limit error, queue.sh listed it in queue-limit-hits-sol.txt and ran the same attempt again after the reset; that later attempt (20261030T110346Z-terminal-bench-mission-control-sol-zak-510/heat-pump-warranty__cffbWto) is the one counted. Most of that window went outside the bench: the plan's reading in the agents' rollouts rose from 33% to 100% between 06:57 and 07:08 while the team used about 0.9M input tokens, nearly all cached, against 17 points for the 3.5M before it"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261030T115658Z-terminal-bench-mission-control-sol-zak-510/roy-polymorph-cn__dUYiDAR"
+reason = "harness fault, not a graded attempt: the team ran to completion, but its agents had kept /results/TB3_Conf_Answers.csv in an OMAR workspace and linked it into place (OMAR tells every team agent to put its files in its workspace), and Harbor failed with PermissionError copying that link out for the grader, which never ran (exception.txt). Since 2026-10-30 run.sh turns such links into copies before the session is removed; the task runs again"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261030T173100Z-terminal-bench-mission-control-sol-zak-510/sound-change-cascade__2zvTEQ8"
+reason = "harness fault, not a graded attempt: the team ran to completion, but its agents had kept /app/rules.json and /app/ordering.txt in an OMAR workspace and linked them into place (OMAR tells every team agent to put its files in its workspace), and Harbor failed with PermissionError copying those links out for the grader, which never ran (exception.txt). Since 2026-10-30 run.sh turns such links into copies before the session is removed; the task runs again"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261030T183800Z-terminal-bench-mission-control-sol-zak-510/freight-dispatch-shift__UUapbUb"
+reason = "setup failure, not an attempt at the task: Mission Control's assistant never started. For the five minutes the brief was offered, OMAR answered 502 'codex startup did not become ready for bench-ea-0' (mission-control/log.txt), so no design was proposed and no model was called: zero requests on the row. The cause is not on record; since 2026-10-30 run.sh keeps the assistant's terminal and OMAR's runtime log when this happens. The task runs again"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261030T190751Z-terminal-bench-mission-control-sol-zak-510/music-harmony__Pa7F5ny"
+reason = "the plan's five-hour usage limit cut it short, so it says nothing about the task: the attempt failed, and queue.sh found the plan at its limit in its logs and listed it in queue-limit-hits-sol.txt. The queue then stopped at 85% of the plan's week, so the same attempt runs again after the week resets (2026-11-04); that later attempt is the one counted"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"

@@ -106,7 +106,10 @@ if backend == "claude":
     logs = glob.glob("runs/*-solo-*/jobs/*/*/agent/claude-code.txt") + glob.glob(os.path.expanduser("~/queue-meter-claude.txt"))
     marker, read = '"rate_limit_event"', claude
 else:
-    logs = glob.glob("runs/*/jobs/*/*/agent/sessions/**/rollout-*.jsonl", recursive=True)
+    # Also this machine's own Codex: a request made by hand there gives a fresh reading
+    # when the last attempt's is out of date, as after a reset.
+    logs = glob.glob("runs/*/jobs/*/*/agent/sessions/**/rollout-*.jsonl", recursive=True) + \
+        glob.glob(os.path.expanduser("~/.codex/sessions/**/rollout-*.jsonl"), recursive=True)
     marker, read = '"rate_limits"', codex
 for path in sorted(logs, key=os.path.getmtime, reverse=True):
     last = None

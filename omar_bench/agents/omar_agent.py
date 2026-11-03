@@ -89,6 +89,49 @@ def codex_config(model: str, mcp_servers, reasoning_effort=None, web_search=None
     return "\n".join(lines) + "\n"
 
 
+async def link_cli(agent: BaseInstalledAgent, environment: BaseEnvironment, backend: str) -> None:
+    """Put the CLI where a login shell finds it.
+
+    OMAR starts each agent with `sh -lc`, and a login shell resets PATH to the
+    system's. Without this OMAR's agent exits with "claude: not found" (or
+    "codex: not found") and OMAR reports that it "did not become ready".
+
+    Harbor leaves Claude Code in the agent user's ~/.local/bin, on PATH only for
+    bash. It installs Codex, and the node that runs it, under the agent user's
+    nvm, and its own step that links them into /usr/local/bin looks them up
+    without loading nvm, so it links nothing (Harbor 0.24.0, 2026-10-14). Its own
+    agent loads nvm before every command. Codex gets a launcher that does the
+    same, rather than a link: the node on everyone's PATH, the tests' included,
+    stays the task image's own.
+    """
+    if backend == "claude":
+        found = await agent.exec_as_agent(
+            environment, command='PATH="$HOME/.local/bin:$PATH" command -v claude')
+        path = (found.stdout or "").strip()
+        if path and path != "/usr/local/bin/claude":
+            await agent.exec_as_root(
+                environment, command=f"ln -sf {shlex.quote(path)} /usr/local/bin/claude")
+        return
+    found = await agent.exec_as_agent(
+        environment, command='[ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"; command -v codex')
+    path = (found.stdout or "").strip()
+    if path and path != "/usr/local/bin/codex":
+        bin_dir = shlex.quote(str(PurePosixPath(path).parent))
+        launcher = f'#!/bin/sh\nPATH={bin_dir}:"$PATH"; export PATH\nexec {shlex.quote(path)} "$@"\n'
+        await agent.exec_as_root(environment, command=(
+            f"printf %s {shlex.quote(launcher)} > /usr/local/bin/codex"
+            " && chmod 755 /usr/local/bin/codex"))
+
+
+def codex_auth_json(env: dict[str, str]) -> Path | None:
+    """A ChatGPT-subscription login to inject, under Harbor's own two switches."""
+    if env.get("CODEX_AUTH_JSON_PATH"):
+        return Path(env["CODEX_AUTH_JSON_PATH"])
+    if env.get("CODEX_FORCE_AUTH_JSON", "").lower() in ("1", "true", "yes"):
+        return Path.home() / ".codex" / "auth.json"
+    return None
+
+
 def answer(omar_output: str) -> str:
     """The team's final response: what the topology wrote to `t.answer`."""
     for line in omar_output.splitlines():
@@ -101,7 +144,118 @@ def answer(omar_output: str) -> str:
     return ""
 
 
-class OmarAgent(BaseInstalledAgent):
+class CliTeamAgent(BaseInstalledAgent):
+    """A team of the arm's CLI agents inside the task container, whatever runs the team.
+
+    What every such arm shares: the CLI installed by Harbor's own integration and set up
+    with the suite's settings and the arm's login, the task handed over, the team's answer
+    left as a trajectory, and the whole team's tokens reported to Harbor.
+    """
+
+    def __init__(self, logs_dir: Path, *args, backend: str = "claude",
+                 cli_version: str | None = None, invocation_timeout_sec: int,
+                 reasoning_effort: str | None = None, disallowed_tools=None,
+                 web_search: str | None = None,
+                 extra_env: dict[str, str] | None = None, **kwargs):
+        super().__init__(logs_dir, *args, extra_env=extra_env, **kwargs)
+        self._backend = backend
+        # `omar run --timeout-seconds`: the limit on one agent's turn, not on the attempt.
+        # No default: a short one would stop OMAR's agents before the suite stops anyone else's.
+        self._invocation_timeout_sec = int(invocation_timeout_sec)
+        # The suite's CLI settings; the same values Harbor's own agent gets on the solo arm.
+        self._reasoning_effort = reasoning_effort
+        self._disallowed_tools = disallowed_tools
+        self._web_search = web_search
+        self._env = {**os.environ, **(extra_env or {})}
+        self._cli = CLI[backend](logs_dir=logs_dir, model_name=self.model_name,
+                                 version=str(cli_version) if cli_version else None)
+        # Kept beside the trial's logs: the exact program and task text this attempt ran.
+        self._local = Path(logs_dir) / "omar-bench"
+
+    @property
+    def _model(self) -> str:
+        return (self.model_name or "").split("/")[-1]
+
+    @property
+    def _container_logs(self) -> PurePosixPath:
+        # Harbor 0.20 (which APEX-Agents pins) predates the per-agent override.
+        return getattr(self, "environment_logs_dir", None) or EnvironmentPaths.agent_dir
+
+    async def _upload(self, environment: BaseEnvironment, name: str, text: str) -> None:
+        (self._local / name).parent.mkdir(parents=True, exist_ok=True)
+        (self._local / name).write_text(text)
+        await environment.upload_file(self._local / name, str(OB / name))
+
+    async def _configure_cli(self, environment: BaseEnvironment) -> None:
+        """The CLI's config and login, where run.sh's setup() takes them from."""
+        if self._backend == "claude":
+            await self._upload(environment, "claude.json", claude_json(self.mcp_servers))
+            await self._upload(environment, "claude-settings.json",
+                               claude_settings(self._model, self._disallowed_tools))
+        else:
+            await self._upload(environment, "codex-config.toml", codex_config(
+                self._model, self.mcp_servers, self._reasoning_effort, self._web_search))
+            auth = self._codex_auth_json()
+            if auth is not None:
+                # Same opt-in and same in-container location as Harbor's codex agent.
+                await self.exec_as_root(environment, command=f"mkdir -p {CODEX_SECRETS}")
+                await environment.upload_file(auth, str(CODEX_SECRETS / "auth.json"))
+                await self.exec_as_root(environment, command=f"chmod -R a+rX {CODEX_SECRETS}")
+
+    async def _link_cli(self, environment: BaseEnvironment) -> None:
+        await link_cli(self, environment, self._backend)
+
+    def _codex_auth_json(self) -> Path | None:
+        return codex_auth_json(self._env)
+
+    def _run_env(self) -> dict[str, str]:
+        """What run.sh is given: this backend's credentials and nothing else's, and its settings."""
+        env = {name: self._env[name] for name in CREDENTIALS[self._backend]
+               if self._env.get(name)}
+        if self._env.get("CLAUDE_FORCE_OAUTH", "").lower() in ("1", "true", "yes"):
+            env.pop("ANTHROPIC_API_KEY", None)  # otherwise the CLI prefers the key
+        if self._backend == "claude" and self._reasoning_effort:
+            env["CLAUDE_CODE_EFFORT_LEVEL"] = self._reasoning_effort
+        return env | {
+            "OB_BACKEND": self._backend,
+            "OB_MODEL": self._model,
+            "OB_LOGS": str(self._container_logs),
+            "OB_INVOCATION_TIMEOUT": str(self._invocation_timeout_sec),
+        }
+
+    async def _write_trajectory(self, environment: BaseEnvironment, instruction: str,
+                                result) -> None:
+        """The task and the team's final response, as ATIF.
+
+        APEX-Agents grades from this file; its verifier collects it from the
+        agent's log directory.
+        """
+        log = Path(self.logs_dir) / "omar-run.txt"  # there already when the logs dir is mounted
+        output = (result.stdout if result is not None else None) or (
+            log.read_text() if log.exists() else "")
+        path = Path(self.logs_dir) / "trajectory.json"
+        path.write_text(json.dumps({
+            "schema_version": "ATIF-v1.5",
+            "session_id": Path(self.logs_dir).parent.name,
+            "agent": {"name": self.name(), "version": self.version(), "model_name": self._model},
+            "steps": [{"step_id": 1, "source": "user", "message": instruction},
+                      {"step_id": 2, "source": "agent", "message": answer(output)}],
+        }, indent=2))
+        if not getattr(environment.capabilities, "mounted", True):
+            await environment.upload_file(path, str(self._container_logs / "trajectory.json"))
+
+    def populate_context_post_run(self, context: AgentContext) -> None:
+        """Team-wide token totals, in Harbor's convention (input includes cached tokens)."""
+        by_model = usage.scan(self.logs_dir)
+        total = usage.total(by_model)
+        cache_write = total["cache_write_5m"] + total["cache_write_1h"]
+        context.n_input_tokens = total["input"] + total["cache_read"] + cache_write
+        context.n_cache_tokens = total["cache_read"]
+        context.n_output_tokens = total["output"]
+        context.metadata = {**(context.metadata or {}), "omar_bench_usage": by_model}
+
+
+class OmarAgent(CliTeamAgent):
     # Newer Harbor refuses a task that brings MCP servers unless the agent says it takes them.
     if AgentCapabilities is not None:
         capabilities = AgentCapabilities(atif=True, mcp_servers=True)
@@ -110,12 +264,8 @@ class OmarAgent(BaseInstalledAgent):
                  brief: str | None = None, swarm: str | None = None, max_mutations: int = 0,
                  checkin_minutes: float = 15, test_mutation: bool | str = False,
                  omar_repo: str = "omar-os/omar", omar_sha256: str = "", omar_tarball: str = "",
-                 omar_spec: str = "", backend: str = "claude",
-                 cli_version: str | None = None, invocation_timeout_sec: int,
-                 reasoning_effort: str | None = None, disallowed_tools=None,
-                 web_search: str | None = None,
-                 extra_env: dict[str, str] | None = None, **kwargs):
-        super().__init__(logs_dir, *args, extra_env=extra_env, **kwargs)
+                 omar_spec: str = "", **kwargs):
+        super().__init__(logs_dir, *args, **kwargs)
         if [topology, brief, swarm].count(None) != 2:
             raise ValueError("give a topology to run, a brief for Mission Control, or a brief"
                              " for the swarm's EA: one of the three")
@@ -134,19 +284,6 @@ class OmarAgent(BaseInstalledAgent):
         self._omar_spec = Path(omar_spec) if omar_spec else None
         if self._brief and not self._omar_spec:
             raise ValueError("Mission Control needs omar_spec: the reference of the build it runs on")
-        self._backend = backend
-        # `omar run --timeout-seconds`: the limit on one agent's turn, not on the attempt.
-        # No default: a short one would stop OMAR's agents before the suite stops anyone else's.
-        self._invocation_timeout_sec = int(invocation_timeout_sec)
-        # The suite's CLI settings; the same values Harbor's own agent gets on the solo arm.
-        self._reasoning_effort = reasoning_effort
-        self._disallowed_tools = disallowed_tools
-        self._web_search = web_search
-        self._env = {**os.environ, **(extra_env or {})}
-        self._cli = CLI[backend](logs_dir=logs_dir, model_name=self.model_name,
-                                 version=str(cli_version) if cli_version else None)
-        # Kept beside the trial's logs: the exact program and task text this attempt ran.
-        self._local = Path(logs_dir) / "omar-bench"
 
     @staticmethod
     def name() -> str:
@@ -154,20 +291,6 @@ class OmarAgent(BaseInstalledAgent):
 
     def version(self) -> str | None:
         return self._omar["OMAR_VERSION"]
-
-    @property
-    def _model(self) -> str:
-        return (self.model_name or "").split("/")[-1]
-
-    @property
-    def _container_logs(self) -> PurePosixPath:
-        # Harbor 0.20 (which APEX-Agents pins) predates the per-agent override.
-        return getattr(self, "environment_logs_dir", None) or EnvironmentPaths.agent_dir
-
-    async def _upload(self, environment: BaseEnvironment, name: str, text: str) -> None:
-        self._local.mkdir(parents=True, exist_ok=True)
-        (self._local / name).write_text(text)
-        await environment.upload_file(self._local / name, str(OB / name))
 
     async def install(self, environment: BaseEnvironment) -> None:
         await environment.upload_file(HERE / "install-root.sh", "/tmp/omar-bench-install-root.sh")
@@ -192,77 +315,13 @@ class OmarAgent(BaseInstalledAgent):
             self._local.mkdir(parents=True, exist_ok=True)
             (self._local / "brief.md").write_text(self._brief.read_text())
         await environment.upload_file(HERE / "run.sh", str(OB / "run.sh"))
-        if self._backend == "claude":
-            await self._upload(environment, "claude.json", claude_json(self.mcp_servers))
-            await self._upload(environment, "claude-settings.json",
-                               claude_settings(self._model, self._disallowed_tools))
-        else:
-            await self._upload(environment, "codex-config.toml", codex_config(
-                self._model, self.mcp_servers, self._reasoning_effort, self._web_search))
-            auth = self._codex_auth_json()
-            if auth is not None:
-                # Same opt-in and same in-container location as Harbor's codex agent.
-                await self.exec_as_root(environment, command=f"mkdir -p {CODEX_SECRETS}")
-                await environment.upload_file(auth, str(CODEX_SECRETS / "auth.json"))
-                await self.exec_as_root(environment, command=f"chmod -R a+rX {CODEX_SECRETS}")
-
-    async def _link_cli(self, environment: BaseEnvironment) -> None:
-        """Put the CLI where a login shell finds it.
-
-        OMAR starts each agent with `sh -lc`, and a login shell resets PATH to the
-        system's. Without this OMAR's agent exits with "claude: not found" (or
-        "codex: not found") and OMAR reports that it "did not become ready".
-
-        Harbor leaves Claude Code in the agent user's ~/.local/bin, on PATH only for
-        bash. It installs Codex, and the node that runs it, under the agent user's
-        nvm, and its own step that links them into /usr/local/bin looks them up
-        without loading nvm, so it links nothing (Harbor 0.24.0, 2026-10-14). Its own
-        agent loads nvm before every command. Codex gets a launcher that does the
-        same, rather than a link: the node on everyone's PATH, the tests' included,
-        stays the task image's own.
-        """
-        if self._backend == "claude":
-            found = await self.exec_as_agent(
-                environment, command='PATH="$HOME/.local/bin:$PATH" command -v claude')
-            path = (found.stdout or "").strip()
-            if path and path != "/usr/local/bin/claude":
-                await self.exec_as_root(
-                    environment, command=f"ln -sf {shlex.quote(path)} /usr/local/bin/claude")
-            return
-        found = await self.exec_as_agent(
-            environment, command='[ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"; command -v codex')
-        path = (found.stdout or "").strip()
-        if path and path != "/usr/local/bin/codex":
-            bin_dir = shlex.quote(str(PurePosixPath(path).parent))
-            launcher = f'#!/bin/sh\nPATH={bin_dir}:"$PATH"; export PATH\nexec {shlex.quote(path)} "$@"\n'
-            await self.exec_as_root(environment, command=(
-                f"printf %s {shlex.quote(launcher)} > /usr/local/bin/codex"
-                " && chmod 755 /usr/local/bin/codex"))
-
-    def _codex_auth_json(self) -> Path | None:
-        """A ChatGPT-subscription login to inject, under Harbor's own two switches."""
-        if self._env.get("CODEX_AUTH_JSON_PATH"):
-            return Path(self._env["CODEX_AUTH_JSON_PATH"])
-        if self._env.get("CODEX_FORCE_AUTH_JSON", "").lower() in ("1", "true", "yes"):
-            return Path.home() / ".codex" / "auth.json"
-        return None
+        await self._configure_cli(environment)
 
     @with_prompt_template
     async def run(self, instruction: str, environment: BaseEnvironment,
                   context: AgentContext) -> None:
         await self._upload(environment, "instruction.md", instruction)
-        env = {name: self._env[name] for name in CREDENTIALS[self._backend]
-               if self._env.get(name)}
-        if self._env.get("CLAUDE_FORCE_OAUTH", "").lower() in ("1", "true", "yes"):
-            env.pop("ANTHROPIC_API_KEY", None)  # otherwise the CLI prefers the key
-        if self._backend == "claude" and self._reasoning_effort:
-            env["CLAUDE_CODE_EFFORT_LEVEL"] = self._reasoning_effort
-        env |= {
-            "OB_BACKEND": self._backend,
-            "OB_MODEL": self._model,
-            "OB_LOGS": str(self._container_logs),
-            "OB_INVOCATION_TIMEOUT": str(self._invocation_timeout_sec),
-        }
+        env = self._run_env()
         result = None
         try:
             if self._topology or self._swarm:
@@ -308,34 +367,3 @@ class OmarAgent(BaseInstalledAgent):
             down = await self.exec_as_agent(environment, command=f"sh {OB / 'run.sh'} down",
                                             env=steps)
         return down
-
-    async def _write_trajectory(self, environment: BaseEnvironment, instruction: str,
-                                result) -> None:
-        """The task and the team's final response, as ATIF.
-
-        APEX-Agents grades from this file; its verifier collects it from the
-        agent's log directory.
-        """
-        log = Path(self.logs_dir) / "omar-run.txt"  # there already when the logs dir is mounted
-        output = (result.stdout if result is not None else None) or (
-            log.read_text() if log.exists() else "")
-        path = Path(self.logs_dir) / "trajectory.json"
-        path.write_text(json.dumps({
-            "schema_version": "ATIF-v1.5",
-            "session_id": Path(self.logs_dir).parent.name,
-            "agent": {"name": "omar", "version": self.version(), "model_name": self._model},
-            "steps": [{"step_id": 1, "source": "user", "message": instruction},
-                      {"step_id": 2, "source": "agent", "message": answer(output)}],
-        }, indent=2))
-        if not getattr(environment.capabilities, "mounted", True):
-            await environment.upload_file(path, str(self._container_logs / "trajectory.json"))
-
-    def populate_context_post_run(self, context: AgentContext) -> None:
-        """Team-wide token totals, in Harbor's convention (input includes cached tokens)."""
-        by_model = usage.scan(self.logs_dir)
-        total = usage.total(by_model)
-        cache_write = total["cache_write_5m"] + total["cache_write_1h"]
-        context.n_input_tokens = total["input"] + total["cache_read"] + cache_write
-        context.n_cache_tokens = total["cache_read"]
-        context.n_output_tokens = total["output"]
-        context.metadata = {**(context.metadata or {}), "omar_bench_usage": by_model}

@@ -6,6 +6,8 @@
 #   run.sh stalled   why the team can make no more progress, or nothing
 #   run.sh down      ends the session; prints what the attempt left
 #   run.sh swarm     pre-DSL OMAR: its executive assistant takes the task, to its end
+#   run.sh omnigent  Omnigent's Polly takes the task, to its end (not OMAR at all; the same
+#                    CLI setup)
 # `up`, `stalled` and `down` are the mission-control arm's steps, which the adapter drives.
 set -eu
 stage=${1:-run}
@@ -235,7 +237,7 @@ finish() {
 }
 
 case "$stage" in
-  run | up | swarm) ;;
+  run | up | swarm | omnigent) ;;
   stalled)
     if why=$(stalled); then
       printf 'omar-bench ended this attempt: %s\n' "$why" > "$OB_LOGS/omar-stall.txt"
@@ -255,6 +257,35 @@ esac
 setup
 # Run from $WORK so the runtime leaves nothing in the task's directory.
 cd "$WORK"
+
+if [ "$stage" = omnigent ]; then
+  # Omnigent's Polly, its bundle rendered for the arm's one model by the adapter. `omnigent
+  # run` starts a local server and a session that takes the brief as its first message;
+  # it needs a terminal, so it gets a tmux server of its own. The session, and every
+  # sub-agent it starts, is followed over the server's API to its end (omnigent_watch.py).
+  sed -e "s|@STATEMENT@|$WORK/instruction.md|g" -e "s|@CWD@|$TASK_CWD|g" "$OB/omnigent-brief.md" \
+    > "$WORK/brief.md"
+  cp -R "$OB/polly" "$WORK/polly"
+  tmux -L omnigent new-session -d -s polly -x 200 -y 50 \
+    "omnigent run '$WORK/polly' --server local -p \"\$(cat '$WORK/brief.md')\" 2>> '$OB_LOGS/omnigent.txt'"
+  status=0
+  "${OB_OMNIGENT_PY:-/opt/omnigent/tools/omnigent/bin/python}" "$OB/omnigent_watch.py" \
+    "${OB_OMNIGENT_API:-http://127.0.0.1:6767}" "$OB_LOGS" > "$OB_LOGS/omar-run.txt" 2>&1 || status=$?
+  tmux -L omnigent capture-pane -p -J -S -200 -t polly: > "$OB_LOGS/omar-panes.txt" 2>/dev/null || true
+  # The workers' own logs, beside the rest; their tokens are counted from Omnigent's totals,
+  # as the lead's log goes with its turn. Not their Codex homes: those hold the login.
+  for d in "$HOME"/.omnigent/codex-native/*/codex-home/sessions; do
+    [ -d "$d" ] || continue
+    w=$(basename "$(dirname "$(dirname "$d")")")
+    mkdir -p "$OB_LOGS/omnigent-workers/$w" && cp -R "$d" "$OB_LOGS/omnigent-workers/$w/"
+  done
+  # Nothing of the team may still be running when the tests start.
+  omnigent stop > /dev/null 2>&1 || true
+  tmux -L omnigent kill-server 2>/dev/null || true
+  pkill -f /opt/omnigent/ 2>/dev/null || true
+  cat "$OB_LOGS/omar-run.txt"
+  exit "$status"
+fi
 
 if [ "$stage" = swarm ]; then
   # The dashboard runs the EA on the arm's CLI (`-a`, OMAR's own command line for it) and

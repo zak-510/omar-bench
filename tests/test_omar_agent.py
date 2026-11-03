@@ -277,6 +277,40 @@ class OmarAgent(unittest.TestCase):
         asyncio.run(agent.run("Fix it.", self.container, AgentContext()))
         self.assertTrue(self.container.execs[-1].command.endswith(f"sh {OB}run.sh swarm"))
 
+    def test_omnigent_installs_polly_for_the_arms_one_model_and_runs_it(self):
+        from omar_bench.agents import omnigent_agent
+        agent = omnigent_agent.OmnigentAgent(
+            logs_dir=self.logs, model_name="openai/gpt-6.1-sol", backend="codex",
+            brief=str(ROOT / "topologies/omnigent.md"), omnigent_version="0.20.0",
+            cli_version="0.159.0", invocation_timeout_sec="28800", reasoning_effort="max")
+
+        async def cli_install(environment):
+            self.container.execs.append(SimpleNamespace(command="<cli install>", env={}, user=None))
+        agent._cli.install = cli_install
+        asyncio.run(agent.install(self.container))
+        install, cli = self.container.execs[:2]
+        self.assertTrue(install.command.endswith("sh /tmp/omar-bench-install-omnigent.sh"))
+        self.assertEqual(install.env["OMNIGENT_VERSION"], "0.20.0")
+        self.assertEqual(cli.command, "<cli install>")
+        files = self.container.files
+        self.assertIn("    harness: codex\n", files[OB + "polly/config.yaml"])
+        self.assertIn("  model: gpt-6.1-sol\n", files[OB + "polly/agents/codex/config.yaml"])
+        self.assertNotIn(OB + "polly/agents/claude_code/config.yaml", files)
+        brief = files[OB + "omnigent-brief.md"]
+        self.assertIn("Only Codex is installed here, and every agent runs gpt-6.1-sol", brief)
+        self.assertIn("@STATEMENT@", brief)  # run.sh fills in where the statement is
+        for name in ("run.sh", "omnigent_watch.py", "codex-config.toml"):
+            self.assertIn(OB + name, files)
+        self.assertNotIn(OB + "topology.omar", files)
+
+        asyncio.run(agent.run("Fix it.", self.container, AgentContext()))
+        last = self.container.execs[-1]
+        self.assertTrue(last.command.endswith(f"sh {OB}run.sh omnigent"), last.command)
+        self.assertEqual(last.env["OB_BACKEND"], "codex")
+        written = json.loads((self.logs / "trajectory.json").read_text())
+        self.assertEqual(written["agent"]["name"], "omnigent")
+        self.assertEqual(written["agent"]["version"], "0.20.0")
+
     def test_it_runs_a_topology_or_a_brief_never_both(self):
         for kwargs in ({}, {"topology": str(ROOT / "topologies/Solo.omar"),
                             "brief": str(ROOT / "topologies/mission-control.md")},
@@ -661,6 +695,55 @@ class RunScript(unittest.TestCase):
         config = tomllib.loads((work / "codex-home/config.toml").read_text())
         self.assertEqual(config["projects"], {str(work): {"trust_level": "trusted"},
                                               str(task): {"trust_level": "trusted"}})
+
+    @unittest.skipUnless(shutil.which("tmux"), "tmux is not installed")
+    def test_omnigent_runs_polly_from_its_work_folder_and_keeps_what_the_workers_logged(self):
+        def bundle(tmp, logs):
+            ob = tmp / "ob"
+            (ob / "polly").mkdir()
+            (ob / "polly/config.yaml").write_text("name: polly\n")
+            (ob / "omnigent-brief.md").write_text("Read @STATEMENT@; work in @CWD@.\n")
+            # `omnigent run` records how it was started, and keeps running; `stop` just stops.
+            omnigent = tmp / ".local/bin/omnigent"
+            omnigent.write_text('#!/bin/sh\n[ "$1" = run ] || exit 0\n'
+                                'printf "%s\\n" "$PWD" "$@" > "$RECORD.omnigent"\nexec sleep 600\n')
+            omnigent.chmod(0o755)
+            # A worker Omnigent ran: its log beside the login it was given.
+            home = tmp / ".omnigent/codex-native/abc/codex-home"
+            (home / "sessions/2026/11/03").mkdir(parents=True)
+            (home / "sessions/2026/11/03/rollout-1.jsonl").write_text("{}\n")
+            (home / "auth.json").write_text('{"tokens": "secret"}')
+        # The watcher, standing in: records what it was given and says the team's answer.
+        watcher = Path(self.enterContext(tempfile.TemporaryDirectory())) / "watch"
+        watcher.write_text('#!/bin/sh\nsleep 2\nprintf "%s\\n" "$@" > "$RECORD.watch"\n'
+                           "echo 'Output t.answer = \"done\"'\nexit \"${WATCH_EXIT:-0}\"\n")
+        watcher.chmod(0o755)
+        tmp_dirs = []
+
+        def keep(tmp, logs):
+            tmp_dirs.append(tmp)
+            bundle(tmp, logs)
+        self.addCleanup(lambda: tmp_dirs and subprocess.run(
+            ["tmux", "-L", "omnigent", "kill-server"], capture_output=True,
+            env={**os.environ, "TMUX_TMPDIR": str(tmp_dirs[0])}))
+        run, tmp, ob, logs, task = self._run(
+            "", stage="omnigent", before=keep, OB_BACKEND="codex", OB_MODEL="gpt-6.1-sol",
+            OB_OMNIGENT_PY=str(watcher), WATCH_EXIT="70")
+
+        # The watcher's word is the attempt's.
+        self.assertEqual(run.returncode, 70, run.stderr)
+        self.assertIn('Output t.answer = "done"', run.stdout)
+        cwd, *args = (tmp / "rec.omnigent").read_text().splitlines()
+        work = Path(cwd)
+        self.assertNotEqual(work, task)  # Polly's own files stay out of the graded folder
+        self.assertEqual(args, ["run", f"{work}/polly", "--server", "local",
+                                "-p", f"Read {work}/instruction.md; work in {task}."])
+        self.assertEqual((work / "polly/config.yaml").read_text(), "name: polly\n")
+        self.assertEqual((tmp / "rec.watch").read_text().splitlines(),
+                         [str(ob / "omnigent_watch.py"), "http://127.0.0.1:6767", str(logs)])
+        kept = logs / "omnigent-workers/abc/sessions/2026/11/03/rollout-1.jsonl"
+        self.assertTrue(kept.exists())
+        self.assertEqual(list(logs.rglob("auth.json")), [])
 
     UP = '{\n  "name": "bench",\n  "url": "http://127.0.0.1:4100",\n  "state": "ready"\n}'
 

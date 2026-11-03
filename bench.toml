@@ -31,6 +31,13 @@ repo = "omar-os/omar"
 version = "0.3.3"             # last tag before the DSL runtime (v0.4.0 added lang/, 2026-08-05)
 sha256_linux_amd64 = "ebef3f28ee3e6e430ec1f277089cd161dba0e9dcdb8f10bbf3c7ba5c0e2dc076"
 
+# ------------------------------------------------------------ Omnigent ------
+# Databricks' meta-harness (github.com/omnigent-ai/omnigent, Apache-2.0). Its coding
+# orchestrator, Polly, comes from the same tag: omar_bench/agents/polly, as shipped.
+
+[omnigent]
+version = "0.20.0"            # PyPI, published 2026-10-28; the latest on 2026-11-03
+
 # ---------------------------------------------------------- agent CLIs ------
 # Exact versions installed inside every task container.
 
@@ -220,9 +227,9 @@ note = "Harbor ships a `langgraph` agent; confirm what graph it runs before usin
 kind = "todo"
 note = "no Harbor integration; needs an adapter"
 
-[arms.omnigent]
-kind = "todo"
-note = "no Harbor integration; needs an adapter"
+[arms.omnigent]               # Omnigent's Polly, all on the arm's one model (omnigent_agent.py)
+kind = "omnigent"
+brief = "topologies/omnigent.md"   # its first message: the task, and what grading in place means for it
 
 # -------------------------------------------------------------- prices ------
 # USD per million tokens, API list price. Subscriptions bill no per-session

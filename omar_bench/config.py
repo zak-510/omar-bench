@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # Harbor's built-in agent for each CLI backend.
 HARBOR_AGENT = {"claude": "claude-code", "codex": "codex"}
 OMAR_AGENT = "omar_bench.agents.omar_agent:OmarAgent"
+OMNIGENT_AGENT = "omar_bench.agents.omnigent_agent:OmnigentAgent"
 
 
 class ConfigError(Exception):
@@ -45,9 +46,11 @@ def cell(cfg: dict, suite: str, arm: str, model: str) -> dict:
         "suite_cfg": s, "arm_cfg": a, "model_cfg": m,
         "backend": backend,
         "cli_version": cfg["cli"].get(backend, ""),
-        "agent": HARBOR_AGENT[backend] if a["kind"] == "harbor" else OMAR_AGENT,
+        "agent": {"harbor": HARBOR_AGENT[backend], "omnigent": OMNIGENT_AGENT}.get(a["kind"], OMAR_AGENT),
         "omar": cfg["omar"][a["omar"]] if a["kind"] == "omar" else None,
     }
+    if a["kind"] == "omnigent":
+        out["omnigent"] = cfg["omnigent"]
     return out
 
 
@@ -58,6 +61,8 @@ def identity(c: dict, **also) -> str:
     """
     doc = {k: c[k] for k in ("suite", "arm", "model", "suite_cfg", "arm_cfg", "model_cfg",
                              "omar", "cli_version")} | also
+    if c.get("omnigent"):  # only where there is one, so no other cell's identity moves
+        doc["omnigent"] = c["omnigent"]
     return hashlib.sha256(json.dumps(doc, sort_keys=True).encode()).hexdigest()
 
 
@@ -77,6 +82,9 @@ def unpinned(c: dict) -> list[str]:
         need[f"models.{c['model']}.env.{key}"] = value
     if s.get("allow_agent_host"):
         need[f"models.{c['model']}.api_host"] = m.get("api_host")
+    if c.get("omnigent") is not None:
+        need[f"suites.{c['suite']}.agent_timeout_sec"] = s.get("agent_timeout_sec")
+        need["omnigent.version"] = c["omnigent"].get("version")
     if c["omar"] is not None:
         # Without it OMAR would stop an agent at its own default, sooner than the suite does.
         need[f"suites.{c['suite']}.agent_timeout_sec"] = s.get("agent_timeout_sec")

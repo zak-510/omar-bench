@@ -42,7 +42,15 @@ def command(c: dict, jobs_dir: Path, job_name: str, *, attempts: int | None = No
     for key, value in {**s.get("agent_env", {}).get(c["backend"], {}), **m.get("env", {})}.items():
         cmd += ["--ae", f"{key}={value}"]
 
-    if c["omar"] is None:
+    if c.get("omnigent"):
+        kwargs = {
+            "brief": str(ROOT / c["arm_cfg"]["brief"]),
+            "omnigent_version": c["omnigent"]["version"],
+            "backend": c["backend"],
+            "cli_version": c["cli_version"],
+            "invocation_timeout_sec": s.get("agent_timeout_sec"),
+        }
+    elif c["omar"] is None:
         kwargs = {"version": c["cli_version"]}
     else:
         a, o = c["arm_cfg"], c["omar"]

@@ -113,6 +113,30 @@ class CodexRollouts(unittest.TestCase):
                 "sol": {**zero, "input": 500, "output": 5, "requests": 1}})
 
 
+class OmnigentTotals(unittest.TestCase):
+    def test_omnigents_own_totals_are_the_tokens_and_the_workers_logs_count_requests(self):
+        # The lead's usage as Omnigent reports it for its whole subtree (2026-11-03): its own
+        # log went with its turn; the worker's, copied beside it, holds the same tokens again.
+        with tempfile.TemporaryDirectory() as tmp:
+            # As a trial leaves it: the ledger scans the trial, the adapter its agent folder.
+            agent = Path(tmp) / "agent"
+            agent.mkdir()
+            (agent / "omnigent-usage.json").write_text(json.dumps({"gpt-6.1-sol": {
+                "input_tokens": 18771, "output_tokens": 2251, "total_tokens": 283422,
+                "cache_read_input_tokens": 262400, "cache_creation_input_tokens": None,
+                "total_cost_usd": 0.0863}}))
+            worker = [{"type": "turn_context", "payload": {"model": "gpt-6.1-sol"}}] + [
+                {"type": "token_usage_record", "payload": {
+                    "response_id": f"r{n}", "usage": {"input_tokens": 9000, "output_tokens": 10}}}
+                for n in range(3)]
+            write_jsonl(agent / "omnigent-workers/w1/sessions/2026/11/03/rollout-1.jsonl", worker)
+            zero = dict.fromkeys(usage.FIELDS, 0)
+            expected = {"gpt-6.1-sol": {**zero, "input": 18771, "cache_read": 262400,
+                                        "output": 2251, "requests": 3}}
+            for root in (Path(tmp), agent):
+                self.assertEqual(usage.scan(root, long_over={"gpt-6.1-sol": 8000}), expected)
+
+
 class Pricing(unittest.TestCase):
     PRICES = {"as_of": "2026-10-06", "models": {
         "opus": {"input": 4.0, "output": 20.0, "cache_read": 0.2,

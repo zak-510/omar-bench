@@ -122,8 +122,29 @@ def codex(paths, long_over: dict[str, int] | None = None) -> dict[str, dict]:
     return out
 
 
+def omnigent(usage_by_model: dict) -> dict[str, dict]:
+    """Usage per model as Omnigent reports it for a session and all its sub-agents.
+
+    Its totals keep cached reads out of input_tokens, as Claude Code does. They are
+    totals, not one per request, so none is priced at a long rate.
+    """
+    out: dict[str, dict] = {}
+    for model, usage in usage_by_model.items():
+        row = out.setdefault(model, _zero())
+        row["input"] += usage.get("input_tokens") or 0
+        row["cache_read"] += usage.get("cache_read_input_tokens") or 0
+        row["cache_write_5m"] += usage.get("cache_creation_input_tokens") or 0
+        row["output"] += usage.get("output_tokens") or 0
+    return out
+
+
 def scan(root: Path, long_over: dict[str, int] | None = None) -> dict[str, dict]:
-    """Usage per model for every session log under `root`."""
+    """Usage per model for every session log under `root`.
+
+    An Omnigent team's lead logs each request only for as long as its turn lasts, so its
+    tokens are Omnigent's own totals (omnigent-usage.json); the logs the workers leave
+    count its requests.
+    """
     logs = sorted(Path(root).rglob("*.jsonl"))
     rollouts = [p for p in logs if p.name.startswith("rollout-")]
     transcripts = [p for p in logs if not p.name.startswith("rollout-")]
@@ -132,6 +153,16 @@ def scan(root: Path, long_over: dict[str, int] | None = None) -> dict[str, dict]
         merged = out.setdefault(model, _zero())
         for field in FIELDS:
             merged[field] += row[field]
+    reported = sorted(Path(root).rglob("omnigent-usage.json"))
+    if reported:
+        logged, out = out, {}
+        for path in reported:
+            for model, row in omnigent(json.loads(path.read_text())).items():
+                merged = out.setdefault(model, _zero())
+                for field in FIELDS:
+                    merged[field] += row[field]
+        for name, row in logged.items():
+            out.setdefault(name.removesuffix(LONG), _zero())["requests"] += row["requests"]
     return out
 
 

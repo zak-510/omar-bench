@@ -216,6 +216,26 @@ class HarborCommand(unittest.TestCase):
         self.assertEqual(config.unpinned(config.cell(cfg, "terminal-bench", "mission-control", "sol")),
                          ["omar.main.commit", "omar.main.spec"])
 
+    def test_omnigent_gets_its_brief_its_pin_and_the_suites_own_settings(self):
+        c = config.cell(config.load(), "terminal-bench", "omnigent", "sol")
+        self.assertEqual(config.unpinned(c), [])
+        self.assertEqual(c["agent"], config.OMNIGENT_AGENT)
+        cmd = harbor.command(c, Path("j"), "r")
+        pairs = [cmd[i:i + 2] for i in range(len(cmd) - 1)]
+        for expected in (["--ak", f"brief={ROOT / 'topologies/omnigent.md'}"],
+                         ["--ak", "omnigent_version=0.20.0"], ["--ak", "backend=codex"],
+                         ["--ak", "cli_version=0.159.0"], ["--ak", "invocation_timeout_sec=28800"],
+                         ["--ak", "reasoning_effort=max"]):
+            self.assertIn(expected, pairs)
+        for absent in ("topology=", "swarm=", "omar_version=", "max_mutations="):
+            self.assertNotIn(absent, " ".join(cmd))
+        # The pin is part of the cell, and only of a cell that has it.
+        cfg = config.load()
+        before = config.identity(c)
+        cfg["omnigent"]["version"] = "0.21.0"
+        self.assertNotEqual(config.identity(config.cell(cfg, "terminal-bench", "omnigent", "sol")), before)
+        self.assertNotIn("omnigent", config.cell(cfg, "terminal-bench", "solo", "sol"))
+
     def test_the_swarm_gets_its_message_and_the_last_release_before_the_language(self):
         c = config.cell(config.load(), "terminal-bench", "omar-swarm", "sol")
         self.assertEqual(config.unpinned(c), [])

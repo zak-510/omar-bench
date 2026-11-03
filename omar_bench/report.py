@@ -5,6 +5,7 @@ table per row; one task set and attempt count per comparison.
 """
 from __future__ import annotations
 
+import itertools
 import random
 import statistics
 import tomllib
@@ -119,11 +120,43 @@ def summarize(rows: list[dict], excluded: dict[str, str],
     return out
 
 
+def paired(rows: list[dict], excluded: dict[str, str]) -> list[dict]:
+    """Every two arms of one study, suite and model, compared task by task.
+
+    Arms run on the same tasks are compared on each task's pass fraction: the difference is
+    averaged over the tasks both ran, every task weighing the same, and its interval
+    resamples those tasks. That is tighter than setting the two arms' own intervals side by
+    side, as a task hard for one arm is mostly hard for the other.
+    """
+    fractions: dict[tuple, dict[str, dict[str, float]]] = defaultdict(dict)
+    by_arm: dict[tuple, dict[str, list[bool]]] = defaultdict(lambda: defaultdict(list))
+    for row in rows:
+        if row["attempt_id"] not in excluded:
+            by_arm[(row["study"], row["suite"], row["model"], row["arm"])][row["task"]].append(
+                row["outcome"] == "pass")
+    for (study, suite, model, arm), by_task in by_arm.items():
+        fractions[(study, suite, model)][arm] = {t: statistics.fmean(v) for t, v in by_task.items()}
+    out = []
+    for (study, suite, model), arms in sorted(fractions.items()):
+        for a, b in itertools.combinations(sorted(arms), 2):
+            common = sorted(set(arms[a]) & set(arms[b]))
+            if len(common) < 2:
+                continue
+            diffs = [arms[a][t] - arms[b][t] for t in common]
+            low, high = _bootstrap_ci(diffs)
+            out.append({"study": study, "suite": suite, "model": model, "a": a, "b": b,
+                        "tasks": len(common), "diff": statistics.fmean(diffs),
+                        "ci_low": low, "ci_high": high,
+                        "a_ahead": sum(d > 0 for d in diffs), "b_ahead": sum(d < 0 for d in diffs),
+                        "tied": sum(d == 0 for d in diffs)})
+    return out
+
+
 def _usd(value: float | None) -> str:
     return "n/a" if value is None else f"${value:,.2f}"
 
 
-def markdown(lines: list[dict]) -> str:
+def markdown(lines: list[dict], pairs: list[dict] = ()) -> str:
     out = []
     for study, suite in sorted({(l["study"], l["suite"]) for l in lines}):
         section = [l for l in lines if (l["study"], l["suite"]) == (study, suite)]
@@ -148,6 +181,18 @@ def markdown(lines: list[dict]) -> str:
         if not section[0]["comparable"]:
             out += ["These rows cover different tasks or attempt counts, so their pass rates are "
                     "not comparable and no frontier is drawn.", ""]
+        here = [p for p in pairs if (p["study"], p["suite"]) == (study, suite)]
+        if here:
+            out += ["### Task by task", "",
+                    "Each task's pass fraction under arm A less under arm B, averaged over the tasks "
+                    "both ran; the interval resamples those tasks.", "",
+                    "| arm A | arm B | model | tasks | A − B (95% CI) | A ahead | B ahead | tied |",
+                    "|---|---|---|--:|---|--:|--:|--:|"]
+            for p in here:
+                out.append(f"| {p['a']} | {p['b']} | {p['model']} | {p['tasks']} "
+                           f"| {p['diff']:+.1%} ({p['ci_low']:+.1%} to {p['ci_high']:+.1%}) "
+                           f"| {p['a_ahead']} | {p['b_ahead']} | {p['tied']} |")
+            out.append("")
     out += ["k is the fewest attempts any task has in that row; all-k and any-k use each task's "
             "first k.", "Errors are attempts that raised or were never scored. One the verifier still scored "
             "counts by that score; the rest count as failures. Cost is measured tokens at pinned "

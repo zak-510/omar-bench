@@ -346,7 +346,9 @@ def cmd_report(args) -> int:
     # A run with no record of finishing its plan is not known to be complete.
     incomplete = {r["run_id"] for r in rows if not records.get(r["run_id"], {}).get("complete")}
     try:
-        text = report.markdown(report.summarize(rows, report.exclusions(EXCLUSIONS), incomplete))
+        excluded = report.exclusions(EXCLUSIONS)
+        text = report.markdown(report.summarize(rows, excluded, incomplete),
+                               report.paired(rows, excluded))
     except report.ReportError as err:
         print(f"omar-bench: {err}", file=sys.stderr)
         return 2

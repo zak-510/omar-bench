@@ -549,6 +549,28 @@ class Report(unittest.TestCase):
         self.assertIn("| team † | m | 1 | 1 | 1 |", text)   # tasks, k, attempts
         self.assertIn("Not a final result", text)
 
+    def test_arms_are_compared_task_by_task_on_the_tasks_both_ran(self):
+        rows = [attempt("solo", "t1", "pass", 1.0), attempt("solo", "t1", "pass", 1.0),
+                attempt("solo", "t2", "pass", 1.0), attempt("solo", "t3", "fail", 1.0),
+                attempt("team", "t1", "pass", 2.0), attempt("team", "t1", "fail", 2.0),
+                attempt("team", "t2", "fail", 2.0), attempt("team", "t3", "fail", 2.0),
+                attempt("team", "t4", "pass", 2.0)]   # a task solo never ran
+        out = rows[5]["attempt_id"]                     # the team's failure on t1, excluded
+        (pair,) = report.paired(rows, {out: "provider outage"})
+        self.assertEqual((pair["a"], pair["b"], pair["tasks"]), ("solo", "team", 3))
+        # t1: 1 - 1 (the excluded failure gone), t2: 1 - 0, t3: 0 - 0.
+        self.assertAlmostEqual(pair["diff"], 1 / 3)
+        self.assertEqual((pair["a_ahead"], pair["b_ahead"], pair["tied"]), (1, 0, 2))
+        self.assertLessEqual(pair["ci_low"], pair["diff"])
+        self.assertGreaterEqual(pair["ci_high"], pair["diff"])
+        text = report.markdown(report.summarize(rows, {out: "provider outage"}), [pair])
+        self.assertIn("### Task by task", text)
+        self.assertIn("| solo | team | m | 3 | +33.3% (", text)
+        # Arms of different models are not paired.
+        other = [attempt("solo", "t1", "pass", 1.0) | {"model": "n"},
+                 attempt("solo", "t2", "pass", 1.0) | {"model": "n"}]
+        self.assertEqual(len(report.paired(rows[:4] + other, {})), 0)
+
     def test_the_heading_says_which_study_and_which_part_of_the_suite(self):
         row = attempt("solo", "t1", "pass", 1.0, study="pilot",
                       suite_label="Terminal-Bench 4.0, CPU subset (63 of 66 tasks)")

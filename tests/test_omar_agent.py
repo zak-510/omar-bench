@@ -7,6 +7,7 @@ that OMAR then runs.
 import asyncio
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import time
@@ -256,9 +257,31 @@ class OmarAgent(unittest.TestCase):
         self.assertNotIn(OB + "topology.omar", self.container.files)
         self.assertEqual(self.mission().version(), "main-03633ed")
 
+    def test_the_swarm_gets_its_ea_message_and_runs_to_its_own_end(self):
+        agent = omar_agent.OmarAgent(
+            logs_dir=self.logs, model_name="openai/gpt-6.1-sol", backend="codex",
+            swarm=str(ROOT / "topologies/swarm.md"), omar_version="0.3.3", omar_sha256="f" * 64,
+            cli_version="0.159.0", invocation_timeout_sec="28800")
+
+        async def cli_install(environment):
+            pass
+        agent._cli.install = cli_install
+        asyncio.run(agent.install(self.container))
+        brief = self.container.files[OB + "swarm-brief.md"]
+        self.assertIn("every agent is a `Codex` agent", brief)
+        # Where the statement and the task's directory are, run.sh fills in.
+        self.assertIn("@STATEMENT@", brief)
+        self.assertIn("@CWD@", brief)
+        self.assertNotIn(OB + "topology.omar", self.container.files)
+        self.assertEqual(self.container.execs[0].env["OMAR_VERSION"], "0.3.3")
+        asyncio.run(agent.run("Fix it.", self.container, AgentContext()))
+        self.assertTrue(self.container.execs[-1].command.endswith(f"sh {OB}run.sh swarm"))
+
     def test_it_runs_a_topology_or_a_brief_never_both(self):
         for kwargs in ({}, {"topology": str(ROOT / "topologies/Solo.omar"),
-                            "brief": str(ROOT / "topologies/mission-control.md")}):
+                            "brief": str(ROOT / "topologies/mission-control.md")},
+                       {"topology": str(ROOT / "topologies/Solo.omar"),
+                        "swarm": str(ROOT / "topologies/swarm.md")}):
             with self.assertRaises(ValueError):
                 omar_agent.OmarAgent(logs_dir=self.logs, model_name="anthropic/claude-opus-5-5",
                                      omar_version="x", invocation_timeout_sec="1", **kwargs)
@@ -293,7 +316,7 @@ class OmarAgent(unittest.TestCase):
 class RunScript(unittest.TestCase):
     """container/run.sh, executed for real against a stand-in `omar`."""
 
-    def _run(self, omar, stage=None, before=None, **env):
+    def _run(self, omar, stage=None, before=None, stub=None, **env):
         tmp = Path(self.enterContext(tempfile.TemporaryDirectory())).resolve()
         # The script puts $HOME/.local/bin first, so the stand-in wins over any installed omar.
         ob, logs, bin_, task = tmp / "ob", tmp / "logs", tmp / ".local/bin", tmp / "task"
@@ -311,9 +334,12 @@ class RunScript(unittest.TestCase):
             before(tmp, logs)
         # Every call is logged; only `run` is the run, the session commands just succeed
         # (`up` printing what the runtime says of itself, when asked).
-        (bin_ / "omar").write_text('#!/bin/sh\necho "$*" >> "$RECORD.calls"\n'
-                                   'case " $* " in *" run "*) ;; *" up "*) printf "%s\\n" "${UP_JSON:-}"; exit 0 ;;'
-                                   ' *) exit 0 ;; esac\n' + omar)
+        (bin_ / "omar").write_text(stub or (
+            '#!/bin/sh\necho "$*" >> "$RECORD.calls"\n'
+            'case " $* " in *" run "*) ;; *" up "*) printf "%s\\n" "${UP_JSON:-}"; exit 0 ;;'
+            ' *) exit 0 ;; esac\n' + omar))
+        if stage == "swarm":
+            (ob / "swarm-brief.md").write_text("Read @STATEMENT@; work in @CWD@.\n")
         (bin_ / "omar").chmod(0o755)
         if env.get("OB_BACKEND") == "codex":
             (ob / "codex-config.toml").write_text('model = "gpt-6-luna"\n')
@@ -326,7 +352,7 @@ class RunScript(unittest.TestCase):
                 "PATH": os.environ["PATH"], "HOME": str(tmp), "TMPDIR": str(tmp),
                 "OB_DIR": str(ob), "OB_BACKEND": "claude", "OB_MODEL": "claude-haiku-5-5",
                 "OB_LOGS": str(logs), "OB_INVOCATION_TIMEOUT": "28800", "RECORD": str(tmp / "rec"),
-                "OB_LINK_ROOT": str(tmp), **env})
+                "OB_LINK_ROOT": str(tmp), "TMUX_TMPDIR": str(tmp), **env})
         return run, tmp, ob, logs, task
 
     def test_it_runs_where_the_agent_user_cannot_write_to_the_install_directory(self):
@@ -524,7 +550,119 @@ class RunScript(unittest.TestCase):
         self.assertEqual(type(error).__name__, "ApiOverloadedError")
 
 
-    UP ='{\n  "name": "bench",\n  "url": "http://127.0.0.1:4100",\n  "state": "ready"\n}'
+    # Pre-DSL OMAR, standing in: `-a` is the dashboard, which starts the EA's session on the
+    # swarm's server, and the agents named in AGENTS, which end after AGENT_SECS as the EA
+    # kills them (those in ASKING first ask to trust their folder, as a CLI does); `event
+    # list` has a one-shot event pending for its first PENDING calls, and a recurring one always.
+    SWARM_OMAR = (
+        '#!/bin/sh\necho "$*" >> "$RECORD.calls"\n'
+        'case " $* " in\n'
+        '  *" -a "*)\n'
+        '    tmux -L "$OMAR_TMUX_SERVER" new-session -d -s bench-ea-0 "echo EA: all done; sleep 600"\n'
+        '    for a in ${AGENTS:-}; do\n'
+        '      tmux -L "$OMAR_TMUX_SERVER" new-session -d -s "bench-0-$a" "sleep ${AGENT_SECS:-600}"\n'
+        '    done\n'
+        '    for a in ${ASKING:-}; do\n'
+        '      tmux -L "$OMAR_TMUX_SERVER" new-session -d -s "bench-0-$a" \\\n'
+        '        "echo \'Trust this folder?\'; read x; touch $RECORD.trusted-$a; sleep ${AGENT_SECS:-600}"\n'
+        '    done\n'
+        '    exec sleep 600 ;;\n'
+        '  *" event schedule "*) printf "%s\\n" "$@" > "$RECORD.event" ;;\n'
+        '  *" event list "*)\n'
+        '    n=$(cat "$RECORD.lists" 2>/dev/null || echo 0); echo $((n + 1)) > "$RECORD.lists"\n'
+        '    echo "ID SENDER RECEIVER TIMESTAMP_NS RECURRING PAYLOAD"\n'
+        '    [ "$n" -ge "${PENDING:-0}" ] || echo "e1 ea ea 1 - check on the build"\n'
+        '    echo "e2 ea ea 1 600000000000 heartbeat" ;;\n'
+        'esac\n')
+
+    def _swarm(self, before=None, **env):
+        tmp = []
+
+        def keep(t, logs):
+            tmp.append(t)
+            if before:
+                before(t, logs)
+        # Whatever the outcome, no session outlives the test.
+        self.addCleanup(lambda: tmp and subprocess.run(
+            ["tmux", "-L", "omar-bench-swarm", "kill-server"], capture_output=True,
+            env={**os.environ, "TMUX_TMPDIR": str(tmp[0])}))
+        run, t, ob, logs, task = self._run("", stage="swarm", stub=self.SWARM_OMAR,
+                                           before=keep, OB_WATCH_SECS="1", **env)
+        return run, t, logs, task
+
+    @unittest.skipUnless(shutil.which("tmux"), "tmux is not installed")
+    def test_the_swarm_is_done_when_its_ea_has_no_agent_and_nothing_coming(self):
+        started = time.monotonic()
+        run, tmp, logs, task = self._swarm(PENDING="3", AGENTS="builder", ASKING="checker",
+                                           AGENT_SECS="10", OB_SWARM_SETTLE_SECS="2")
+
+        self.assertEqual(run.returncode, 0, run.stderr)
+        # Not before the EA's agent was gone; soon after.
+        self.assertGreater(time.monotonic() - started, 10)
+        self.assertLess(time.monotonic() - started, 30)
+        # The dashboard ran the EA on the arm's CLI, its agents to start in the task's directory.
+        dashboard = (tmp / "rec.calls").read_text().splitlines()[0]
+        self.assertRegex(dashboard, r"^-c (.+)/config\.toml -a claude$")
+        work = Path(dashboard.split()[1]).parent
+        self.assertIn(f'default_workdir = "{task}"', (work / "config.toml").read_text())
+        # Both folders trusted up front, and the question answered where an agent asked it.
+        trusted = json.loads((tmp / ".claude.json").read_text())["projects"]
+        self.assertTrue(trusted[str(work)]["hasTrustDialogAccepted"])
+        self.assertTrue(trusted[str(task)]["hasTrustDialogAccepted"])
+        self.assertTrue((tmp / "rec.trusted-checker").exists())
+        # The task reached the EA as a user's message through OMAR's own scheduler, with the
+        # places filled in.
+        event = (tmp / "rec.event").read_text().splitlines()
+        self.assertEqual(event[event.index("--receiver") + 1], "ea")
+        self.assertEqual(event[event.index("--sender") + 1], "user")
+        self.assertEqual(event[event.index("--payload") + 1],
+                         f"Read {work}/instruction.md; work in {task}.")
+        # The one-shot event was waited for; the recurring one was not.
+        self.assertGreater(int((tmp / "rec.lists").read_text()), 3)
+        self.assertIn("== bench-ea-0\nEA: all done", (logs / "omar-panes.txt").read_text())
+        self.assertFalse((logs / "omar-stall.txt").exists())
+        # Every agent ended with the swarm's server.
+        left = subprocess.run(["tmux", "-L", "omar-bench-swarm", "list-sessions"],
+                              capture_output=True, env={**os.environ, "TMUX_TMPDIR": str(tmp)})
+        self.assertNotEqual(left.returncode, 0)
+
+    @unittest.skipUnless(shutil.which("tmux"), "tmux is not installed")
+    def test_a_swarm_whose_agents_all_sit_quiet_with_nothing_coming_is_ended(self):
+        def transcript(tmp, logs):
+            d = logs / "sessions/projects/p"
+            d.mkdir(parents=True)
+            (d / "s0.jsonl").write_text(self.ANSWERED.replace("\\n", "\n"))
+            os.utime(d / "s0.jsonl", (1767225600, 1767225600))
+        run, _, logs, _ = self._swarm(before=transcript, AGENTS="builder", OB_DEAD_TURN_MINS="0")
+
+        self.assertEqual(run.returncode, 70, run.stderr)
+        stall = (logs / "omar-stall.txt").read_text()
+        # Said as stalled() says it, so the queue reads it as a step left open.
+        self.assertIn("every agent's turn was over", stall)
+        self.assertIn(str(logs / "sessions/projects/p/s0.jsonl"), stall)
+        self.assertIn("== bench-0-builder", (logs / "omar-panes.txt").read_text())
+
+    @unittest.skipUnless(shutil.which("tmux"), "tmux is not installed")
+    def test_a_swarm_agent_whose_turn_died_is_named_as_it_is_for_solo(self):
+        def rollout(tmp, logs):
+            d = logs / "sessions/2026/11/02"
+            d.mkdir(parents=True)
+            (d / "rollout-1.jsonl").write_text(self.CODEX_AT_CAPACITY.replace("\\n", "\n"))
+            os.utime(d / "rollout-1.jsonl", (1767225600, 1767225600))
+        run, tmp, logs, task = self._swarm(before=rollout, AGENTS="builder", OB_DEAD_TURN_MINS="0",
+                                           OB_BACKEND="codex", OB_MODEL="gpt-6.1-sol")
+
+        self.assertEqual(run.returncode, 70, run.stderr)
+        stall = (logs / "omar-stall.txt").read_text().splitlines()
+        self.assertIn("ended in an API error", stall[0])
+        self.assertIn("Selected model is at capacity. Please try a different model.", stall)
+        # Codex trusts the EA's folder and the task's from its config.
+        work = Path((tmp / "rec.calls").read_text().split()[1]).parent
+        config = tomllib.loads((work / "codex-home/config.toml").read_text())
+        self.assertEqual(config["projects"], {str(work): {"trust_level": "trusted"},
+                                              str(task): {"trust_level": "trusted"}})
+
+    UP = '{\n  "name": "bench",\n  "url": "http://127.0.0.1:4100",\n  "state": "ready"\n}'
 
     def test_up_starts_a_session_with_mission_controls_assistant_on_the_arms_cli(self):
         for backend, assistant in (("claude", "claude --dangerously-skip-permissions"),

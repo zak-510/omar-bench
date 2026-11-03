@@ -7,7 +7,8 @@ adapter puts an OMAR team on all three:
         --ak topology=topologies/PlanBuildCheck.omar --ak omar_version=<pin> ...
 
 The team is a fixed topology, or (`--ak brief=...`) the one Mission Control's assistant
-designs for the task, which it may change as the team runs (see mission.py).
+designs for the task, which it may change as the team runs (see mission.py), or
+(`--ak swarm=...`) pre-DSL OMAR's executive assistant and the agents it spawns itself.
 `omar-bench run` builds that command from bench.toml.
 """
 from __future__ import annotations
@@ -106,7 +107,7 @@ class OmarAgent(BaseInstalledAgent):
         capabilities = AgentCapabilities(atif=True, mcp_servers=True)
 
     def __init__(self, logs_dir: Path, *args, omar_version: str, topology: str | None = None,
-                 brief: str | None = None, max_mutations: int = 0,
+                 brief: str | None = None, swarm: str | None = None, max_mutations: int = 0,
                  checkin_minutes: float = 15, test_mutation: bool | str = False,
                  omar_repo: str = "omar-os/omar", omar_sha256: str = "", omar_tarball: str = "",
                  omar_spec: str = "", backend: str = "claude",
@@ -115,10 +116,12 @@ class OmarAgent(BaseInstalledAgent):
                  web_search: str | None = None,
                  extra_env: dict[str, str] | None = None, **kwargs):
         super().__init__(logs_dir, *args, extra_env=extra_env, **kwargs)
-        if (topology is None) == (brief is None):
-            raise ValueError("give a topology to run, or a brief for Mission Control: one of the two")
+        if [topology, brief, swarm].count(None) != 2:
+            raise ValueError("give a topology to run, a brief for Mission Control, or a brief"
+                             " for the swarm's EA: one of the three")
         self._topology = Path(topology) if topology else None
         self._brief = Path(brief) if brief else None
+        self._swarm = Path(swarm) if swarm else None
         self._max_mutations = int(max_mutations)
         # Shakedowns only (`--ak`): check in sooner, and ask for a change at the first one.
         self._checkin_sec = float(checkin_minutes) * 60
@@ -180,6 +183,10 @@ class OmarAgent(BaseInstalledAgent):
         if self._topology:
             await self._upload(environment, "topology.omar",
                                render(self._topology.read_text(), self._backend))
+        elif self._swarm:
+            # run.sh fills in where the statement and the task's directory are.
+            await self._upload(environment, "swarm-brief.md", self._swarm.read_text()
+                               .replace("@BACKEND@", BACKENDS[self._backend]))
         else:
             await self._upload(environment, "spec.md", self._omar_spec.read_text())
             self._local.mkdir(parents=True, exist_ok=True)
@@ -258,9 +265,10 @@ class OmarAgent(BaseInstalledAgent):
         }
         result = None
         try:
-            if self._topology:
-                result = await self.exec_as_agent(environment, command=f"sh {OB / 'run.sh'}",
-                                                  env=env)
+            if self._topology or self._swarm:
+                stage = " swarm" if self._swarm else ""
+                result = await self.exec_as_agent(
+                    environment, command=f"sh {OB / 'run.sh'}{stage}", env=env)
             else:
                 result = await self._mission(environment, env)
         finally:

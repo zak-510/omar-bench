@@ -5,7 +5,8 @@
 #   run.sh up        a session with Mission Control's assistant; prints url=, work=, cwd=
 #   run.sh stalled   why the team can make no more progress, or nothing
 #   run.sh down      ends the session; prints what the attempt left
-# The last three are the mission-control arm's steps, which the adapter drives.
+#   run.sh swarm     pre-DSL OMAR: its executive assistant takes the task, to its end
+# `up`, `stalled` and `down` are the mission-control arm's steps, which the adapter drives.
 set -eu
 stage=${1:-run}
 : "${OB_BACKEND:?}" "${OB_MODEL:?}" "${OB_LOGS:?}" "${OB_INVOCATION_TIMEOUT:?}"
@@ -13,6 +14,9 @@ stage=${1:-run}
 # ends the attempt, and how often to look. Longer than the longest quiet stretch of a
 # working agent: one response or one tool call, ten minutes each at most.
 : "${OB_DEAD_TURN_MINS:=15}" "${OB_WATCH_SECS:=30}"
+# How long the swarm's EA must have shown nothing new, with no agent and no event left,
+# before its run counts as finished: its last words written, its turn over.
+: "${OB_SWARM_SETTLE_SECS:=60}"
 # Where finish() looks for links into a workspace: the whole machine, as a deliverable can
 # be anywhere the task names.
 : "${OB_LINK_ROOT:=/}"
@@ -103,6 +107,25 @@ turn_died() {
   esac
 }
 
+# What ended a turn that died on an API error, and the log that shows it.
+died() {
+  echo "an agent's turn ended in an API error and"
+  case "$1" in
+    */rollout-*.jsonl)
+      echo "no agent has written for $OB_DEAD_TURN_MINS minutes. The error, as Codex gave it:"
+      grep '"type":"task_complete"' "$1" | tail -n 1 \
+        | grep -o '"error":{"message":"[^"]*' | sed 's/^"error":{"message":"//' || true ;;
+    *)
+      echo "no agent has written for $OB_DEAD_TURN_MINS minutes. The error, as Claude Code gave it:"
+      # Harbor names an attempt's error after the last one it knows in what this script
+      # prints, so a safety refusal or the output cap is named here as it is for `solo`.
+      tail -n 40 "$1" | grep '"isApiErrorMessage":true' | tail -n 1 \
+        | grep -o '"text":"API Error:[^"]*' | sed 's/^"text":"//' || true ;;
+  esac
+  echo "Its transcript:"
+  echo "$1"
+}
+
 # Once no agent has written anything for OB_DEAD_TURN_MINS, prints why OMAR is waiting on
 # a step no agent will finish, and the logs that show it: an agent's turn died on an API
 # error, which neither CLI takes up again (the output cap, a usage limit, a model at
@@ -117,27 +140,62 @@ stalled() {
     turn_over "$f" || over=
   done
   if [ -n "$dead" ]; then
-    echo "an agent's turn ended in an API error and"
-    case "$dead" in
-      */rollout-*.jsonl)
-        echo "no agent has written for $OB_DEAD_TURN_MINS minutes. The error, as Codex gave it:"
-        grep '"type":"task_complete"' "$dead" | tail -n 1 \
-          | grep -o '"error":{"message":"[^"]*' | sed 's/^"error":{"message":"//' || true ;;
-      *)
-        echo "no agent has written for $OB_DEAD_TURN_MINS minutes. The error, as Claude Code gave it:"
-        # Harbor names an attempt's error after the last one it knows in what this script
-        # prints, so a safety refusal or the output cap is named here as it is for `solo`.
-        tail -n 40 "$dead" | grep '"isApiErrorMessage":true' | tail -n 1 \
-          | grep -o '"text":"API Error:[^"]*' | sed 's/^"text":"//' || true ;;
-    esac
-    echo "Its transcript:"
-    echo "$dead"
+    died "$dead"
   elif [ -n "$over" ]; then
     echo "every agent's turn was over and no agent had written for"
     echo "$OB_DEAD_TURN_MINS minutes, while OMAR still waited on a step. Their session logs:"
     echo "$logs"
   else
     return 1
+  fi
+}
+
+# Pre-DSL OMAR's swarm (0.3.x) has no program to finish: its executive assistant (EA)
+# spawns, watches and kills agents of its own, and wakes them, and itself, with events its
+# dashboard delivers. It runs on a tmux server of its own. A killed agent's log can stop
+# mid-turn, so the swarm is read from its terminals: an agent at work shows it (a running
+# timer, a spinner); one waiting at its prompt shows nothing new.
+SWARM=omar-bench-swarm
+EA=bench-ea-0   # OMAR's name for the first EA's session, under the prefix setup() gives
+swarm() { tmux -L "$SWARM" "$@"; }
+# Seconds since anything showed in the busiest of these sessions (all but the dashboard's).
+swarm_quiet() {
+  now=$(date +%s) last=0
+  for at in $(swarm list-windows -a -F '#{session_name} #{window_activity}' 2>/dev/null |
+      awk -v only="${1:-}" '$1 != "dashboard" && (only == "" || $1 == only) { print $2 }'); do
+    [ "$at" -le "$last" ] || last=$at
+  done
+  echo $((now - last))
+}
+# The agents the EA has running; and its events still to come that fire once (a recurring
+# one is a heartbeat, not work).
+swarm_agents() { swarm list-sessions -F '#S' 2>/dev/null | grep -v -x -e dashboard -e "$EA" || true; }
+swarm_pending() { omar -c "$WORK/config.toml" event list 2>/dev/null | awk 'NR > 1 && $5 == "-"'; }
+
+# The swarm has finished: the EA has no agent left and nothing to wait for, and has shown
+# nothing new for OB_SWARM_SETTLE_SECS, its last turn over.
+swarm_done() {
+  swarm has-session -t "=$EA" 2>/dev/null &&
+    [ -z "$(swarm_agents)" ] && [ -z "$(swarm_pending)" ] &&
+    [ "$(swarm_quiet "$EA")" -ge "$OB_SWARM_SETTLE_SECS" ]
+}
+
+# No agent will move again: nothing has shown in any of their terminals, nor been written
+# to any log, for OB_DEAD_TURN_MINS, and no event is coming to wake one. As stalled() says
+# it, so the queue reads it the same way.
+swarm_stalled() {
+  [ "$(swarm_quiet)" -ge "$((OB_DEAD_TURN_MINS * 60))" ] && [ -z "$(swarm_pending)" ] || return 1
+  logs=$(session_logs) dead=
+  for f in $logs; do
+    [ -n "$(find "$f" -mmin +"$OB_DEAD_TURN_MINS")" ] || return 1
+    if turn_died "$f"; then dead=$f; fi
+  done
+  if [ -n "$dead" ]; then
+    died "$dead"
+  else
+    echo "every agent's turn was over and no agent had written for"
+    echo "$OB_DEAD_TURN_MINS minutes, while the EA still had agents up and no event was coming. Their session logs:"
+    echo "$logs"
   fi
 }
 
@@ -177,7 +235,7 @@ finish() {
 }
 
 case "$stage" in
-  run | up) ;;
+  run | up | swarm) ;;
   stalled)
     if why=$(stalled); then
       printf 'omar-bench ended this attempt: %s\n' "$why" > "$OB_LOGS/omar-stall.txt"
@@ -197,6 +255,73 @@ esac
 setup
 # Run from $WORK so the runtime leaves nothing in the task's directory.
 cd "$WORK"
+
+if [ "$stage" = swarm ]; then
+  # The dashboard runs the EA on the arm's CLI (`-a`, OMAR's own command line for it) and
+  # delivers events; it needs a terminal, so it gets a session of the swarm's server. The
+  # EA's agents start in the task's directory, as `solo` does.
+  export OMAR_TMUX_SERVER="$SWARM"
+  printf '\n[agent]\ndefault_workdir = "%s"\n' "$TASK_CWD" >> "$WORK/config.toml"
+  # Each CLI asks once per folder whether to trust it, and 0.3.x does not answer (0.4.3
+  # does): the EA's folder and the task's are trusted up front, and the question is
+  # answered wherever else an agent starts.
+  if [ "$OB_BACKEND" = claude ]; then
+    sed "s|\"projects\": {|\"projects\": {\"$TASK_CWD\": {\"hasTrustDialogAccepted\": true}, |" \
+      "$HOME/.claude.json" > "$HOME/.claude.json.new" && mv "$HOME/.claude.json.new" "$HOME/.claude.json"
+  else
+    printf '\n[projects."%s"]\ntrust_level = "trusted"\n' "$WORK" "$TASK_CWD" >> "$CODEX_HOME/config.toml"
+  fi
+  (
+    while sleep 2; do
+      for s in $(swarm list-sessions -F '#S' 2>/dev/null); do
+        if swarm capture-pane -p -t "=$s:" 2>/dev/null |
+            grep -q -E 'Trust this folder\?|trust the files in this folder'; then
+          swarm send-keys -t "=$s:" Enter
+        fi
+      done
+    done
+  ) > /dev/null 2>&1 &
+  trust_pid=$!
+  swarm new-session -d -s dashboard -x 200 -y 50 \
+    "omar -c '$WORK/config.toml' -a '$OB_BACKEND' 2>> '$OB_LOGS/omar-dashboard.txt'"
+  waited=0
+  until swarm has-session -t "=$EA" 2>/dev/null; do
+    if [ "$waited" -ge 120 ]; then
+      echo "omar-bench: the EA did not start within 120 s" | tee "$OB_LOGS/omar-mission-failed.txt"
+      swarm capture-pane -p -t dashboard: > "$OB_LOGS/omar-panes.txt" 2>/dev/null || true
+      kill "$trust_pid" 2>/dev/null || true
+      swarm kill-server 2>/dev/null || true
+      exit 71
+    fi
+    sleep 2; waited=$((waited + 2))
+  done
+  # The task, as a user's message: an event to the EA, delivered by OMAR's own scheduler.
+  sed -e "s|@STATEMENT@|$WORK/instruction.md|g" -e "s|@CWD@|$TASK_CWD|g" "$OB/swarm-brief.md" \
+    > "$WORK/brief.md"
+  omar -c "$WORK/config.toml" event schedule --receiver ea --sender user --in-seconds 0 \
+    --payload "$(cat "$WORK/brief.md")" > "$OB_LOGS/omar-run.txt" 2>&1
+  status=0
+  while sleep "$OB_WATCH_SECS"; do
+    if ! swarm has-session -t "=$EA" 2>/dev/null; then
+      echo "omar-bench ended this attempt: the EA's session ended" > "$OB_LOGS/omar-stall.txt"
+      status=70; break
+    fi
+    swarm_done && break
+    if why=$(swarm_stalled); then
+      printf 'omar-bench ended this attempt: %s\n' "$why" > "$OB_LOGS/omar-stall.txt"
+      status=70; break
+    fi
+  done
+  # What every terminal last showed, the EA's report among them; then every agent ends.
+  for s in $(swarm list-sessions -F '#S' 2>/dev/null); do
+    echo "== $s"; swarm capture-pane -p -J -S -200 -t "=$s:" 2>/dev/null
+  done > "$OB_LOGS/omar-panes.txt" || true
+  kill "$trust_pid" 2>/dev/null || true
+  swarm kill-server 2>/dev/null || true
+  cat "$OB_LOGS/omar-run.txt"
+  [ ! -e "$OB_LOGS/omar-stall.txt" ] || cat "$OB_LOGS/omar-stall.txt"
+  exit "$status"
+fi
 
 if [ "$stage" = up ]; then
   # The assistant runs on the arm's CLI, whichever OMAR would have found first.

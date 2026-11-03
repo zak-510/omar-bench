@@ -105,8 +105,8 @@ class Config(unittest.TestCase):
         self.assertEqual(config.unpinned(config.cell(cfg, "apex-agents", "solo", "sol")), [])
 
     def test_an_unimplemented_arm_says_why(self):
-        with self.assertRaisesRegex(config.ConfigError, "headless entry point"):
-            config.cell(config.load(), "terminal-bench", "omar-swarm", "opus")
+        with self.assertRaisesRegex(config.ConfigError, "needs an adapter"):
+            config.cell(config.load(), "terminal-bench", "adk", "opus")
 
     def test_a_local_path_suite_pins_its_commit_instead_of_a_dataset(self):
         cfg = pinned()
@@ -215,6 +215,18 @@ class HarborCommand(unittest.TestCase):
         cfg["omar"]["main"].update(commit="", spec="")
         self.assertEqual(config.unpinned(config.cell(cfg, "terminal-bench", "mission-control", "sol")),
                          ["omar.main.commit", "omar.main.spec"])
+
+    def test_the_swarm_gets_its_message_and_the_last_release_before_the_language(self):
+        c = config.cell(config.load(), "terminal-bench", "omar-swarm", "sol")
+        self.assertEqual(config.unpinned(c), [])
+        cmd = harbor.command(c, Path("j"), "r")
+        pairs = [cmd[i:i + 2] for i in range(len(cmd) - 1)]
+        for expected in (["--ak", f"swarm={ROOT / 'topologies/swarm.md'}"],
+                         ["--ak", "backend=codex"], ["--ak", "omar_version=0.3.3"],
+                         ["--ak", "invocation_timeout_sec=28800"]):
+            self.assertIn(expected, pairs)
+        for absent in ("topology=", "brief=", "max_mutations=", "omar_tarball="):
+            self.assertNotIn(absent, " ".join(cmd))
 
     def test_every_arm_gets_the_suites_own_cli_settings(self):
         # SWE Atlas runs its agents at high effort with web tools off; a team must not get more.

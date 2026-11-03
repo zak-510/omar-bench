@@ -235,8 +235,9 @@ def cmd_run(args) -> int:
                          concurrency=args.concurrency, tasks=args.tasks, limit=args.limit,
                          extra=args.harbor_args)
     env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(ROOT), env.get("PYTHONPATH")]))
-    # The program a team runs, or the brief its program is designed from.
-    topology = c["arm_cfg"].get("topology") or c["arm_cfg"].get("brief")
+    # The program a team runs, the brief its program is designed from, or the swarm's message.
+    topology = (c["arm_cfg"].get("topology") or c["arm_cfg"].get("brief")
+                or c["arm_cfg"].get("swarm"))
     topology_sha256 = (hashlib.sha256((ROOT / topology).read_bytes()).hexdigest()
                        if topology else None)
     manifest = {

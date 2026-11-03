@@ -28,8 +28,8 @@ sha256_linux_amd64 = "52b427276323ae912da29b0ed6ab091ce6cb6fb79ce79f1d4dc43906e3
 
 [omar.pre_dsl]                # self-coordinated swarm: the "before" baseline
 repo = "omar-os/omar"
-version = ""                  # last tag before the DSL runtime
-sha256_linux_amd64 = ""
+version = "0.3.3"             # last tag before the DSL runtime (v0.4.0 added lang/, 2026-08-05)
+sha256_linux_amd64 = "ebef3f28ee3e6e430ec1f277089cd161dba0e9dcdb8f10bbf3c7ba5c0e2dc076"
 
 # ---------------------------------------------------------- agent CLIs ------
 # Exact versions installed inside every task container.
@@ -208,8 +208,9 @@ brief = "topologies/mission-control.md"   # what the operator's stand-in tells t
 max_mutations = 3             # every one restarts the whole team with fresh conversations
 
 [arms.omar-swarm]             # pre-DSL OMAR: agents route and terminate themselves
-kind = "todo"
-note = "needs a headless entry point for the legacy EA and a pre-DSL version pin"
+kind = "omar"
+omar = "pre_dsl"
+swarm = "topologies/swarm.md" # the user's message its executive assistant gets the task in
 
 [arms.langgraph]
 kind = "todo"

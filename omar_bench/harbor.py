@@ -46,9 +46,14 @@ def command(c: dict, jobs_dir: Path, job_name: str, *, attempts: int | None = No
         kwargs = {"version": c["cli_version"]}
     else:
         a, o = c["arm_cfg"], c["omar"]
-        # A fixed team, or the brief Mission Control's assistant designs one from.
-        kwargs = ({"topology": str(ROOT / a["topology"])} if "topology" in a else
-                  {"brief": str(ROOT / a["brief"]), "max_mutations": a.get("max_mutations")})
+        # A fixed team, the brief Mission Control's assistant designs one from, or the
+        # message pre-DSL OMAR's executive assistant gets the task in.
+        if "topology" in a:
+            kwargs = {"topology": str(ROOT / a["topology"])}
+        elif "swarm" in a:
+            kwargs = {"swarm": str(ROOT / a["swarm"])}
+        else:
+            kwargs = {"brief": str(ROOT / a["brief"]), "max_mutations": a.get("max_mutations")}
         kwargs |= {
             "backend": c["backend"],
             "cli_version": c["cli_version"],

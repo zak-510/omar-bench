@@ -45,7 +45,9 @@ if [ -n "${OMAR_SHA256:-}" ] && [ "$ARCH" = amd64 ]; then
   echo "$OMAR_SHA256  /tmp/$TARBALL" | sha256sum -c - >/dev/null
 fi
 tar xzf "/tmp/$TARBALL" -C /tmp
-install "/tmp/omar-linux-$ARCH/omar" "/tmp/omar-linux-$ARCH/omarc" /usr/local/bin/
+install "/tmp/omar-linux-$ARCH/omar" /usr/local/bin/
+# Pre-DSL releases (0.3.x) have no compiler: there is no language to compile.
+[ ! -e "/tmp/omar-linux-$ARCH/omarc" ] || install "/tmp/omar-linux-$ARCH/omarc" /usr/local/bin/
 
 # Where an image with musl, an older glibc or no OpenSSL 3 fails, before any model is called.
 omar --version

@@ -7,6 +7,7 @@
 #   tmux new -d -s queue "STUDY=mine infra/ec2/queue.sh"
 #   tmux new -d -s queue "STUDY=mine TASKS='fix-git prove-plus-comm' K=5 infra/ec2/queue.sh"
 #   tmux new -d -s queue "STUDY=mine WEEK_STOP=0.93 infra/ec2/queue.sh"   (spend more of the week)
+#   tmux new -d -s queue "STUDY=mine WEEK_WAIT=1 infra/ec2/queue.sh"      (wait for the week's reset)
 : "${STUDY:?set STUDY: the name these attempts are reported under}"
 cd "$(dirname "$0")/../.." || exit 1
 SUITE=${SUITE:-terminal-bench-2}
@@ -15,6 +16,7 @@ ARMS=${ARMS:-solo mission-control}
 MODEL=${MODEL:-haiku}
 K=${K:-1}
 WEEK_STOP=${WEEK_STOP:-0.85}   # the share of the plan's week at which no attempt starts
+WEEK_WAIT=${WEEK_WAIT:-}       # set: at that share, wait for the week's reset instead of stopping
 exec >> ~/queue-"$MODEL".log 2>&1
 mkdir -p ~/.queues && touch ~/.queues/$$ && trap 'rm -f ~/.queues/$$' EXIT
 now() { date -u +'%a %H:%M:%S'; }
@@ -93,14 +95,16 @@ subprocess.run(["claude", "-p", "Reply with the word ok.", "--model", model["id"
                 "--output-format", "stream-json", "--verbose"], env=env, timeout=120)
 PY
 }
-limits() {   # plan use as of the newest attempt that logged it: five-hour, weekly, five-hour reset (epoch)
+limits() {   # plan use as of the newest attempt that logged it: five-hour, weekly, five-hour reset,
+             # status, weekly reset (epochs)
   python3 - "$MODEL" <<'PY'
 import glob, json, os, sys, tomllib
 backend = tomllib.load(open("bench.toml", "rb"))["models"][sys.argv[1]]["backend"]
 def claude(line):   # Claude Code reports it only in the solo arm's output, and meter()'s
     info = json.loads(line)["rate_limit_info"]; w = info.get("unifiedWindows", {})
     five, week = w.get("five_hour") or {}, w.get("seven_day") or {}
-    return five.get("utilization", 0), week.get("utilization", 0), int(five.get("resetsAt") or 0), info.get("status")
+    return (five.get("utilization", 0), week.get("utilization", 0), int(five.get("resetsAt") or 0),
+            info.get("status"), int(week.get("resetsAt") or 0))
 def codex(line):    # Codex reports it in every rollout's token_count events
     rl = json.loads(line)["payload"]["rate_limits"]
     by = {w.get("window_minutes"): w for w in (rl.get("primary"), rl.get("secondary")) if w}
@@ -108,7 +112,8 @@ def codex(line):    # Codex reports it in every rollout's token_count events
         raise ValueError
     five, week = by.get(300) or {}, by.get(10080) or {}
     return ((five.get("used_percent") or 0) / 100, (week.get("used_percent") or 0) / 100,
-            int(five.get("resets_at") or 0), rl.get("rate_limit_reached_type") or "allowed")
+            int(five.get("resets_at") or 0), rl.get("rate_limit_reached_type") or "allowed",
+            int(week.get("resets_at") or 0))
 if backend == "claude":
     logs = glob.glob("runs/*-solo-*/jobs/*/*/agent/claude-code.txt") + glob.glob(os.path.expanduser("~/queue-meter-claude.txt"))
     marker, read = '"rate_limit_event"', claude
@@ -152,7 +157,16 @@ for t in $TASKS; do for a in $ARMS; do tries=0; while :; do
   set -- $(limits)
   if [ -n "${1:-}" ]; then
     echo "$(now) plan use: five-hour $1, week $2, status $4"
-    if python3 -c "import sys; sys.exit(0 if float('$2') >= $WEEK_STOP else 1)"; then echo "$(now) the week is at $2: stopping the queue to leave room"; break 3; fi
+    # A reading from before the week's reset says nothing about this week: the next attempt
+    # gives a fresh one.
+    if { [ "${5:-0}" -eq 0 ] || [ "$5" -gt "$(date +%s)" ]; } &&
+        python3 -c "import sys; sys.exit(0 if float('$2') >= $WEEK_STOP else 1)"; then
+      if [ -n "$WEEK_WAIT" ] && [ "${5:-0}" -gt 0 ]; then
+        wait=$(( $5 - $(date +%s) + 300 ))
+        echo "$(now) the week is at $2: waiting ${wait}s for its reset"; sleep "$wait"; continue
+      fi
+      echo "$(now) the week is at $2: stopping the queue to leave room"; break 3
+    fi
     # A team's attempt has taken up to half a five-hour window (Sol, 2026-10-30): one
     # starts with that much left, or waits for the reset.
     five=0.80; [ "$a" = solo ] || five=0.50

@@ -135,3 +135,8 @@ by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by 
 attempt_id = "20261030T190751Z-terminal-bench-mission-control-sol-zak-510/music-harmony__Pa7F5ny"
 reason = "the plan's five-hour usage limit cut it short, so it says nothing about the task: the attempt failed, and queue.sh found the plan at its limit in its logs and listed it in queue-limit-hits-sol.txt. The queue then stopped at 85% of the plan's week, so the same attempt runs again after the week resets (2026-11-04); that later attempt is the one counted"
 by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"
+
+[[exclude]]
+attempt_id = "20261102T221622Z-terminal-bench-mission-control-sol-zak-510/session-window-debug__phF4b4n"
+reason = "provider fault, not an attempt at the task: 23 seconds into the team's first turn, while it was still reading the task files, Codex ended the turn on 'Selected model is at capacity. Please try a different model.' (server_overloaded, in its rollout). No agent did more and nothing in /app was changed: 11 requests on the row. run.sh ended the attempt after 15 quiet minutes but named it a step left open (stall cause idle), so the queue went on; since 2026-11-03 run.sh names such a turn's error and the queue runs the attempt again. One more mission-control attempt on the task runs in its place"
+by = "zak-510 (written by Claude Code during study tb4-043; not yet reviewed by a person)"

@@ -498,8 +498,33 @@ class RunScript(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertFalse((logs / "omar-stall.txt").exists())
 
+    # What Codex wrote when Sol was at capacity on a team's first turn (2026-11-02).
+    CODEX_AT_CAPACITY = ('{"type":"event_msg","payload":{"type":"task_started"}}\\n'
+                         '{"type":"event_msg","payload":{"type":"task_complete","last_agent_message":null,'
+                         '"error":{"message":"Selected model is at capacity. Please try a different model.",'
+                         '"codex_error_info":"server_overloaded"}}}\\n')
 
-    UP = '{\n  "name": "bench",\n  "url": "http://127.0.0.1:4100",\n  "state": "ready"\n}'
+    def test_a_codex_turn_that_died_on_an_api_error_is_named_as_it_is_for_solo(self):
+        run, _, _, logs, _ = self._run(
+            self._codex_with((self.CODEX_DONE, True), (self.CODEX_AT_CAPACITY, True)),
+            OB_BACKEND="codex", OB_MODEL="gpt-6-luna", OB_WATCH_SECS="1")
+
+        self.assertEqual(run.returncode, 70, run.stderr)
+        stall = (logs / "omar-stall.txt").read_text().splitlines()
+        self.assertIn("ended in an API error", stall[0])
+        self.assertIn("Selected model is at capacity. Please try a different model.", stall)
+        self.assertEqual(stall[-1], str(logs / "sessions/2026/10/14/rollout-1.jsonl"))
+        # Harbor's own classifier, on what the script printed, as it runs on `solo`'s output.
+        agent = omar_agent.OmarAgent(
+            logs_dir=logs, model_name="openai/gpt-6-luna", backend="codex",
+            topology=str(ROOT / "topologies/PlanBuildCheck.omar"), omar_version="0.4.3",
+            omar_sha256="f" * 64, cli_version="0.159.0", invocation_timeout_sec="28800")
+        error = agent._classify_exec_error(
+            "sh run.sh", SimpleNamespace(return_code=70, stdout=run.stdout, stderr=run.stderr))
+        self.assertEqual(type(error).__name__, "ApiOverloadedError")
+
+
+    UP ='{\n  "name": "bench",\n  "url": "http://127.0.0.1:4100",\n  "state": "ready"\n}'
 
     def test_up_starts_a_session_with_mission_controls_assistant_on_the_arms_cli(self):
         for backend, assistant in (("claude", "claude --dangerously-skip-permissions"),

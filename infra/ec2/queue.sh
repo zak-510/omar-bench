@@ -32,12 +32,19 @@ if (agent / "omar-stall.txt").exists():
         stall = "idle"   # one agent left its OMAR step open
     else:                # an API error; which one is in the transcript named last
         stall = "unknown"
-        name = text.split()[-1].split("/sessions/projects/")[-1]
+        name = text.split()[-1]
         try:
-            for line in open(agent / "sessions/projects" / name, errors="replace"):
-                if '"isApiErrorMessage":true' in line:
-                    stall = json.loads(line).get("error") or "unknown"
-        except OSError:
+            if "/rollout-" in name:   # Codex: on the task_complete that closed the turn
+                for line in open(agent / "sessions" / name.split("/sessions/", 1)[-1], errors="replace"):
+                    if '"task_complete"' in line and '"error":{' in line:
+                        info = (json.loads(line)["payload"]["error"] or {}).get("codex_error_info")
+                        stall = (next(iter(info)) if isinstance(info, dict) else info) or "unknown"
+            else:
+                for line in open(agent / "sessions/projects" / name.split("/sessions/projects/")[-1],
+                                 errors="replace"):
+                    if '"isApiErrorMessage":true' in line:
+                        stall = json.loads(line).get("error") or "unknown"
+        except (OSError, ValueError, KeyError, TypeError):
             pass
 if r["error_type"] == "AgentSafetyRefusalError":
     stall = "refusal"    # the provider's classifier declined; Claude Code calls it invalid_request
@@ -176,6 +183,16 @@ for t in $TASKS; do for a in $ARMS; do tries=0; while :; do
     echo "$(now) the plan's usage limit cut that attempt short ($id, listed in ~/queue-limit-hits-$MODEL.txt): waiting ${wait}s, then running it again"
     sleep "$wait"; continue
   fi
+  # The provider had no room for the model (Codex: "Selected model is at capacity",
+  # 2026-11-02): the attempt says nothing about the task either. It is listed for
+  # exclusion and runs again in ten minutes.
+  if [ "$2" = ApiOverloadedError ] && [ "$1" != pass ]; then
+    echo "$7" >> ~/queue-provider-faults-"$MODEL".txt
+    tries=$((tries + 1))
+    if [ "$tries" -ge 4 ]; then echo "$(now) the provider turned $a on $t away $tries times: stopping the queue"; break 3; fi
+    echo "$(now) the provider had no room for the model ($7, listed in ~/queue-provider-faults-$MODEL.txt): waiting 600s, then running it again"
+    sleep 600; continue
+  fi
   # A refused login refuses every attempt after it, however long the CLI took to give up.
   if [ "$2" = AgentAuthenticationError ]; then echo "$(now) the login was refused: stopping the queue"; break 3; fi
   # Raised within ten minutes: a broken setup, or a task this setup cannot run. Skip the
@@ -189,7 +206,7 @@ for t in $TASKS; do for a in $ARMS; do tries=0; while :; do
   quick=0
   # A pass stands though a turn died on the plan's limit (a failure is run again, above);
   # the next attempt waits out the reset rather than meet the limit too.
-  if [ "$5" = rate_limit ]; then
+  if [ "$5" = rate_limit ] || [ "$5" = usage_limit_exceeded ]; then
     set -- $(limits); wait=$(( ${3:-0} - $(date +%s) + 120 ))
     [ "$wait" -gt 0 ] && [ "$wait" -lt 19000 ] || wait=3600
     echo "$(now) a turn died on the plan's usage limit after the attempt passed: waiting ${wait}s for the reset"
@@ -198,12 +215,14 @@ for t in $TASKS; do for a in $ARMS; do tries=0; while :; do
   # A turn that died on anything but the output cap would die again.
   # An agent that left its step open is the system under test, not the setup: go on.
   # So is a refusal: it fails that attempt, scored like `solo`'s, and the queue goes on.
-  case "$5" in -|max_output_tokens|idle|refusal) ;; *) echo "$(now) a turn died on '$5': stopping the queue"; break 3;; esac
+  # A pass stands though a turn died on a model at capacity (a failure is run again, above).
+  case "$5" in -|max_output_tokens|idle|refusal|server_overloaded) ;; *) echo "$(now) a turn died on '$5': stopping the queue"; break 3;; esac
   break
 done; done; done
 uv run omar-bench report --study "$STUDY" > ~/queue-report-"$MODEL".md 2>&1
 sh infra/ec2/sync.sh > ~/sync.log 2>&1 || echo "$(now) sync reported a problem; see ~/sync.log"
-for f in ~/queue-"$MODEL".log ~/queue-report-"$MODEL".md ~/queue-limit-hits-"$MODEL".txt; do
+for f in ~/queue-"$MODEL".log ~/queue-report-"$MODEL".md ~/queue-limit-hits-"$MODEL".txt \
+    ~/queue-provider-faults-"$MODEL".txt; do
   [ -e "$f" ] && aws s3 cp "$f" "s3://$(cat /etc/omar-bench/evidence-bucket)/queue-logs/$STUDY/${f##*/}" --only-show-errors
 done
 others=$(cd ~/.queues && for p in *; do [ "$p" != "$$" ] && kill -0 "$p" 2>/dev/null && echo "$p"; done)

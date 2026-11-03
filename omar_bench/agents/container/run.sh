@@ -90,29 +90,46 @@ turn_over() {
   esac
 }
 
+# Whether a log's last turn ended in an API error. Claude Code says so on the message it
+# gave instead of an answer; Codex on the task_complete that closes the turn.
+turn_died() {
+  case "$1" in
+    */rollout-*.jsonl)
+      grep -E '"type":"(task_started|task_complete|turn_aborted)"' "$1" | tail -n 1 \
+        | grep -q '"type":"task_complete".*"error":{' ;;
+    *)
+      tail -n 40 "$1" | grep -E '"type":"(assistant|user)"' | tail -n 1 \
+        | grep -q '"isApiErrorMessage":true' ;;
+  esac
+}
+
 # Once no agent has written anything for OB_DEAD_TURN_MINS, prints why OMAR is waiting on
 # a step no agent will finish, and the logs that show it: an agent's turn died on an API
-# error, which Claude Code does not take up again (the output cap, a usage limit); or every
-# agent's turn is over, one having ended without completing its OMAR step.
+# error, which neither CLI takes up again (the output cap, a usage limit, a model at
+# capacity); or every agent's turn is over, one having ended without completing its OMAR step.
 stalled() {
   logs=$(session_logs)
   [ -n "$logs" ] || return 1
   dead= over=yes
   for f in $logs; do
     [ -n "$(find "$f" -mmin +"$OB_DEAD_TURN_MINS")" ] || return 1
-    if tail -n 40 "$f" | grep -E '"type":"(assistant|user)"' | tail -n 1 \
-        | grep -q '"isApiErrorMessage":true'; then
-      dead=$f
-    fi
+    if turn_died "$f"; then dead=$f; fi
     turn_over "$f" || over=
   done
   if [ -n "$dead" ]; then
     echo "an agent's turn ended in an API error and"
-    echo "no agent has written for $OB_DEAD_TURN_MINS minutes. The error, as Claude Code gave it:"
-    # Harbor names an attempt's error after the last one it knows in what this script
-    # prints, so a safety refusal or the output cap is named here as it is for `solo`.
-    tail -n 40 "$dead" | grep '"isApiErrorMessage":true' | tail -n 1 \
-      | grep -o '"text":"API Error:[^"]*' | sed 's/^"text":"//' || true
+    case "$dead" in
+      */rollout-*.jsonl)
+        echo "no agent has written for $OB_DEAD_TURN_MINS minutes. The error, as Codex gave it:"
+        grep '"type":"task_complete"' "$dead" | tail -n 1 \
+          | grep -o '"error":{"message":"[^"]*' | sed 's/^"error":{"message":"//' || true ;;
+      *)
+        echo "no agent has written for $OB_DEAD_TURN_MINS minutes. The error, as Claude Code gave it:"
+        # Harbor names an attempt's error after the last one it knows in what this script
+        # prints, so a safety refusal or the output cap is named here as it is for `solo`.
+        tail -n 40 "$dead" | grep '"isApiErrorMessage":true' | tail -n 1 \
+          | grep -o '"text":"API Error:[^"]*' | sed 's/^"text":"//' || true ;;
+    esac
     echo "Its transcript:"
     echo "$dead"
   elif [ -n "$over" ]; then

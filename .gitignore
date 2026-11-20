@@ -1,12 +1,16 @@
-# Credentials
 .env
-
-# Raw run evidence: large, and for APEX-Agents not ours to redistribute. Lives in S3.
-/runs/
-
-# Checkouts pinned by version in bench.toml, not by copy
-/vendor/
-
+infra/instance.env
+REVISION
 __pycache__/
-.venv/
 .DS_Store
+
+# Installed by infra/bootstrap.sh on the machine, never committed
+summer/target/
+summer/probes/dsl/bin/
+summer/probes/dsl/config-*.toml
+
+# Pilot runs stay local; counted results are committed
+results/pilot/
+
+# OMAR writes the generated crate for code reactions beside the program
+savina/programs/src-gen/

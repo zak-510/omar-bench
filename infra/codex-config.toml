@@ -1,0 +1,3 @@
+# CODEX_HOME/config.toml on the benchmark machine. Only the model is pinned;
+# reasoning effort stays at Codex's default and is recorded from each session.
+model = "gpt-6.1-sol"

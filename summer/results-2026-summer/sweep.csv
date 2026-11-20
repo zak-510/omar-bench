@@ -1,0 +1,16 @@
+family,n,param,trial,hops,completed,reason,metric,output
+chain,20,-,1,20,True,reached tail,facts=5/5 len=453,"order_id=4471, ship_date=09-30, city=Lisbon, sku=XZ12, qty=3"
+chain,50,-,1,50,True,reached tail,facts=5/5 len=1203,"order_id=4471, ship_date=09-30, city=Lisbon, sku=XZ12, qty=3"
+chain,100,-,1,40,False,stalled at node 41,facts=0/5 len=0,
+ring,10,-,1,10,True,self-terminated,stop_hop=10 laps=1.0,node 1 → node 2 → node 3 → node 4 → node 5 → node 6 → node 7
+ring,25,-,1,25,True,self-terminated,stop_hop=25 laps=1.0,node 1 → node 2 → node 3 → node 4 → node 5 → node 6 → node 7
+ring,40,-,1,40,True,self-terminated,stop_hop=40 laps=1.0,"node 1, node 2, node 3, node 4, node 5, node 6, node 7, node"
+sg-corrupt,5,corrupt=0,1,6,True,"strict gather, 5/5 arrived, gathered",verdict=good,144
+sg-corrupt,5,corrupt=1,1,6,True,"strict gather, 5/5 arrived, gathered",verdict=good,144
+sg-corrupt,5,corrupt=2,1,6,True,"strict gather, 5/5 arrived, gathered",verdict=good,144
+sg-corrupt,5,corrupt=3,1,6,True,"strict gather, 5/5 arrived, gathered",verdict=good,144
+sg-corrupt,5,corrupt=4,1,2,False,"strict gather, 2/5 arrived, refused",verdict=other/none,
+sg-missing,5,fail=1 relaxed=False,1,,,Expecting value: line 1 column 1 (char 0),available=no,
+sg-missing,5,fail=1 relaxed=True,1,,,Expecting value: line 1 column 1 (char 0),available=no,
+sg-missing,5,fail=3 relaxed=False,1,,,Expecting value: line 1 column 1 (char 0),available=no,
+sg-missing,5,fail=3 relaxed=True,1,,,Expecting value: line 1 column 1 (char 0),available=no,

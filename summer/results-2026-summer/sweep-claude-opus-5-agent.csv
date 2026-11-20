@@ -1,0 +1,633 @@
+model,arm,family,n,param,trial,hops,completed,reason,metric,rc,stderr,output
+claude-opus-5,agent,chain,20,-,1,20,True,"done by node 20, 20 deliveries",facts=5/5 trail=20/20 len=308,0,[mass] graph run f40f ready; results under /Users/zakali/.omar/mass/runs/f40f,"PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,chain,50,-,1,50,True,"done by node 50, 50 deliveries",facts=5/5 trail=50/50 len=578,0,"4d86-node-38, mass4d86-node-41, mass4d86-node-42, mass4d86-node-46, mass4d86-node-47, mass4d86-node-49; respawning [mass] readiness attempt 2/4 timed out for mass4d86-node-23, mass4d86-node-33, mass4d86-node-47; respawning [mass] graph run 4d86 ready; results under /Users/zakali/.omar/mass/runs/4d86","PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,ring,10,-,1,13,True,"done by node 3, 13 deliveries",stop_hop=13 laps=1.3,0,[mass] graph run 5185 ready; results under /Users/zakali/.omar/mass/runs/5185,"RING RUN COMPLETE - halted by node 3 after 1 full lap.
+
+Fina"
+claude-opus-5,agent,ring,25,-,1,21,True,"done by node 21, 21 deliveries",stop_hop=21 laps=0.84,0,[mass] graph run 232d ready; results under /Users/zakali/.omar/mass/runs/232d,"RING RESULT - terminated deliberately at node 21
+
+Trail: nod"
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,1,8,True,"done by node 6, 8 deliveries",verdict=good,0,", mass35b1-node-5; respawning [mass] readiness attempt 2/4 timed out for mass35b1-node-1, mass35b1-node-3, mass35b1-node-4, mass35b1-node-5; respawning [mass] readiness attempt 3/4 timed out for mass35b1-node-3; respawning [mass] graph run 35b1 ready; results under /Users/zakali/.omar/mass/runs/35b1",144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,1,8,True,"done by node 6, 8 deliveries",verdict=good,0,"[mass] readiness attempt 1/4 timed out for massf5ea-node-3, massf5ea-node-4, massf5ea-node-6; respawning [mass] readiness attempt 2/4 timed out for massf5ea-node-3; respawning [mass] graph run f5ea ready; results under /Users/zakali/.omar/mass/runs/f5ea",144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,1,8,True,"done by node 6, 8 deliveries",verdict=good,0,"[mass] readiness attempt 1/4 timed out for mass4be4-node-1, mass4be4-node-2, mass4be4-node-6; respawning [mass] graph run 4be4 ready; results under /Users/zakali/.omar/mass/runs/4be4",144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,1,10,True,"done by node 6, 10 deliveries",verdict=good,0,", mass418c-node-3, mass418c-node-4, mass418c-node-5; respawning [mass] readiness attempt 2/4 timed out for mass418c-node-3, mass418c-node-4; respawning [mass] readiness attempt 3/4 timed out for mass418c-node-3; respawning [mass] graph run 418c ready; results under /Users/zakali/.omar/mass/runs/418c",144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,1,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run d3b7 ready; results under /Users/zakali/.omar/mass/runs/d3b7,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,1,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] readiness attempt 1/4 timed out for massa7c6-node-5; respawning [mass] graph run a7c6 ready; results under /Users/zakali/.omar/mass/runs/a7c6,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,1,14,True,"done by node 10, 14 deliveries",verdict=good,0,"[mass] readiness attempt 1/4 timed out for mass47fd-node-5, mass47fd-node-6, mass47fd-node-9; respawning [mass] readiness attempt 2/4 timed out for mass47fd-node-9; respawning [mass] graph run 47fd ready; results under /Users/zakali/.omar/mass/runs/47fd",144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,1,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run c4e5 ready; results under /Users/zakali/.omar/mass/runs/c4e5,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,1,14,True,"done by node 10, 14 deliveries",verdict=good,0,"[mass] readiness attempt 1/4 timed out for mass8860-node-2, mass8860-node-3, mass8860-node-4; respawning [mass] graph run 8860 ready; results under /Users/zakali/.omar/mass/runs/8860",144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,1,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 3761 ready; results under /Users/zakali/.omar/mass/runs/3761,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,1,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run fd6a ready; results under /Users/zakali/.omar/mass/runs/fd6a,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,1,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 798c ready; results under /Users/zakali/.omar/mass/runs/798c,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,1,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 8a40 ready; results under /Users/zakali/.omar/mass/runs/8a40,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,1,13,True,"done by node 10, 13 deliveries",verdict=good,0,[mass] graph run ad0b ready; results under /Users/zakali/.omar/mass/runs/ad0b,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,1,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run facf ready; results under /Users/zakali/.omar/mass/runs/facf,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,1,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 138a ready; results under /Users/zakali/.omar/mass/runs/138a,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,1,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run aea0 ready; results under /Users/zakali/.omar/mass/runs/aea0,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,1,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run fb15 ready; results under /Users/zakali/.omar/mass/runs/fb15,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,1,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 1eb5 ready; results under /Users/zakali/.omar/mass/runs/1eb5,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,1,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 542a ready; results under /Users/zakali/.omar/mass/runs/542a,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,1,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run 34ea ready; results under /Users/zakali/.omar/mass/runs/34ea,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,1,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run 724f ready; results under /Users/zakali/.omar/mass/runs/724f,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,1,14,True,"done by node 10, 14 deliveries",verdict=corrupt,0,[mass] graph run e16f ready; results under /Users/zakali/.omar/mass/runs/e16f,4102
+claude-opus-5,agent,sg-missing,5,policy=none fail=1,1,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run 2857 ready; results under /Users/zakali/.omar/mass/runs/2857,144
+claude-opus-5,agent,sg-missing,5,policy=none fail=3,1,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run dac1 ready; results under /Users/zakali/.omar/mass/runs/dac1,
+claude-opus-5,agent,sg-missing,5,policy=all fail=1,1,8,False,went quiet after 8 deliveries,available=no,0,[mass] graph run e832 ready; results under /Users/zakali/.omar/mass/runs/e832,
+claude-opus-5,agent,sg-missing,5,policy=all fail=3,1,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 5239 ready; results under /Users/zakali/.omar/mass/runs/5239,
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=1,1,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run 2b00 ready; results under /Users/zakali/.omar/mass/runs/2b00,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=2,1,6,True,"done by node 6, 6 deliveries",available=yes,0,[mass] graph run dcc6 ready; results under /Users/zakali/.omar/mass/runs/dcc6,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=3,1,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run ee28 ready; results under /Users/zakali/.omar/mass/runs/ee28,
+claude-opus-5,agent,ring,40,-,1,80,False,fuse: 80 message cap hit,stop_hop=80 laps=2.0,0,"timed out for mass9a2f-node-12, mass9a2f-node-21, mass9a2f-node-25, mass9a2f-node-26, mass9a2f-node-27, mass9a2f-node-28, mass9a2f-node-30, mass9a2f-node-32, mass9a2f-node-37, mass9a2f-node-38, mass9a2f-node-39; respawning [mass] graph run 9a2f ready; results under /Users/zakali/.omar/mass/runs/9a2f",
+claude-opus-5,agent,chain,20,-,2,20,True,"done by node 20, 20 deliveries",facts=5/5 trail=20/20 len=493,0,[mass] graph run cfa6 ready; results under /Users/zakali/.omar/mass/runs/cfa6,"PAYLOAD (preserved exactly): order_id=4471, ship_date=09-30,"
+claude-opus-5,agent,chain,50,-,2,50,True,"done by node 50, 50 deliveries",facts=0/5 trail=27/50 len=1033,0,"3d17-node-25, mass3d17-node-28, mass3d17-node-31, mass3d17-node-34, mass3d17-node-35, mass3d17-node-36, mass3d17-node-38, mass3d17-node-41, mass3d17-node-43, mass3d17-node-45, mass3d17-node-46, mass3d17-node-50; respawning [mass] graph run 3d17 ready; results under /Users/zakali/.omar/mass/runs/3d17","RELAY MESSAGE (graph-c76b77, run 3d17, round 49) - FINAL
+
+fi"
+claude-opus-5,agent,ring,10,-,2,11,True,"done by node 1, 11 deliveries",stop_hop=11 laps=1.1,0,[mass] graph run cec8 ready; results under /Users/zakali/.omar/mass/runs/cec8,Continuous token-passing heartbeat with no natural end. Keep
+claude-opus-5,agent,ring,25,-,2,26,True,"done by node 1, 26 deliveries",stop_hop=26 laps=1.04,0,[mass] graph run 6df8 ready; results under /Users/zakali/.omar/mass/runs/6df8,Continuous token-passing heartbeat with no natural end. Keep
+claude-opus-5,agent,ring,40,-,2,25,True,"done by node 25, 25 deliveries",stop_hop=25 laps=0.62,0,"[mass] readiness attempt 1/4 timed out for mass4728-node-18, mass4728-node-19, mass4728-node-20, mass4728-node-21, mass4728-node-27, mass4728-node-28, mass4728-node-30, mass4728-node-32, mass4728-node-34; respawning [mass] graph run 4728 ready; results under /Users/zakali/.omar/mass/runs/4728","TRUNCATION REPORT - RING PAYLOAD LOST, RUN TERMINATED
+
+Statu"
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,2,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 3658 ready; results under /Users/zakali/.omar/mass/runs/3658,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,2,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run f024 ready; results under /Users/zakali/.omar/mass/runs/f024,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,2,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 08b6 ready; results under /Users/zakali/.omar/mass/runs/08b6,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,2,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run ac23 ready; results under /Users/zakali/.omar/mass/runs/ac23,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,2,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 49d9 ready; results under /Users/zakali/.omar/mass/runs/49d9,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,2,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 67f5 ready; results under /Users/zakali/.omar/mass/runs/67f5,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,2,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 8d91 ready; results under /Users/zakali/.omar/mass/runs/8d91,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,2,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 249c ready; results under /Users/zakali/.omar/mass/runs/249c,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,2,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run aa2d ready; results under /Users/zakali/.omar/mass/runs/aa2d,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,2,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 5db3 ready; results under /Users/zakali/.omar/mass/runs/5db3,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,2,15,True,"done by node 10, 15 deliveries",verdict=good,0,[mass] graph run 2e1a ready; results under /Users/zakali/.omar/mass/runs/2e1a,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,2,17,True,"done by node 10, 17 deliveries",verdict=good,0,[mass] graph run e327 ready; results under /Users/zakali/.omar/mass/runs/e327,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,2,15,True,"done by node 10, 15 deliveries",verdict=good,0,[mass] graph run c550 ready; results under /Users/zakali/.omar/mass/runs/c550,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,2,18,True,"done by node 10, 18 deliveries",verdict=good,0,[mass] graph run 27cf ready; results under /Users/zakali/.omar/mass/runs/27cf,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,2,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 58cc ready; results under /Users/zakali/.omar/mass/runs/58cc,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,2,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 8656 ready; results under /Users/zakali/.omar/mass/runs/8656,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,2,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 06ff ready; results under /Users/zakali/.omar/mass/runs/06ff,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,2,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 169a ready; results under /Users/zakali/.omar/mass/runs/169a,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,2,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 1525 ready; results under /Users/zakali/.omar/mass/runs/1525,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,2,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run f051 ready; results under /Users/zakali/.omar/mass/runs/f051,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,2,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run f7b5 ready; results under /Users/zakali/.omar/mass/runs/f7b5,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,2,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run 7a87 ready; results under /Users/zakali/.omar/mass/runs/7a87,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,2,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run 3970 ready; results under /Users/zakali/.omar/mass/runs/3970,4102
+claude-opus-5,agent,sg-missing,5,policy=none fail=1,2,5,True,"done by node 6, 5 deliveries",available=yes,0,[mass] graph run d22e ready; results under /Users/zakali/.omar/mass/runs/d22e,144
+claude-opus-5,agent,sg-missing,5,policy=none fail=3,2,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run b8b1 ready; results under /Users/zakali/.omar/mass/runs/b8b1,
+claude-opus-5,agent,sg-missing,5,policy=all fail=1,2,8,False,went quiet after 8 deliveries,available=no,0,[mass] graph run 4d2d ready; results under /Users/zakali/.omar/mass/runs/4d2d,
+claude-opus-5,agent,sg-missing,5,policy=all fail=3,2,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 9db8 ready; results under /Users/zakali/.omar/mass/runs/9db8,
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=1,2,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run 995d ready; results under /Users/zakali/.omar/mass/runs/995d,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=2,2,6,True,"done by node 6, 6 deliveries",available=yes,0,[mass] graph run fdfe ready; results under /Users/zakali/.omar/mass/runs/fdfe,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=3,2,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 82e3 ready; results under /Users/zakali/.omar/mass/runs/82e3,
+claude-opus-5,agent,chain,20,-,3,20,True,"done by node 20, 20 deliveries",facts=5/5 trail=20/20 len=307,0,[mass] graph run f0f2 ready; results under /Users/zakali/.omar/mass/runs/f0f2,"PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,chain,50,-,3,50,True,"done by node 50, 50 deliveries",facts=5/5 trail=50/50 len=578,0,"db63-node-22, massdb63-node-28, massdb63-node-33, massdb63-node-35, massdb63-node-40, massdb63-node-42, massdb63-node-43, massdb63-node-44, massdb63-node-45, massdb63-node-47, massdb63-node-49, massdb63-node-50; respawning [mass] graph run db63 ready; results under /Users/zakali/.omar/mass/runs/db63","PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,ring,10,-,3,11,True,"done by node 1, 11 deliveries",stop_hop=11 laps=1.1,0,[mass] graph run 9c62 ready; results under /Users/zakali/.omar/mass/runs/9c62,"RING RUN — FINAL RESULT
+
+Topology: 10-node unidirectional ri"
+claude-opus-5,agent,ring,25,-,3,26,True,"done by node 1, 26 deliveries",stop_hop=26 laps=1.04,0,[mass] readiness attempt 1/4 timed out for massd991-node-25; respawning [mass] graph run d991 ready; results under /Users/zakali/.omar/mass/runs/d991,"RING RUN FINAL REPORT (task graph-57fbe7, run d991)
+
+ORIGINA"
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,3,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] readiness attempt 1/4 timed out for mass9792-node-3; respawning [mass] graph run 9792 ready; results under /Users/zakali/.omar/mass/runs/9792,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,3,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] readiness attempt 1/4 timed out for mass347e-node-5; respawning [mass] graph run 347e ready; results under /Users/zakali/.omar/mass/runs/347e,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,3,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] readiness attempt 1/4 timed out for mass715d-node-5; respawning [mass] graph run 715d ready; results under /Users/zakali/.omar/mass/runs/715d,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,3,9,True,"done by node 6, 9 deliveries",verdict=good,0,[mass] readiness attempt 1/4 timed out for massa4eb-node-4; respawning [mass] graph run a4eb ready; results under /Users/zakali/.omar/mass/runs/a4eb,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,3,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run e0f1 ready; results under /Users/zakali/.omar/mass/runs/e0f1,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,3,11,True,"done by node 10, 11 deliveries",verdict=good,0,[mass] graph run 9158 ready; results under /Users/zakali/.omar/mass/runs/9158,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,3,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 451e ready; results under /Users/zakali/.omar/mass/runs/451e,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,3,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run a580 ready; results under /Users/zakali/.omar/mass/runs/a580,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,3,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 295d ready; results under /Users/zakali/.omar/mass/runs/295d,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,3,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run b5dc ready; results under /Users/zakali/.omar/mass/runs/b5dc,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,3,15,True,"done by node 10, 15 deliveries",verdict=good,0,[mass] graph run 572c ready; results under /Users/zakali/.omar/mass/runs/572c,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,3,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 4934 ready; results under /Users/zakali/.omar/mass/runs/4934,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,3,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 658d ready; results under /Users/zakali/.omar/mass/runs/658d,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,3,13,True,"done by node 10, 13 deliveries",verdict=good,0,[mass] graph run 4733 ready; results under /Users/zakali/.omar/mass/runs/4733,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,3,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run cdbf ready; results under /Users/zakali/.omar/mass/runs/cdbf,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,3,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run e19b ready; results under /Users/zakali/.omar/mass/runs/e19b,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,3,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run eb64 ready; results under /Users/zakali/.omar/mass/runs/eb64,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,3,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run a896 ready; results under /Users/zakali/.omar/mass/runs/a896,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,3,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 41dd ready; results under /Users/zakali/.omar/mass/runs/41dd,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,3,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run d912 ready; results under /Users/zakali/.omar/mass/runs/d912,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,3,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run e60c ready; results under /Users/zakali/.omar/mass/runs/e60c,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,3,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run c2f4 ready; results under /Users/zakali/.omar/mass/runs/c2f4,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,3,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run 8104 ready; results under /Users/zakali/.omar/mass/runs/8104,4102
+claude-opus-5,agent,sg-missing,5,policy=none fail=1,3,5,True,"done by node 6, 5 deliveries",available=yes,0,[mass] graph run 3414 ready; results under /Users/zakali/.omar/mass/runs/3414,144
+claude-opus-5,agent,sg-missing,5,policy=none fail=3,3,3,True,"done by node 6, 3 deliveries",available=yes,0,[mass] graph run b5c3 ready; results under /Users/zakali/.omar/mass/runs/b5c3,144
+claude-opus-5,agent,sg-missing,5,policy=all fail=1,3,8,False,went quiet after 8 deliveries,available=no,0,[mass] graph run 65b6 ready; results under /Users/zakali/.omar/mass/runs/65b6,
+claude-opus-5,agent,sg-missing,5,policy=all fail=3,3,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 02cc ready; results under /Users/zakali/.omar/mass/runs/02cc,
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=1,3,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run d0ac ready; results under /Users/zakali/.omar/mass/runs/d0ac,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=2,3,6,True,"done by node 6, 6 deliveries",available=yes,0,[mass] graph run 5ede ready; results under /Users/zakali/.omar/mass/runs/5ede,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=3,3,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 4aa9 ready; results under /Users/zakali/.omar/mass/runs/4aa9,
+claude-opus-5,agent,chain,50,-,4,50,True,"done by node 50, 50 deliveries",facts=5/5 trail=50/50 len=718,0,"5a1f-node-39, mass5a1f-node-40, mass5a1f-node-41, mass5a1f-node-42, mass5a1f-node-43, mass5a1f-node-44, mass5a1f-node-45, mass5a1f-node-46, mass5a1f-node-47, mass5a1f-node-48, mass5a1f-node-49, mass5a1f-node-50; respawning [mass] graph run 5a1f ready; results under /Users/zakali/.omar/mass/runs/5a1f","RELAY CHAIN MESSAGE (node 50 of 50 — FINAL)
+
+PAYLOAD (preser"
+claude-opus-5,agent,ring,10,-,4,11,True,"done by node 1, 11 deliveries",stop_hop=11 laps=1.1,0,[mass] graph run 7c28 ready; results under /Users/zakali/.omar/mass/runs/7c28,"Ring result: COMPLETE, one full circuit.
+
+Continuous token-p"
+claude-opus-5,agent,ring,25,-,4,26,True,"done by node 1, 26 deliveries",stop_hop=26 laps=1.04,0,[mass] graph run 930d ready; results under /Users/zakali/.omar/mass/runs/930d,Ring run complete. Original task recovered at the origin nod
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,4,6,True,"done by node 6, 6 deliveries",verdict=good,0,[mass] graph run 0c85 ready; results under /Users/zakali/.omar/mass/runs/0c85,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,4,10,True,"done by node 6, 10 deliveries",verdict=good,0,[mass] graph run 1921 ready; results under /Users/zakali/.omar/mass/runs/1921,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,4,10,True,"done by node 6, 10 deliveries",verdict=good,0,[mass] graph run 15e8 ready; results under /Users/zakali/.omar/mass/runs/15e8,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,4,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run c476 ready; results under /Users/zakali/.omar/mass/runs/c476,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,4,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 153d ready; results under /Users/zakali/.omar/mass/runs/153d,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,4,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run b3e8 ready; results under /Users/zakali/.omar/mass/runs/b3e8,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,4,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 274a ready; results under /Users/zakali/.omar/mass/runs/274a,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,4,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run c04b ready; results under /Users/zakali/.omar/mass/runs/c04b,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,4,15,True,"done by node 10, 15 deliveries",verdict=good,0,[mass] graph run 9259 ready; results under /Users/zakali/.omar/mass/runs/9259,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,4,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 554e ready; results under /Users/zakali/.omar/mass/runs/554e,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,4,13,True,"done by node 10, 13 deliveries",verdict=good,0,[mass] graph run 4587 ready; results under /Users/zakali/.omar/mass/runs/4587,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,4,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 0374 ready; results under /Users/zakali/.omar/mass/runs/0374,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,4,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run cab4 ready; results under /Users/zakali/.omar/mass/runs/cab4,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,4,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 6c07 ready; results under /Users/zakali/.omar/mass/runs/6c07,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,4,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 8c86 ready; results under /Users/zakali/.omar/mass/runs/8c86,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,4,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 32c3 ready; results under /Users/zakali/.omar/mass/runs/32c3,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,4,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 8a5f ready; results under /Users/zakali/.omar/mass/runs/8a5f,7731
+claude-opus-5,agent,chain,20,-,4,20,True,"done by node 20, 20 deliveries",facts=5/5 trail=20/20 len=308,0,[mass] graph run c0e8 ready; results under /Users/zakali/.omar/mass/runs/c0e8,"PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,ring,40,-,4,40,True,"done by node 40, 40 deliveries",stop_hop=40 laps=1.0,0,[mass] graph run 15a9 ready; results under /Users/zakali/.omar/mass/runs/15a9,Ring terminated at node 40 - payload truncated upstream of n
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,4,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run e30a ready; results under /Users/zakali/.omar/mass/runs/e30a,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,4,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 4235 ready; results under /Users/zakali/.omar/mass/runs/4235,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,4,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run eb39 ready; results under /Users/zakali/.omar/mass/runs/eb39,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,4,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run 7970 ready; results under /Users/zakali/.omar/mass/runs/7970,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,4,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run 10e4 ready; results under /Users/zakali/.omar/mass/runs/10e4,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,4,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run 9870 ready; results under /Users/zakali/.omar/mass/runs/9870,4102
+claude-opus-5,agent,sg-missing,5,policy=none fail=1,4,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run 7807 ready; results under /Users/zakali/.omar/mass/runs/7807,144
+claude-opus-5,agent,sg-missing,5,policy=none fail=3,4,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 11b7 ready; results under /Users/zakali/.omar/mass/runs/11b7,
+claude-opus-5,agent,sg-missing,5,policy=all fail=1,4,8,False,went quiet after 8 deliveries,available=no,0,[mass] graph run 1f66 ready; results under /Users/zakali/.omar/mass/runs/1f66,
+claude-opus-5,agent,sg-missing,5,policy=all fail=3,4,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 8bcd ready; results under /Users/zakali/.omar/mass/runs/8bcd,
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=1,4,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run 46b5 ready; results under /Users/zakali/.omar/mass/runs/46b5,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=2,4,6,True,"done by node 6, 6 deliveries",available=yes,0,[mass] graph run 7aa3 ready; results under /Users/zakali/.omar/mass/runs/7aa3,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=3,4,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run efef ready; results under /Users/zakali/.omar/mass/runs/efef,
+claude-opus-5,agent,chain,20,-,5,20,True,"done by node 20, 20 deliveries",facts=5/5 trail=20/20 len=262,0,[mass] graph run 9299 ready; results under /Users/zakali/.omar/mass/runs/9299,"PAYLOAD: order_id=4471, ship_date=09-30, city=Lisbon, sku=XZ"
+claude-opus-5,agent,chain,50,-,5,50,True,"done by node 50, 50 deliveries",facts=0/5 trail=26/50 len=15556,0,[mass] graph run a760 ready; results under /Users/zakali/.omar/mass/runs/a760,"Relay chain message — 50-node chain, terminal hop 50. Run co"
+claude-opus-5,agent,ring,10,-,5,11,True,"done by node 1, 11 deliveries",stop_hop=11 laps=1.1,0,[mass] graph run 72eb ready; results under /Users/zakali/.omar/mass/runs/72eb,"Ring traversal complete.
+
+Trail: node 1 -> node 2 -> node 3 "
+claude-opus-5,agent,ring,25,-,5,26,True,"done by node 1, 26 deliveries",stop_hop=26 laps=1.04,0,[mass] graph run 8747 ready; results under /Users/zakali/.omar/mass/runs/8747,"Ring traversal complete. Token originated at node 1, passed "
+claude-opus-5,agent,ring,40,-,5,41,True,"done by node 1, 41 deliveries",stop_hop=41 laps=1.02,0,[mass] graph run e49a ready; results under /Users/zakali/.omar/mass/runs/e49a,"Ring traversal complete: 40/40 nodes, one full lap, token re"
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,5,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run bf5a ready; results under /Users/zakali/.omar/mass/runs/bf5a,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,5,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 7903 ready; results under /Users/zakali/.omar/mass/runs/7903,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,5,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 8ad6 ready; results under /Users/zakali/.omar/mass/runs/8ad6,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,5,9,True,"done by node 6, 9 deliveries",verdict=good,0,[mass] graph run 8b69 ready; results under /Users/zakali/.omar/mass/runs/8b69,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,5,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 8cd1 ready; results under /Users/zakali/.omar/mass/runs/8cd1,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,5,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 776e ready; results under /Users/zakali/.omar/mass/runs/776e,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,5,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run a800 ready; results under /Users/zakali/.omar/mass/runs/a800,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,5,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run a5a0 ready; results under /Users/zakali/.omar/mass/runs/a5a0,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,5,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 18b6 ready; results under /Users/zakali/.omar/mass/runs/18b6,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,5,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run bf76 ready; results under /Users/zakali/.omar/mass/runs/bf76,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,5,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 4393 ready; results under /Users/zakali/.omar/mass/runs/4393,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,5,17,True,"done by node 10, 17 deliveries",verdict=good,0,[mass] graph run e803 ready; results under /Users/zakali/.omar/mass/runs/e803,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,5,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run d67c ready; results under /Users/zakali/.omar/mass/runs/d67c,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,5,13,True,"done by node 10, 13 deliveries",verdict=good,0,[mass] graph run e9de ready; results under /Users/zakali/.omar/mass/runs/e9de,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,5,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run f80d ready; results under /Users/zakali/.omar/mass/runs/f80d,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,5,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 9fe3 ready; results under /Users/zakali/.omar/mass/runs/9fe3,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,5,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run ccc0 ready; results under /Users/zakali/.omar/mass/runs/ccc0,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,5,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 054d ready; results under /Users/zakali/.omar/mass/runs/054d,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,5,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 6ba9 ready; results under /Users/zakali/.omar/mass/runs/6ba9,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,5,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 52a8 ready; results under /Users/zakali/.omar/mass/runs/52a8,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,5,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run 3e15 ready; results under /Users/zakali/.omar/mass/runs/3e15,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,5,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run b497 ready; results under /Users/zakali/.omar/mass/runs/b497,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,5,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run 039d ready; results under /Users/zakali/.omar/mass/runs/039d,4102
+claude-opus-5,agent,sg-missing,5,policy=none fail=1,5,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run 6886 ready; results under /Users/zakali/.omar/mass/runs/6886,144
+claude-opus-5,agent,sg-missing,5,policy=none fail=3,5,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 4823 ready; results under /Users/zakali/.omar/mass/runs/4823,
+claude-opus-5,agent,sg-missing,5,policy=all fail=1,5,8,False,went quiet after 8 deliveries,available=no,0,[mass] graph run 6928 ready; results under /Users/zakali/.omar/mass/runs/6928,
+claude-opus-5,agent,sg-missing,5,policy=all fail=3,5,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 3cea ready; results under /Users/zakali/.omar/mass/runs/3cea,
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=1,5,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run 7b7b ready; results under /Users/zakali/.omar/mass/runs/7b7b,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=2,5,6,True,"done by node 6, 6 deliveries",available=yes,0,[mass] graph run 9eca ready; results under /Users/zakali/.omar/mass/runs/9eca,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=3,5,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 3e09 ready; results under /Users/zakali/.omar/mass/runs/3e09,
+claude-opus-5,agent,chain,20,-,6,20,True,"done by node 20, 20 deliveries",facts=5/5 trail=20/20 len=282,0,[mass] graph run 4985 ready; results under /Users/zakali/.omar/mass/runs/4985,"PAYLOAD (preserved exactly): order_id=4471, ship_date=09-30,"
+claude-opus-5,agent,chain,50,-,6,50,True,"done by node 50, 50 deliveries",facts=5/5 trail=50/50 len=578,0,[mass] graph run d63a ready; results under /Users/zakali/.omar/mass/runs/d63a,"PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,ring,10,-,6,10,True,"done by node 10, 10 deliveries",stop_hop=10 laps=1.0,0,[mass] graph run c8cf ready; results under /Users/zakali/.omar/mass/runs/c8cf,"FINAL RING RESULT — task graph-acd55e, run c8cf, round 8, re"
+claude-opus-5,agent,ring,25,-,6,27,True,"done by node 2, 27 deliveries",stop_hop=27 laps=1.08,0,[mass] graph run c686 ready; results under /Users/zakali/.omar/mass/runs/c686,Ring heartbeat complete — terminated after one full circuit.
+claude-opus-5,agent,ring,40,-,6,41,True,"done by node 1, 41 deliveries",stop_hop=41 laps=1.02,0,[mass] graph run 53be ready; results under /Users/zakali/.omar/mass/runs/53be,Ring message - FINAL (task text RECOVERED by node 1; run ter
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,6,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 474a ready; results under /Users/zakali/.omar/mass/runs/474a,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,6,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 8556 ready; results under /Users/zakali/.omar/mass/runs/8556,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,6,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run ccfa ready; results under /Users/zakali/.omar/mass/runs/ccfa,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,6,6,True,"done by node 6, 6 deliveries",verdict=good,0,[mass] graph run 63d3 ready; results under /Users/zakali/.omar/mass/runs/63d3,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,6,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run f70c ready; results under /Users/zakali/.omar/mass/runs/f70c,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,6,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 9162 ready; results under /Users/zakali/.omar/mass/runs/9162,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,6,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 677b ready; results under /Users/zakali/.omar/mass/runs/677b,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,6,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run d1c2 ready; results under /Users/zakali/.omar/mass/runs/d1c2,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,6,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run d79e ready; results under /Users/zakali/.omar/mass/runs/d79e,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,6,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 208e ready; results under /Users/zakali/.omar/mass/runs/208e,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,6,15,True,"done by node 10, 15 deliveries",verdict=good,0,[mass] graph run 35b9 ready; results under /Users/zakali/.omar/mass/runs/35b9,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,6,18,True,"done by node 10, 18 deliveries",verdict=good,0,[mass] graph run afb6 ready; results under /Users/zakali/.omar/mass/runs/afb6,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,6,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 5e1e ready; results under /Users/zakali/.omar/mass/runs/5e1e,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,6,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 914b ready; results under /Users/zakali/.omar/mass/runs/914b,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,6,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 0233 ready; results under /Users/zakali/.omar/mass/runs/0233,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,6,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 39b2 ready; results under /Users/zakali/.omar/mass/runs/39b2,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,6,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 641f ready; results under /Users/zakali/.omar/mass/runs/641f,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,6,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 8599 ready; results under /Users/zakali/.omar/mass/runs/8599,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,6,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run 87da ready; results under /Users/zakali/.omar/mass/runs/87da,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,6,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 5db4 ready; results under /Users/zakali/.omar/mass/runs/5db4,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,6,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run ac67 ready; results under /Users/zakali/.omar/mass/runs/ac67,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,6,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run c6b6 ready; results under /Users/zakali/.omar/mass/runs/c6b6,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,6,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run 5551 ready; results under /Users/zakali/.omar/mass/runs/5551,4102
+claude-opus-5,agent,sg-missing,5,policy=none fail=1,6,6,True,"done by node 6, 6 deliveries",available=yes,0,[mass] graph run b731 ready; results under /Users/zakali/.omar/mass/runs/b731,144
+claude-opus-5,agent,sg-missing,5,policy=none fail=3,6,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 5bb1 ready; results under /Users/zakali/.omar/mass/runs/5bb1,
+claude-opus-5,agent,sg-missing,5,policy=all fail=1,6,8,False,went quiet after 8 deliveries,available=no,0,[mass] graph run 7b53 ready; results under /Users/zakali/.omar/mass/runs/7b53,
+claude-opus-5,agent,sg-missing,5,policy=all fail=3,6,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 4be7 ready; results under /Users/zakali/.omar/mass/runs/4be7,
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=1,6,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run c238 ready; results under /Users/zakali/.omar/mass/runs/c238,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=2,6,6,True,"done by node 6, 6 deliveries",available=yes,0,[mass] graph run 29e4 ready; results under /Users/zakali/.omar/mass/runs/29e4,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=3,6,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 713a ready; results under /Users/zakali/.omar/mass/runs/713a,
+claude-opus-5,agent,chain,20,-,7,20,True,"done by node 20, 20 deliveries",facts=5/5 trail=20/20 len=262,0,[mass] graph run 741f ready; results under /Users/zakali/.omar/mass/runs/741f,"PAYLOAD: order_id=4471, ship_date=09-30, city=Lisbon, sku=XZ"
+claude-opus-5,agent,chain,50,-,7,50,True,"done by node 50, 50 deliveries",facts=5/5 trail=50/50 len=532,0,[mass] graph run 9bbe ready; results under /Users/zakali/.omar/mass/runs/9bbe,"PAYLOAD: order_id=4471, ship_date=09-30, city=Lisbon, sku=XZ"
+claude-opus-5,agent,ring,10,-,7,11,True,"done by node 1, 11 deliveries",stop_hop=11 laps=1.1,0,[mass] graph run 411b ready; results under /Users/zakali/.omar/mass/runs/411b,Continuous token-passing heartbeat: COMPLETE after one full 
+claude-opus-5,agent,ring,25,-,7,13,True,"done by node 13, 13 deliveries",stop_hop=13 laps=0.52,0,[mass] graph run fc02 ready; results under /Users/zakali/.omar/mass/runs/fc02,"RING RESULT: TERMINATED - CORRUPTED MESSAGE
+
+Trail: ... -> n"
+claude-opus-5,agent,ring,40,-,7,41,True,"done by node 1, 41 deliveries",stop_hop=41 laps=1.02,0,[mass] graph run 4c39 ready; results under /Users/zakali/.omar/mass/runs/4c39,"FINAL RESULT — ring run graph-87839e, terminated by node 1 a"
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,7,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run e9b5 ready; results under /Users/zakali/.omar/mass/runs/e9b5,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,7,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 5b4b ready; results under /Users/zakali/.omar/mass/runs/5b4b,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,7,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run f48e ready; results under /Users/zakali/.omar/mass/runs/f48e,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,7,6,True,"done by node 6, 6 deliveries",verdict=good,0,[mass] graph run 1d2a ready; results under /Users/zakali/.omar/mass/runs/1d2a,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,7,10,True,"done by node 6, 10 deliveries",verdict=good,0,[mass] graph run 9f26 ready; results under /Users/zakali/.omar/mass/runs/9f26,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,7,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run ebc4 ready; results under /Users/zakali/.omar/mass/runs/ebc4,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,7,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 4592 ready; results under /Users/zakali/.omar/mass/runs/4592,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,7,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 492a ready; results under /Users/zakali/.omar/mass/runs/492a,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,7,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 3a25 ready; results under /Users/zakali/.omar/mass/runs/3a25,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,7,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 7a16 ready; results under /Users/zakali/.omar/mass/runs/7a16,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,7,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run e535 ready; results under /Users/zakali/.omar/mass/runs/e535,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,7,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run b09c ready; results under /Users/zakali/.omar/mass/runs/b09c,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,7,13,True,"done by node 10, 13 deliveries",verdict=good,0,[mass] graph run b0b9 ready; results under /Users/zakali/.omar/mass/runs/b0b9,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,7,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 5f63 ready; results under /Users/zakali/.omar/mass/runs/5f63,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,7,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 3681 ready; results under /Users/zakali/.omar/mass/runs/3681,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,7,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run b308 ready; results under /Users/zakali/.omar/mass/runs/b308,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,7,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 87f3 ready; results under /Users/zakali/.omar/mass/runs/87f3,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,7,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 4f9f ready; results under /Users/zakali/.omar/mass/runs/4f9f,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,7,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 5622 ready; results under /Users/zakali/.omar/mass/runs/5622,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,7,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 849b ready; results under /Users/zakali/.omar/mass/runs/849b,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,7,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run 02e4 ready; results under /Users/zakali/.omar/mass/runs/02e4,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,7,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run ed75 ready; results under /Users/zakali/.omar/mass/runs/ed75,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,7,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run fed7 ready; results under /Users/zakali/.omar/mass/runs/fed7,4102
+claude-opus-5,agent,sg-missing,5,policy=none fail=1,7,5,True,"done by node 6, 5 deliveries",available=yes,0,[mass] graph run 5f1b ready; results under /Users/zakali/.omar/mass/runs/5f1b,144
+claude-opus-5,agent,sg-missing,5,policy=none fail=3,7,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 03df ready; results under /Users/zakali/.omar/mass/runs/03df,
+claude-opus-5,agent,sg-missing,5,policy=all fail=1,7,8,False,went quiet after 8 deliveries,available=no,0,[mass] graph run ae39 ready; results under /Users/zakali/.omar/mass/runs/ae39,
+claude-opus-5,agent,sg-missing,5,policy=all fail=3,7,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 4ff2 ready; results under /Users/zakali/.omar/mass/runs/4ff2,
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=1,7,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run f5f7 ready; results under /Users/zakali/.omar/mass/runs/f5f7,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=2,7,6,True,"done by node 6, 6 deliveries",available=yes,0,[mass] graph run d06c ready; results under /Users/zakali/.omar/mass/runs/d06c,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=3,7,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 58c3 ready; results under /Users/zakali/.omar/mass/runs/58c3,
+claude-opus-5,agent,chain,20,-,8,20,True,"done by node 20, 20 deliveries",facts=5/5 trail=20/20 len=262,0,[mass] graph run 37cb ready; results under /Users/zakali/.omar/mass/runs/37cb,"PAYLOAD: order_id=4471, ship_date=09-30, city=Lisbon, sku=XZ"
+claude-opus-5,agent,chain,50,-,8,50,True,"done by node 50, 50 deliveries",facts=5/5 trail=50/50 len=578,0,[mass] graph run c0ee ready; results under /Users/zakali/.omar/mass/runs/c0ee,"PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,ring,10,-,8,11,True,"done by node 1, 11 deliveries",stop_hop=11 laps=1.1,0,[mass] graph run b33d ready; results under /Users/zakali/.omar/mass/runs/b33d,Ring run complete: the token completed one full lap of the 1
+claude-opus-5,agent,ring,25,-,8,26,True,"done by node 1, 26 deliveries",stop_hop=26 laps=1.04,0,[mass] graph run cfa7 ready; results under /Users/zakali/.omar/mass/runs/cfa7,Ring traversal complete. The token was passed hop by hop aro
+claude-opus-5,agent,ring,40,-,8,41,True,"done by node 1, 41 deliveries",stop_hop=41 laps=1.02,0,[mass] graph run 58c1 ready; results under /Users/zakali/.omar/mass/runs/58c1,"Ring traversal complete. The token departed node 1, visited "
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,8,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run cd31 ready; results under /Users/zakali/.omar/mass/runs/cd31,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,8,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 3f31 ready; results under /Users/zakali/.omar/mass/runs/3f31,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,8,6,True,"done by node 6, 6 deliveries",verdict=good,0,[mass] graph run 31ff ready; results under /Users/zakali/.omar/mass/runs/31ff,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,8,10,True,"done by node 6, 10 deliveries",verdict=good,0,[mass] graph run 5971 ready; results under /Users/zakali/.omar/mass/runs/5971,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,8,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 2b47 ready; results under /Users/zakali/.omar/mass/runs/2b47,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,8,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 61c9 ready; results under /Users/zakali/.omar/mass/runs/61c9,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,8,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 31c9 ready; results under /Users/zakali/.omar/mass/runs/31c9,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,8,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run bbd3 ready; results under /Users/zakali/.omar/mass/runs/bbd3,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,8,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run da6d ready; results under /Users/zakali/.omar/mass/runs/da6d,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,8,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run 2328 ready; results under /Users/zakali/.omar/mass/runs/2328,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,8,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 71d8 ready; results under /Users/zakali/.omar/mass/runs/71d8,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,8,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run fd80 ready; results under /Users/zakali/.omar/mass/runs/fd80,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,8,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 1048 ready; results under /Users/zakali/.omar/mass/runs/1048,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,8,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run e7fd ready; results under /Users/zakali/.omar/mass/runs/e7fd,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,8,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run cae1 ready; results under /Users/zakali/.omar/mass/runs/cae1,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,8,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run c864 ready; results under /Users/zakali/.omar/mass/runs/c864,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,8,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 4430 ready; results under /Users/zakali/.omar/mass/runs/4430,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,8,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 1b80 ready; results under /Users/zakali/.omar/mass/runs/1b80,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,8,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run bd16 ready; results under /Users/zakali/.omar/mass/runs/bd16,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,8,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 9d87 ready; results under /Users/zakali/.omar/mass/runs/9d87,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,8,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run c7aa ready; results under /Users/zakali/.omar/mass/runs/c7aa,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,8,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run 6125 ready; results under /Users/zakali/.omar/mass/runs/6125,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,8,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run 630e ready; results under /Users/zakali/.omar/mass/runs/630e,4102
+claude-opus-5,agent,sg-missing,5,policy=none fail=1,8,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run e580 ready; results under /Users/zakali/.omar/mass/runs/e580,144
+claude-opus-5,agent,sg-missing,5,policy=none fail=3,8,4,True,"done by node 6, 4 deliveries",available=yes,0,[mass] graph run a152 ready; results under /Users/zakali/.omar/mass/runs/a152,144
+claude-opus-5,agent,sg-missing,5,policy=all fail=1,8,8,False,went quiet after 8 deliveries,available=no,0,[mass] graph run e33d ready; results under /Users/zakali/.omar/mass/runs/e33d,
+claude-opus-5,agent,sg-missing,5,policy=all fail=3,8,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run c5ac ready; results under /Users/zakali/.omar/mass/runs/c5ac,
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=1,8,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run 38af ready; results under /Users/zakali/.omar/mass/runs/38af,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=2,8,6,True,"done by node 6, 6 deliveries",available=yes,0,[mass] graph run 4540 ready; results under /Users/zakali/.omar/mass/runs/4540,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=3,8,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run d9a6 ready; results under /Users/zakali/.omar/mass/runs/d9a6,
+claude-opus-5,agent,chain,20,-,9,20,True,"done by node 20, 20 deliveries",facts=5/5 trail=20/20 len=262,0,[mass] graph run 8e34 ready; results under /Users/zakali/.omar/mass/runs/8e34,"PAYLOAD: order_id=4471, ship_date=09-30, city=Lisbon, sku=XZ"
+claude-opus-5,agent,chain,50,-,9,50,True,"done by node 50, 50 deliveries",facts=5/5 trail=50/50 len=676,0,[mass] graph run 6922 ready; results under /Users/zakali/.omar/mass/runs/6922,"PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,ring,10,-,9,11,True,"done by node 1, 11 deliveries",stop_hop=11 laps=1.1,0,[mass] graph run 45f6 ready; results under /Users/zakali/.omar/mass/runs/45f6,"Ring traversal complete.
+
+Task: Continuous token-passing hea"
+claude-opus-5,agent,ring,25,-,9,25,True,"done by node 25, 25 deliveries",stop_hop=25 laps=1.0,0,[mass] graph run 7a88 ready; results under /Users/zakali/.omar/mass/runs/7a88,"FINAL REPORT — ring run terminated at node 25, round 24.
+
+Ou"
+claude-opus-5,agent,ring,40,-,9,41,True,"done by node 1, 41 deliveries",stop_hop=41 laps=1.02,0,[mass] graph run de46 ready; results under /Users/zakali/.omar/mass/runs/de46,"Ring traversal complete. The token originated at node 1, pas"
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,9,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 8ce7 ready; results under /Users/zakali/.omar/mass/runs/8ce7,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,9,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 32a5 ready; results under /Users/zakali/.omar/mass/runs/32a5,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,9,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 2fd0 ready; results under /Users/zakali/.omar/mass/runs/2fd0,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,9,9,True,"done by node 6, 9 deliveries",verdict=good,0,[mass] graph run 6144 ready; results under /Users/zakali/.omar/mass/runs/6144,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,9,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 9b7b ready; results under /Users/zakali/.omar/mass/runs/9b7b,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,9,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run e825 ready; results under /Users/zakali/.omar/mass/runs/e825,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,9,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 2e42 ready; results under /Users/zakali/.omar/mass/runs/2e42,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,9,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run f67c ready; results under /Users/zakali/.omar/mass/runs/f67c,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,9,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 5aef ready; results under /Users/zakali/.omar/mass/runs/5aef,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,9,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run acc1 ready; results under /Users/zakali/.omar/mass/runs/acc1,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,9,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run b357 ready; results under /Users/zakali/.omar/mass/runs/b357,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,9,17,True,"done by node 10, 17 deliveries",verdict=good,0,[mass] graph run 37c2 ready; results under /Users/zakali/.omar/mass/runs/37c2,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,9,17,True,"done by node 10, 17 deliveries",verdict=good,0,[mass] graph run d190 ready; results under /Users/zakali/.omar/mass/runs/d190,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,9,13,True,"done by node 10, 13 deliveries",verdict=good,0,[mass] graph run 90e8 ready; results under /Users/zakali/.omar/mass/runs/90e8,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,9,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 5c6b ready; results under /Users/zakali/.omar/mass/runs/5c6b,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,9,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run d521 ready; results under /Users/zakali/.omar/mass/runs/d521,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,9,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run 4314 ready; results under /Users/zakali/.omar/mass/runs/4314,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,9,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 959d ready; results under /Users/zakali/.omar/mass/runs/959d,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,9,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 4b22 ready; results under /Users/zakali/.omar/mass/runs/4b22,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,9,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run e613 ready; results under /Users/zakali/.omar/mass/runs/e613,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,9,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run 48e3 ready; results under /Users/zakali/.omar/mass/runs/48e3,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,9,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run a7ab ready; results under /Users/zakali/.omar/mass/runs/a7ab,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,9,14,True,"done by node 10, 14 deliveries",verdict=corrupt,0,[mass] graph run 2bd4 ready; results under /Users/zakali/.omar/mass/runs/2bd4,4102
+claude-opus-5,agent,sg-missing,5,policy=none fail=1,9,5,True,"done by node 6, 5 deliveries",available=yes,0,[mass] graph run 9ec8 ready; results under /Users/zakali/.omar/mass/runs/9ec8,144
+claude-opus-5,agent,sg-missing,5,policy=none fail=3,9,4,True,"done by node 6, 4 deliveries",available=yes,0,[mass] graph run 2f68 ready; results under /Users/zakali/.omar/mass/runs/2f68,144
+claude-opus-5,agent,sg-missing,5,policy=all fail=1,9,8,False,went quiet after 8 deliveries,available=no,0,[mass] graph run c963 ready; results under /Users/zakali/.omar/mass/runs/c963,
+claude-opus-5,agent,sg-missing,5,policy=all fail=3,9,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 817d ready; results under /Users/zakali/.omar/mass/runs/817d,
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=1,9,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run 15bb ready; results under /Users/zakali/.omar/mass/runs/15bb,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=2,9,6,True,"done by node 6, 6 deliveries",available=yes,0,[mass] graph run c858 ready; results under /Users/zakali/.omar/mass/runs/c858,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=3,9,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 6179 ready; results under /Users/zakali/.omar/mass/runs/6179,
+claude-opus-5,agent,chain,20,-,10,20,True,"done by node 20, 20 deliveries",facts=5/5 trail=20/20 len=627,0,[mass] graph run fe69 ready; results under /Users/zakali/.omar/mass/runs/fe69,"PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,chain,50,-,10,50,True,"done by node 50, 50 deliveries",facts=0/5 trail=2/50 len=449,0,[mass] graph run 6554 ready; results under /Users/zakali/.omar/mass/runs/6554,"Relay chain message (50 nodes).
+
+Protocol: each node appends"
+claude-opus-5,agent,ring,10,-,10,11,True,"done by node 1, 11 deliveries",stop_hop=11 laps=1.1,0,[mass] graph run 48b0 ready; results under /Users/zakali/.omar/mass/runs/48b0,"Ring traversal complete, terminated by origin node after one"
+claude-opus-5,agent,ring,25,-,10,26,True,"done by node 1, 26 deliveries",stop_hop=26 laps=1.04,0,[mass] graph run 40f0 ready; results under /Users/zakali/.omar/mass/runs/40f0,FINAL RESULT — ring run graph-09a40c. Terminated deliberatel
+claude-opus-5,agent,ring,40,-,10,41,True,"done by node 1, 41 deliveries",stop_hop=41 laps=1.02,0,[mass] graph run 811e ready; results under /Users/zakali/.omar/mass/runs/811e,RING RUN COMPLETE - terminated at the origin after one full 
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,10,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 983b ready; results under /Users/zakali/.omar/mass/runs/983b,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,10,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 0cbc ready; results under /Users/zakali/.omar/mass/runs/0cbc,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,10,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 83d0 ready; results under /Users/zakali/.omar/mass/runs/83d0,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,10,10,True,"done by node 6, 10 deliveries",verdict=good,0,[mass] graph run 41c6 ready; results under /Users/zakali/.omar/mass/runs/41c6,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,10,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 2bca ready; results under /Users/zakali/.omar/mass/runs/2bca,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,10,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run a0c1 ready; results under /Users/zakali/.omar/mass/runs/a0c1,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,10,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 7134 ready; results under /Users/zakali/.omar/mass/runs/7134,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,10,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 0e24 ready; results under /Users/zakali/.omar/mass/runs/0e24,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,10,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run 0fc1 ready; results under /Users/zakali/.omar/mass/runs/0fc1,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,10,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 6d35 ready; results under /Users/zakali/.omar/mass/runs/6d35,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,10,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 7aea ready; results under /Users/zakali/.omar/mass/runs/7aea,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,10,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run c981 ready; results under /Users/zakali/.omar/mass/runs/c981,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,10,17,True,"done by node 10, 17 deliveries",verdict=good,0,[mass] graph run df31 ready; results under /Users/zakali/.omar/mass/runs/df31,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,10,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 02bc ready; results under /Users/zakali/.omar/mass/runs/02bc,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,10,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 279a ready; results under /Users/zakali/.omar/mass/runs/279a,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,10,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run e8a5 ready; results under /Users/zakali/.omar/mass/runs/e8a5,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,10,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run aa1c ready; results under /Users/zakali/.omar/mass/runs/aa1c,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,10,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 77fb ready; results under /Users/zakali/.omar/mass/runs/77fb,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,10,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run ef64 ready; results under /Users/zakali/.omar/mass/runs/ef64,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,10,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run ef28 ready; results under /Users/zakali/.omar/mass/runs/ef28,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,10,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run e64f ready; results under /Users/zakali/.omar/mass/runs/e64f,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,10,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run 87a2 ready; results under /Users/zakali/.omar/mass/runs/87a2,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,10,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run dc28 ready; results under /Users/zakali/.omar/mass/runs/dc28,4102
+claude-opus-5,agent,sg-missing,5,policy=none fail=1,10,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run 8a2e ready; results under /Users/zakali/.omar/mass/runs/8a2e,144
+claude-opus-5,agent,sg-missing,5,policy=none fail=3,10,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 1f1f ready; results under /Users/zakali/.omar/mass/runs/1f1f,
+claude-opus-5,agent,sg-missing,5,policy=all fail=1,10,8,False,went quiet after 8 deliveries,available=no,0,[mass] graph run ec8e ready; results under /Users/zakali/.omar/mass/runs/ec8e,
+claude-opus-5,agent,sg-missing,5,policy=all fail=3,10,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 5978 ready; results under /Users/zakali/.omar/mass/runs/5978,
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=1,10,7,True,"done by node 6, 7 deliveries",available=yes,0,[mass] graph run c550 ready; results under /Users/zakali/.omar/mass/runs/c550,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=2,10,6,True,"done by node 6, 6 deliveries",available=yes,0,[mass] graph run 734c ready; results under /Users/zakali/.omar/mass/runs/734c,144
+claude-opus-5,agent,sg-missing,5,policy=quorum3 fail=3,10,4,False,went quiet after 4 deliveries,available=no,0,[mass] graph run 896b ready; results under /Users/zakali/.omar/mass/runs/896b,
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,11,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 74a9 ready; results under /Users/zakali/.omar/mass/runs/74a9,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,11,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run b627 ready; results under /Users/zakali/.omar/mass/runs/b627,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,11,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 3349 ready; results under /Users/zakali/.omar/mass/runs/3349,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,11,10,True,"done by node 6, 10 deliveries",verdict=good,0,[mass] graph run 0fa4 ready; results under /Users/zakali/.omar/mass/runs/0fa4,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,11,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run aa04 ready; results under /Users/zakali/.omar/mass/runs/aa04,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,11,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 61dd ready; results under /Users/zakali/.omar/mass/runs/61dd,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,11,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run f115 ready; results under /Users/zakali/.omar/mass/runs/f115,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,11,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 7bdc ready; results under /Users/zakali/.omar/mass/runs/7bdc,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,11,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 2c6d ready; results under /Users/zakali/.omar/mass/runs/2c6d,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,11,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 9fbb ready; results under /Users/zakali/.omar/mass/runs/9fbb,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,11,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 5de3 ready; results under /Users/zakali/.omar/mass/runs/5de3,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,11,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 9052 ready; results under /Users/zakali/.omar/mass/runs/9052,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,11,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 0cf2 ready; results under /Users/zakali/.omar/mass/runs/0cf2,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,11,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 22e6 ready; results under /Users/zakali/.omar/mass/runs/22e6,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,11,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 26b4 ready; results under /Users/zakali/.omar/mass/runs/26b4,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,11,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 27e5 ready; results under /Users/zakali/.omar/mass/runs/27e5,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,11,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 08d9 ready; results under /Users/zakali/.omar/mass/runs/08d9,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,11,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run b54f ready; results under /Users/zakali/.omar/mass/runs/b54f,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,11,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run a463 ready; results under /Users/zakali/.omar/mass/runs/a463,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,11,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 11e5 ready; results under /Users/zakali/.omar/mass/runs/11e5,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,11,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run c2ba ready; results under /Users/zakali/.omar/mass/runs/c2ba,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,11,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run da50 ready; results under /Users/zakali/.omar/mass/runs/da50,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,11,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run d651 ready; results under /Users/zakali/.omar/mass/runs/d651,4102
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,12,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 91a0 ready; results under /Users/zakali/.omar/mass/runs/91a0,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,12,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 2c35 ready; results under /Users/zakali/.omar/mass/runs/2c35,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,12,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 9813 ready; results under /Users/zakali/.omar/mass/runs/9813,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,12,10,True,"done by node 6, 10 deliveries",verdict=good,0,[mass] graph run fa41 ready; results under /Users/zakali/.omar/mass/runs/fa41,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,12,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 0b6c ready; results under /Users/zakali/.omar/mass/runs/0b6c,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,12,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run b30b ready; results under /Users/zakali/.omar/mass/runs/b30b,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,12,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run de83 ready; results under /Users/zakali/.omar/mass/runs/de83,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,12,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 1433 ready; results under /Users/zakali/.omar/mass/runs/1433,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,12,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 15f6 ready; results under /Users/zakali/.omar/mass/runs/15f6,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,12,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 81e9 ready; results under /Users/zakali/.omar/mass/runs/81e9,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,12,15,True,"done by node 10, 15 deliveries",verdict=good,0,[mass] graph run 5935 ready; results under /Users/zakali/.omar/mass/runs/5935,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,12,15,True,"done by node 10, 15 deliveries",verdict=good,0,[mass] graph run 28d8 ready; results under /Users/zakali/.omar/mass/runs/28d8,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,12,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 4295 ready; results under /Users/zakali/.omar/mass/runs/4295,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,12,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 5961 ready; results under /Users/zakali/.omar/mass/runs/5961,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,12,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 690c ready; results under /Users/zakali/.omar/mass/runs/690c,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,12,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run ed16 ready; results under /Users/zakali/.omar/mass/runs/ed16,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,12,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 7ec0 ready; results under /Users/zakali/.omar/mass/runs/7ec0,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,12,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 122b ready; results under /Users/zakali/.omar/mass/runs/122b,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,12,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run d7ca ready; results under /Users/zakali/.omar/mass/runs/d7ca,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,12,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 8596 ready; results under /Users/zakali/.omar/mass/runs/8596,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,12,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run 2d94 ready; results under /Users/zakali/.omar/mass/runs/2d94,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,12,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run e29f ready; results under /Users/zakali/.omar/mass/runs/e29f,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,12,14,True,"done by node 10, 14 deliveries",verdict=corrupt,0,[mass] graph run 06ea ready; results under /Users/zakali/.omar/mass/runs/06ea,4102
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,13,6,True,"done by node 6, 6 deliveries",verdict=good,0,[mass] graph run 4b72 ready; results under /Users/zakali/.omar/mass/runs/4b72,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,13,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 0fc8 ready; results under /Users/zakali/.omar/mass/runs/0fc8,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,13,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run b4ef ready; results under /Users/zakali/.omar/mass/runs/b4ef,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,13,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run e252 ready; results under /Users/zakali/.omar/mass/runs/e252,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,13,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 29c0 ready; results under /Users/zakali/.omar/mass/runs/29c0,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,13,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 5eb1 ready; results under /Users/zakali/.omar/mass/runs/5eb1,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,13,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 2e80 ready; results under /Users/zakali/.omar/mass/runs/2e80,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,13,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 2982 ready; results under /Users/zakali/.omar/mass/runs/2982,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,13,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 5064 ready; results under /Users/zakali/.omar/mass/runs/5064,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,13,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run 3cf3 ready; results under /Users/zakali/.omar/mass/runs/3cf3,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,13,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 1419 ready; results under /Users/zakali/.omar/mass/runs/1419,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,13,16,True,"done by node 10, 16 deliveries",verdict=good,0,[mass] graph run ca51 ready; results under /Users/zakali/.omar/mass/runs/ca51,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,13,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run 99ab ready; results under /Users/zakali/.omar/mass/runs/99ab,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,13,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run f98b ready; results under /Users/zakali/.omar/mass/runs/f98b,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,13,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run f369 ready; results under /Users/zakali/.omar/mass/runs/f369,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,13,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 68d4 ready; results under /Users/zakali/.omar/mass/runs/68d4,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,13,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 17f9 ready; results under /Users/zakali/.omar/mass/runs/17f9,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,13,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run e21f ready; results under /Users/zakali/.omar/mass/runs/e21f,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,13,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run b7ec ready; results under /Users/zakali/.omar/mass/runs/b7ec,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,13,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 94ef ready; results under /Users/zakali/.omar/mass/runs/94ef,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,13,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run 1b4a ready; results under /Users/zakali/.omar/mass/runs/1b4a,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,13,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run 79ab ready; results under /Users/zakali/.omar/mass/runs/79ab,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,13,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run b70f ready; results under /Users/zakali/.omar/mass/runs/b70f,4102
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,14,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 06e3 ready; results under /Users/zakali/.omar/mass/runs/06e3,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,14,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 5619 ready; results under /Users/zakali/.omar/mass/runs/5619,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,14,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run ab02 ready; results under /Users/zakali/.omar/mass/runs/ab02,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,14,10,True,"done by node 6, 10 deliveries",verdict=good,0,[mass] graph run 4515 ready; results under /Users/zakali/.omar/mass/runs/4515,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,14,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 256c ready; results under /Users/zakali/.omar/mass/runs/256c,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,14,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run e279 ready; results under /Users/zakali/.omar/mass/runs/e279,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,14,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 853f ready; results under /Users/zakali/.omar/mass/runs/853f,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,14,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 5ebb ready; results under /Users/zakali/.omar/mass/runs/5ebb,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,14,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run b740 ready; results under /Users/zakali/.omar/mass/runs/b740,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,14,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 80cf ready; results under /Users/zakali/.omar/mass/runs/80cf,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,14,15,True,"done by node 10, 15 deliveries",verdict=good,0,[mass] graph run faed ready; results under /Users/zakali/.omar/mass/runs/faed,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,14,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run c8cf ready; results under /Users/zakali/.omar/mass/runs/c8cf,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,14,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 06c6 ready; results under /Users/zakali/.omar/mass/runs/06c6,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,14,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 8dc7 ready; results under /Users/zakali/.omar/mass/runs/8dc7,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,14,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run fdc9 ready; results under /Users/zakali/.omar/mass/runs/fdc9,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,14,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 786d ready; results under /Users/zakali/.omar/mass/runs/786d,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,14,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 333d ready; results under /Users/zakali/.omar/mass/runs/333d,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,14,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 2f7c ready; results under /Users/zakali/.omar/mass/runs/2f7c,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,14,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 4b3f ready; results under /Users/zakali/.omar/mass/runs/4b3f,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,14,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run b86e ready; results under /Users/zakali/.omar/mass/runs/b86e,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,14,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run a002 ready; results under /Users/zakali/.omar/mass/runs/a002,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,14,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run 65d8 ready; results under /Users/zakali/.omar/mass/runs/65d8,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,14,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run 99be ready; results under /Users/zakali/.omar/mass/runs/99be,4102
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,15,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run ca85 ready; results under /Users/zakali/.omar/mass/runs/ca85,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,15,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run e13f ready; results under /Users/zakali/.omar/mass/runs/e13f,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,15,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 6316 ready; results under /Users/zakali/.omar/mass/runs/6316,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,15,9,True,"done by node 6, 9 deliveries",verdict=good,0,[mass] graph run 45b8 ready; results under /Users/zakali/.omar/mass/runs/45b8,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,15,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 2263 ready; results under /Users/zakali/.omar/mass/runs/2263,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,15,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 74d3 ready; results under /Users/zakali/.omar/mass/runs/74d3,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,15,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 8d0c ready; results under /Users/zakali/.omar/mass/runs/8d0c,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,15,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 8606 ready; results under /Users/zakali/.omar/mass/runs/8606,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,15,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 732e ready; results under /Users/zakali/.omar/mass/runs/732e,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,15,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run ced0 ready; results under /Users/zakali/.omar/mass/runs/ced0,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,15,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 2b92 ready; results under /Users/zakali/.omar/mass/runs/2b92,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,15,17,True,"done by node 10, 17 deliveries",verdict=good,0,[mass] graph run 6ef7 ready; results under /Users/zakali/.omar/mass/runs/6ef7,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,15,13,True,"done by node 10, 13 deliveries",verdict=good,0,[mass] graph run a124 ready; results under /Users/zakali/.omar/mass/runs/a124,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,15,15,True,"done by node 10, 15 deliveries",verdict=good,0,[mass] graph run ed47 ready; results under /Users/zakali/.omar/mass/runs/ed47,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,15,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run c2ac ready; results under /Users/zakali/.omar/mass/runs/c2ac,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,15,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 38a1 ready; results under /Users/zakali/.omar/mass/runs/38a1,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,15,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 4e6a ready; results under /Users/zakali/.omar/mass/runs/4e6a,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,15,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 221d ready; results under /Users/zakali/.omar/mass/runs/221d,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,15,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run c491 ready; results under /Users/zakali/.omar/mass/runs/c491,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,15,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 2a59 ready; results under /Users/zakali/.omar/mass/runs/2a59,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,15,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run 9db2 ready; results under /Users/zakali/.omar/mass/runs/9db2,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,15,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run 23f2 ready; results under /Users/zakali/.omar/mass/runs/23f2,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,15,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run fe15 ready; results under /Users/zakali/.omar/mass/runs/fe15,4102
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,16,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run ee38 ready; results under /Users/zakali/.omar/mass/runs/ee38,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,16,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run bc37 ready; results under /Users/zakali/.omar/mass/runs/bc37,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,16,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 1dbd ready; results under /Users/zakali/.omar/mass/runs/1dbd,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,16,9,True,"done by node 6, 9 deliveries",verdict=good,0,[mass] graph run 2afb ready; results under /Users/zakali/.omar/mass/runs/2afb,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,16,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 1261 ready; results under /Users/zakali/.omar/mass/runs/1261,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,16,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 4462 ready; results under /Users/zakali/.omar/mass/runs/4462,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,16,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run fdca ready; results under /Users/zakali/.omar/mass/runs/fdca,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,16,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run f5b2 ready; results under /Users/zakali/.omar/mass/runs/f5b2,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,16,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 0f36 ready; results under /Users/zakali/.omar/mass/runs/0f36,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,16,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 87b4 ready; results under /Users/zakali/.omar/mass/runs/87b4,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,16,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run edb4 ready; results under /Users/zakali/.omar/mass/runs/edb4,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,16,17,True,"done by node 10, 17 deliveries",verdict=good,0,[mass] graph run 38ac ready; results under /Users/zakali/.omar/mass/runs/38ac,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,16,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 101c ready; results under /Users/zakali/.omar/mass/runs/101c,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,16,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 5872 ready; results under /Users/zakali/.omar/mass/runs/5872,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,16,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 2b97 ready; results under /Users/zakali/.omar/mass/runs/2b97,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,16,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run cca4 ready; results under /Users/zakali/.omar/mass/runs/cca4,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,16,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 1fd2 ready; results under /Users/zakali/.omar/mass/runs/1fd2,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,16,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 0c5e ready; results under /Users/zakali/.omar/mass/runs/0c5e,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,16,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 6d31 ready; results under /Users/zakali/.omar/mass/runs/6d31,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,16,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 6389 ready; results under /Users/zakali/.omar/mass/runs/6389,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,16,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run b306 ready; results under /Users/zakali/.omar/mass/runs/b306,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,16,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run 4270 ready; results under /Users/zakali/.omar/mass/runs/4270,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,16,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run 6038 ready; results under /Users/zakali/.omar/mass/runs/6038,4102
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,17,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 4146 ready; results under /Users/zakali/.omar/mass/runs/4146,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,17,6,True,"done by node 6, 6 deliveries",verdict=good,0,[mass] graph run 6115 ready; results under /Users/zakali/.omar/mass/runs/6115,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,17,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run ab49 ready; results under /Users/zakali/.omar/mass/runs/ab49,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,17,9,True,"done by node 6, 9 deliveries",verdict=good,0,[mass] graph run a479 ready; results under /Users/zakali/.omar/mass/runs/a479,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,17,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run a735 ready; results under /Users/zakali/.omar/mass/runs/a735,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,17,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 8643 ready; results under /Users/zakali/.omar/mass/runs/8643,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,17,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 6e4d ready; results under /Users/zakali/.omar/mass/runs/6e4d,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,17,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run f117 ready; results under /Users/zakali/.omar/mass/runs/f117,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,17,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 00d4 ready; results under /Users/zakali/.omar/mass/runs/00d4,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,17,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 987c ready; results under /Users/zakali/.omar/mass/runs/987c,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,17,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run a545 ready; results under /Users/zakali/.omar/mass/runs/a545,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,17,15,True,"done by node 10, 15 deliveries",verdict=good,0,[mass] graph run add7 ready; results under /Users/zakali/.omar/mass/runs/add7,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,17,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run e5cd ready; results under /Users/zakali/.omar/mass/runs/e5cd,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,17,13,True,"done by node 10, 13 deliveries",verdict=good,0,[mass] graph run 8b9b ready; results under /Users/zakali/.omar/mass/runs/8b9b,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,17,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run f572 ready; results under /Users/zakali/.omar/mass/runs/f572,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,17,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 27cd ready; results under /Users/zakali/.omar/mass/runs/27cd,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,17,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 07f5 ready; results under /Users/zakali/.omar/mass/runs/07f5,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,17,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run ff3a ready; results under /Users/zakali/.omar/mass/runs/ff3a,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,17,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run e6ba ready; results under /Users/zakali/.omar/mass/runs/e6ba,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,17,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 6372 ready; results under /Users/zakali/.omar/mass/runs/6372,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,17,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run dff7 ready; results under /Users/zakali/.omar/mass/runs/dff7,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,17,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run 51c5 ready; results under /Users/zakali/.omar/mass/runs/51c5,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,17,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run be8f ready; results under /Users/zakali/.omar/mass/runs/be8f,4102
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,18,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run aea9 ready; results under /Users/zakali/.omar/mass/runs/aea9,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,18,7,True,"done by node 6, 7 deliveries",verdict=good,0,[mass] graph run 519a ready; results under /Users/zakali/.omar/mass/runs/519a,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,18,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 384f ready; results under /Users/zakali/.omar/mass/runs/384f,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,18,9,True,"done by node 6, 9 deliveries",verdict=good,0,[mass] graph run 7d5e ready; results under /Users/zakali/.omar/mass/runs/7d5e,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,18,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 0a8e ready; results under /Users/zakali/.omar/mass/runs/0a8e,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,18,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run 8d80 ready; results under /Users/zakali/.omar/mass/runs/8d80,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,18,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 62bf ready; results under /Users/zakali/.omar/mass/runs/62bf,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,18,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run d1f2 ready; results under /Users/zakali/.omar/mass/runs/d1f2,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,18,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run 9dde ready; results under /Users/zakali/.omar/mass/runs/9dde,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,18,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 9af3 ready; results under /Users/zakali/.omar/mass/runs/9af3,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,18,15,True,"done by node 10, 15 deliveries",verdict=good,0,[mass] graph run 8789 ready; results under /Users/zakali/.omar/mass/runs/8789,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,18,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run c1b0 ready; results under /Users/zakali/.omar/mass/runs/c1b0,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,18,18,True,"done by node 10, 18 deliveries",verdict=good,0,[mass] graph run b94f ready; results under /Users/zakali/.omar/mass/runs/b94f,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,18,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run acff ready; results under /Users/zakali/.omar/mass/runs/acff,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,18,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 24df ready; results under /Users/zakali/.omar/mass/runs/24df,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,18,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run b99e ready; results under /Users/zakali/.omar/mass/runs/b99e,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,18,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run 0f8a ready; results under /Users/zakali/.omar/mass/runs/0f8a,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,18,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run ccfc ready; results under /Users/zakali/.omar/mass/runs/ccfc,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,18,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run c8eb ready; results under /Users/zakali/.omar/mass/runs/c8eb,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,18,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 1134 ready; results under /Users/zakali/.omar/mass/runs/1134,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,18,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run b825 ready; results under /Users/zakali/.omar/mass/runs/b825,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,18,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run a4dc ready; results under /Users/zakali/.omar/mass/runs/a4dc,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,18,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run 1add ready; results under /Users/zakali/.omar/mass/runs/1add,4102
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,19,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 4d71 ready; results under /Users/zakali/.omar/mass/runs/4d71,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,19,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 4d4d ready; results under /Users/zakali/.omar/mass/runs/4d4d,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,19,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run d6ec ready; results under /Users/zakali/.omar/mass/runs/d6ec,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,19,9,True,"done by node 6, 9 deliveries",verdict=good,0,[mass] graph run 1ccb ready; results under /Users/zakali/.omar/mass/runs/1ccb,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,19,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run e74b ready; results under /Users/zakali/.omar/mass/runs/e74b,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,19,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 5865 ready; results under /Users/zakali/.omar/mass/runs/5865,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,19,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 9dfb ready; results under /Users/zakali/.omar/mass/runs/9dfb,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,19,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run d068 ready; results under /Users/zakali/.omar/mass/runs/d068,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,19,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 787b ready; results under /Users/zakali/.omar/mass/runs/787b,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,19,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 1560 ready; results under /Users/zakali/.omar/mass/runs/1560,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,19,11,True,"done by node 10, 11 deliveries",verdict=good,0,[mass] graph run 96fc ready; results under /Users/zakali/.omar/mass/runs/96fc,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,19,15,True,"done by node 10, 15 deliveries",verdict=good,0,[mass] graph run 53b2 ready; results under /Users/zakali/.omar/mass/runs/53b2,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,19,18,True,"done by node 10, 18 deliveries",verdict=good,0,[mass] graph run d7ec ready; results under /Users/zakali/.omar/mass/runs/d7ec,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,19,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run 3f7f ready; results under /Users/zakali/.omar/mass/runs/3f7f,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,19,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 62e9 ready; results under /Users/zakali/.omar/mass/runs/62e9,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,19,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 2945 ready; results under /Users/zakali/.omar/mass/runs/2945,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,19,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run e54f ready; results under /Users/zakali/.omar/mass/runs/e54f,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,19,13,True,"done by node 10, 13 deliveries",verdict=good,0,[mass] graph run b563 ready; results under /Users/zakali/.omar/mass/runs/b563,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,19,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 7c23 ready; results under /Users/zakali/.omar/mass/runs/7c23,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,19,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 99d5 ready; results under /Users/zakali/.omar/mass/runs/99d5,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,19,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run 9e61 ready; results under /Users/zakali/.omar/mass/runs/9e61,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,19,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run 3e9b ready; results under /Users/zakali/.omar/mass/runs/3e9b,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,19,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run a91c ready; results under /Users/zakali/.omar/mass/runs/a91c,4102
+claude-opus-5,agent,sg-corrupt,5,corrupt=0,20,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 72d7 ready; results under /Users/zakali/.omar/mass/runs/72d7,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=1,20,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 61c8 ready; results under /Users/zakali/.omar/mass/runs/61c8,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=2,20,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 5d92 ready; results under /Users/zakali/.omar/mass/runs/5d92,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=3,20,9,True,"done by node 6, 9 deliveries",verdict=good,0,[mass] graph run 6b71 ready; results under /Users/zakali/.omar/mass/runs/6b71,144
+claude-opus-5,agent,sg-corrupt,5,corrupt=4,20,8,True,"done by node 6, 8 deliveries",verdict=good,0,[mass] graph run 21d8 ready; results under /Users/zakali/.omar/mass/runs/21d8,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=0,20,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 7695 ready; results under /Users/zakali/.omar/mass/runs/7695,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=1,20,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run cfad ready; results under /Users/zakali/.omar/mass/runs/cfad,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=2,20,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 7d2a ready; results under /Users/zakali/.omar/mass/runs/7d2a,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=3,20,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 7884 ready; results under /Users/zakali/.omar/mass/runs/7884,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=4,20,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run ba2d ready; results under /Users/zakali/.omar/mass/runs/ba2d,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=5,20,12,True,"done by node 10, 12 deliveries",verdict=good,0,[mass] graph run 9c71 ready; results under /Users/zakali/.omar/mass/runs/9c71,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=6,20,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 00a0 ready; results under /Users/zakali/.omar/mass/runs/00a0,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=7,20,10,True,"done by node 10, 10 deliveries",verdict=good,0,[mass] graph run 8330 ready; results under /Users/zakali/.omar/mass/runs/8330,144
+claude-opus-5,agent,sg-corrupt,9,corrupt=8,20,15,True,"done by node 10, 15 deliveries",verdict=good,0,[mass] graph run 2e8d ready; results under /Users/zakali/.omar/mass/runs/2e8d,144
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=0,20,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 7708 ready; results under /Users/zakali/.omar/mass/runs/7708,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=1,20,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 5b94 ready; results under /Users/zakali/.omar/mass/runs/5b94,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=2,20,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run d6cc ready; results under /Users/zakali/.omar/mass/runs/d6cc,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=3,20,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run fc12 ready; results under /Users/zakali/.omar/mass/runs/fc12,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=4,20,14,True,"done by node 10, 14 deliveries",verdict=good,0,[mass] graph run 086b ready; results under /Users/zakali/.omar/mass/runs/086b,7731
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=5,20,18,True,"done by node 10, 18 deliveries",verdict=corrupt,0,[mass] graph run 2947 ready; results under /Users/zakali/.omar/mass/runs/2947,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=6,20,17,True,"done by node 10, 17 deliveries",verdict=corrupt,0,[mass] graph run f1b8 ready; results under /Users/zakali/.omar/mass/runs/f1b8,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=7,20,16,True,"done by node 10, 16 deliveries",verdict=corrupt,0,[mass] graph run a025 ready; results under /Users/zakali/.omar/mass/runs/a025,4102
+claude-opus-5,agent,sg-corrupt-blind,9,corrupt=8,20,15,True,"done by node 10, 15 deliveries",verdict=corrupt,0,[mass] graph run d9bf ready; results under /Users/zakali/.omar/mass/runs/d9bf,4102
+claude-opus-5,agent,chain,100,-,1,100,True,"done by node 100, 100 deliveries",facts=5/5 trail=100/100 len=983,0,[mass] graph run 9cb3 ready; results under /Users/zakali/.omar/mass/runs/9cb3,"PAYLOAD: order_id=4471, ship_date=09-30, city=Lisbon, sku=XZ"
+claude-opus-5,agent,ring,100,-,1,20,True,"done by node 20, 20 deliveries",stop_hop=20 laps=0.2,0,[mass] graph run e1a1 ready; results under /Users/zakali/.omar/mass/runs/e1a1,"Ring run TERMINATED at node 20 (round 19).
+
+Reason: the mess"
+claude-opus-5,agent,chain,100,-,2,100,True,"done by node 100, 100 deliveries",facts=5/5 trail=100/100 len=1029,0,[mass] graph run f7a4 ready; results under /Users/zakali/.omar/mass/runs/f7a4,"PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,ring,100,-,2,53,True,"done by node 53, 53 deliveries",stop_hop=53 laps=0.53,0,[mass] graph run 65a2 ready; results under /Users/zakali/.omar/mass/runs/65a2,"Trail: ... -> node 52 -> node 53
+
+FINAL REPORT — ring termin"
+claude-opus-5,agent,chain,100,-,3,100,True,"done by node 100, 100 deliveries",facts=5/5 trail=100/100 len=1029,0,[mass] graph run 416b ready; results under /Users/zakali/.omar/mass/runs/416b,"PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,ring,100,-,3,101,True,"done by node 1, 101 deliveries",stop_hop=101 laps=1.01,0,[mass] graph run ccbb ready; results under /Users/zakali/.omar/mass/runs/ccbb,Ring heartbeat complete - terminated by node 1 (originator) 
+claude-opus-5,agent,chain,100,-,4,100,True,"done by node 100, 100 deliveries",facts=5/5 trail=100/100 len=1029,0,[mass] graph run f633 ready; results under /Users/zakali/.omar/mass/runs/f633,"PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,ring,100,-,4,100,True,"done by node 100, 100 deliveries",stop_hop=100 laps=1.0,0,[mass] graph run 2ba7 ready; results under /Users/zakali/.omar/mass/runs/2ba7,"Ring message (round 99) — FINAL, terminated at node 100
+
+Tas"
+claude-opus-5,agent,chain,100,-,5,100,True,"done by node 100, 100 deliveries",facts=5/5 trail=100/100 len=1029,0,[mass] graph run d3eb ready; results under /Users/zakali/.omar/mass/runs/d3eb,"PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,ring,100,-,5,100,True,"done by node 100, 100 deliveries",stop_hop=100 laps=1.0,0,[mass] graph run 898b ready; results under /Users/zakali/.omar/mass/runs/898b,ring completed one full pass; original task text lost upstre
+claude-opus-5,agent,chain,100,-,6,100,True,"done by node 100, 100 deliveries",facts=0/5 trail=2/100 len=772,0,[mass] graph run 12fa ready; results under /Users/zakali/.omar/mass/runs/12fa,"Relay chain message (run 12fa, task graph-eaabfe)
+
+Payload f"
+claude-opus-5,agent,chain,100,-,7,100,True,"done by node 100, 100 deliveries",facts=5/5 trail=100/100 len=1029,0,[mass] graph run 7b9d ready; results under /Users/zakali/.omar/mass/runs/7b9d,"PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,chain,100,-,8,100,True,"done by node 100, 100 deliveries",facts=5/5 trail=100/100 len=1029,0,[mass] graph run deba ready; results under /Users/zakali/.omar/mass/runs/deba,"PAYLOAD (preserve every field exactly, carry forward): order"
+claude-opus-5,agent,chain,100,-,9,100,True,"done by node 100, 100 deliveries",facts=0/5 trail=14/100 len=772,0,[mass] graph run addb ready; results under /Users/zakali/.omar/mass/runs/addb,"Relay chain message — run addb, task graph-2014f2
+
+--- prese"
+claude-opus-5,agent,chain,100,-,10,100,True,"done by node 100, 100 deliveries",facts=5/5 trail=100/100 len=1062,0,[mass] graph run a84c ready; results under /Users/zakali/.omar/mass/runs/a84c,"RELAY CHAIN MESSAGE (100 nodes)
+
+PAYLOAD (preserve every fie"

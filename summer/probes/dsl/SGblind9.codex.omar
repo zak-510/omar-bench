@@ -1,0 +1,72 @@
+team Worker(idx : int, nn : int)[agent : Codex]
+{
+    input q : string
+    output report : string
+
+    task agent(q) -> report
+    "
+        You are worker $(idx) of $(nn) answering a shared task independently. Task:
+
+        $(q)
+
+        Set `report` to your answer and nothing else.
+    "
+}
+
+team Gather[agent : Codex]
+{
+    input r1 : string
+    input r2 : string
+    input r3 : string
+    input r4 : string
+    input r5 : string
+    input r6 : string
+    input r7 : string
+    input r8 : string
+    input r9 : string
+    output answer : string
+
+    task agent(r1, r2, r3, r4, r5, r6, r7, r8, r9) -> answer
+    "
+        Below are candidate final answers to the question. Decide which is most
+        consistent and correct, then output that answer in full as your own.
+        Reproduce the complete answer expression itself; never refer to a
+        candidate by number or label (do not write 'Candidate 2' or 'Agent 4')
+        and do not add a 'consensus' prefix. Set `answer` to that final answer.
+
+        Question: What is the vault code for terminal 7? Give ONLY the 4-digit code.
+        Candidates:
+        [Candidate 1] $(r1)
+        [Candidate 2] $(r2)
+        [Candidate 3] $(r3)
+        [Candidate 4] $(r4)
+        [Candidate 5] $(r5)
+        [Candidate 6] $(r6)
+        [Candidate 7] $(r7)
+        [Candidate 8] $(r8)
+        [Candidate 9] $(r9)
+    "
+}
+
+main SGBlind9 {
+    w1 = Worker(1, 9)
+    w2 = Worker(2, 9)
+    w3 = Worker(3, 9)
+    w4 = Worker(4, 9)
+    w5 = Worker(5, 9)
+    w6 = Worker(6, 9)
+    w7 = Worker(7, 9)
+    w8 = Worker(8, 9)
+    w9 = Worker(9, 9)
+    g = Gather()
+
+    w1.report -> g.r1
+    w2.report -> g.r2
+    w3.report -> g.r3
+    w4.report -> g.r4
+    w5.report -> g.r5
+    w6.report -> g.r6
+    w7.report -> g.r7
+    w8.report -> g.r8
+    w9.report -> g.r9
+}

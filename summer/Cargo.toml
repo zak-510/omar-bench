@@ -1,0 +1,23 @@
+# Standalone package (lives in its own repo); keep it out of any parent workspace.
+[workspace]
+
+[package]
+name = "omar-mass"
+version = "0.1.0"
+edition = "2021"
+description = "MASS topology building blocks for OMAR (Zhou et al. 2025)"
+license = "MIT"
+
+[[bin]]
+name = "omar-mass"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tempfile = "3"

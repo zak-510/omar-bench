@@ -1,0 +1,18 @@
+exp,label,hops,completed,reason,metric,output
+A_ring_termination,forever,10,True,self-terminated,stop_hop=10 laps=1.0,"node 1
+node 2
+node 3
+node 4
+node 5
+node 6
+node 7
+node 8
+node"
+A_ring_termination,three_laps,10,True,self-terminated,stop_hop=10 laps=1.0,node 1 -> node 2 -> node 3 -> node 4 -> node 5 -> node 6 -> 
+A_ring_termination,pass_once,10,True,self-terminated,stop_hop=10 laps=1.0,node 1 node 2 node 3 node 4 node 5 node 6 node 7 node 8 node
+B_chain_fidelity,preserve,10,True,reached tail,facts=5/5 len=263,"order_id=4471, ship_date=09-30, city=Lisbon, sku=XZ12, qty=3"
+B_chain_fidelity,summarize,10,True,reached tail,facts=5/5 len=717,"PAYLOAD: order_id=4471, ship_date=09-30, city=Lisbon, sku=XZ"
+B_chain_fidelity,replace,10,True,reached tail,facts=4/5 len=261,"order_id=42, ship_date=09-30, city=Lisbon, sku=XZ12, qty=37
+"
+C_same_prompt,chain,10,True,reached tail,facts=5/5,"order_id=4471, ship_date=09-30, city=Lisbon, sku=XZ12, qty=3"
+C_same_prompt,ring,10,True,self-terminated,facts=5/5 stop_hop=10,"order_id=4471, ship_date=09-30, city=Lisbon, sku=XZ12, qty=3"

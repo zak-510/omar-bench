@@ -1,0 +1,12 @@
+# Credentials
+.env
+
+# Raw run evidence: large, and for APEX-Agents not ours to redistribute. Lives in S3.
+/runs/
+
+# Checkouts pinned by version in bench.toml, not by copy
+/vendor/
+
+__pycache__/
+.venv/
+.DS_Store

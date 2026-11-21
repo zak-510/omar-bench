@@ -51,10 +51,12 @@ def philosopher_agent_prompt(i):
 Your meals, in order:
 {meals}
 
-Protocol. Forks are handed out by the arbitrator, node {ARBITRATOR_NODE}. To ask for your forks, \
-send the message 'hungry' to node {ARBITRATOR_NODE}. If node {ARBITRATOR_NODE} sends you 'eat', you \
-hold both forks: do your next uneaten meal, then send 'done meal K: ANSWER' to node \
-{ARBITRATOR_NODE} (K is the meal number), which gives both forks back. If node {ARBITRATOR_NODE} \
+Protocol. Forks are handed out by the arbitrator, node {ARBITRATOR_NODE}. Each turn you send at \
+most one message: if a reply has more than one 'To:' line, only one of them is delivered. To ask \
+for your forks, send the message 'hungry' to node {ARBITRATOR_NODE}. If node {ARBITRATOR_NODE} sends \
+you 'eat', you hold both forks: do your next uneaten meal, then send 'done meal K: ANSWER' to node \
+{ARBITRATOR_NODE} (K is the meal number). That message gives both forks back and, if you have meals \
+left, also asks for your forks again, so do not send 'hungry' with it. If node {ARBITRATOR_NODE} \
 sends you 'denied', send 'hungry' to node {ARBITRATOR_NODE} again. Once you have sent 'done' for \
 meal {MEALS}, you are finished: send nothing more and end every later turn with 'Decision: WAIT'. \
 Only the arbitrator finishes the run.
@@ -72,12 +74,15 @@ def arbitrator_agent_prompt():
 {table}
 All forks start free.
 
-Protocol. When philosopher i sends 'hungry': if both of its forks are free, they are now held by \
-philosopher i; send 'eat' to node i. Otherwise send 'denied' to node i. When philosopher i sends \
-'done meal K: ANSWER', both of its forks are free again and its meal K is eaten; send nothing \
-(Decision: WAIT). Never let a fork be held by two philosophers at once. When all {N} philosophers \
-have eaten {MEALS} meals each ({ROUNDS} in all), finish the run: put every philosopher's meal \
-answers, in order, between <answer> and </answer>, and end with 'Decision: DONE'.
+Protocol. Each turn you send at most one message: if a reply has more than one 'To:' line, only \
+one of them is delivered. When philosopher i sends 'hungry': if both of its forks are free, they are \
+now held by philosopher i; send 'eat' to node i. Otherwise send 'denied' to node i. When philosopher \
+i sends 'done meal K: ANSWER', both of its forks are free again and its meal K is eaten. If it has \
+meals left, that message also asks for its forks again: answer it as you would 'hungry' from \
+philosopher i. If it has eaten all {MEALS}, send nothing (Decision: WAIT). Never let a fork be held \
+by two philosophers at once. When all {N} philosophers have eaten {MEALS} meals each ({ROUNDS} in \
+all), finish the run: put every philosopher's meal answers, in order, between <answer> and \
+</answer>, and end with 'Decision: DONE'.
 
 New message from {{sender}}:
 

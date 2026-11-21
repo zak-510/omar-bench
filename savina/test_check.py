@@ -1,7 +1,14 @@
 """The checker passes a correct run and catches each failure it names.
 Run: python3 savina/test_check.py"""
+import os
+import re
+from collections import deque
+
 import check
 import spec
+
+FUSE = int(re.search(r"^FUSE = (\d+)", open(os.path.join(os.path.dirname(__file__), "sweep.py")).read(),
+                     re.M).group(1))
 
 
 def correct_philosophers_trace():
@@ -99,7 +106,54 @@ def test_banking():
     assert check.banking(d, rep, True)["success"]
 
 
+def rule_following_philosophers():
+    """The agent-arm protocol in savina/spec.py played by agents that follow it
+    exactly, one delivery at a time in the order sent, as the runner delivers."""
+    arb, msgs, held, eaten = spec.ARBITRATOR_NODE, [], {}, {i: 0 for i in range(1, spec.N + 1)}
+    queue = deque((0, i, "start: ask for your forks") for i in range(1, spec.N + 1))
+
+    def answer_hungry(i):
+        if all(f not in held for f in spec.forks(i)):
+            held.update({f: i for f in spec.forks(i)})
+            queue.append((arb, i, "eat"))
+        else:
+            queue.append((arb, i, "denied"))
+
+    while queue:
+        frm, to, body = queue.popleft()
+        msgs.append({"from": frm, "to": to, "body": body})
+        if to == arb:
+            i = frm
+            if body.startswith("done"):
+                for f in spec.forks(i):
+                    del held[f]
+                eaten[i] += 1
+                if all(e == spec.MEALS for e in eaten.values()):
+                    return msgs
+                if eaten[i] < spec.MEALS:  # a done with meals left also asks again
+                    answer_hungry(i)
+            else:
+                answer_hungry(i)
+        elif body == "eat":
+            k = eaten[to] + 1
+            queue.append((to, arb, f"done meal {k}: {sum(spec.meal(to, k))}"))
+        else:  # start or denied
+            queue.append((to, arb, "hungry"))
+    return msgs
+
+
+def test_agent_protocol_fits_the_fuse():
+    msgs = rule_following_philosophers()
+    events, dev = check.philosophers_agent(msgs)
+    ok = check.philosophers(events, True)
+    assert dev == 0 and ok["success"] and ok["safety_violations"] == 0, (dev, ok)
+    assert len(msgs) < FUSE, len(msgs)
+    return len(msgs)
+
+
 if __name__ == "__main__":
     test_philosophers()
+    print(f"agent-arm Philosophers protocol, followed exactly: {test_agent_protocol_fits_the_fuse()} "
+          f"deliveries (fuse {FUSE})")
     test_banking()
     print("check.py: all tests pass")

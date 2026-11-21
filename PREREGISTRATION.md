@@ -1,7 +1,8 @@
 # Pre-registration: coordination reliability, summer reproduction and Savina
 
-**Status: frozen** at tag `prereg-v1`, 2026-11-21. No counted run starts
-before that tag, and any later change gets a new tag with the reason stated.
+**Status: frozen** at tag `prereg-v1`, 2026-11-21, and amended at `prereg-v2`
+the same day (see Changes, at the end). No counted run starts before a tag, and
+any later change gets a new tag with the reason stated.
 Pilot runs (kept in `results/pilot/`) never count; the pilots before this tag were
 used only to measure time, memory and usage, and are published with the results.
 
@@ -200,3 +201,31 @@ scheduler's ledger. Tokens are reported for the agents whose CLI kept a session
 log (Codex does not keep one for every agent the runtime starts), with that
 coverage stated; cost is tokens times list price on the tag date. Raw logs, CSVs and the commands that
 produced them are published with the results.
+
+## Changes
+
+**`prereg-v2`, 2026-11-21: the Philosophers protocol in the `agent` arm.**
+Found while reading the transcripts of the first counted Philosophers trials:
+all 6 finished `agent`-arm trials had hit the 400-delivery cut, and all 6 `dsl`-arm
+trials had succeeded. The philosopher prompt left out a step of Savina's
+protocol: after handing its forks back, a philosopher asks for them again. The
+agents made that step up. Some put 'done' and 'hungry' in one message, which
+worked; others wrote two messages in one reply, and the runner, which delivers
+one message per reply and said so nowhere, delivered only the second. The
+arbitrator then never learned those forks were free, and it correctly denied
+their neighbours until the cut. That is a fault in our harness, not a
+coordination failure of the agents.
+
+In v2 both prompts say that each turn sends one message, and that a
+philosopher's 'done meal K' also asks for its forks again when it has meals
+left; the arbitrator answers it as it would 'hungry'. Followed exactly, this
+protocol finishes in 120 deliveries, under the 400 cut
+(`test_agent_protocol_fits_the_fuse` in `savina/test_check.py`). Every change
+is to the `agent` arm's prompts and can only help it: the `dsl` programs and
+everything in Banking are byte-for-byte unchanged.
+
+Philosophers is rerun in both arms under v2, on the same machines and schedule.
+The v1 Philosophers trials (6 `agent`, 6 `dsl`, and one `agent` trial stopped
+mid-run for this change) are published separately as v1 and not counted.
+Banking was not affected and its v1 trials count.
+

@@ -2,8 +2,8 @@
 
 **Status: frozen** at tag `prereg-v1`, 2026-11-21. No counted run starts
 before that tag, and any later change gets a new tag with the reason stated.
-Pilot runs (kept in `results/pilot/`) never count; the pilots before this tag
-measured time, memory and usage only, and are published with the results.
+Pilot runs (kept in `results/pilot/`) never count; the pilots before this tag were
+used only to measure time, memory and usage, and are published with the results.
 
 ## Claim under test
 

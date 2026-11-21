@@ -1,8 +1,9 @@
 # Pre-registration: coordination reliability, summer reproduction and Savina
 
-**Status: DRAFT.** Frozen when tagged `prereg-v1`. No counted run starts
+**Status: frozen** at tag `prereg-v1`, 2026-11-21. No counted run starts
 before that tag, and any later change gets a new tag with the reason stated.
-Pilot runs (3 per cell, kept in `results/pilot/`) never count.
+Pilot runs (kept in `results/pilot/`) never count; the pilots before this tag
+measured time, memory and usage only, and are published with the results.
 
 ## Claim under test
 

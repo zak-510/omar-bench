@@ -28,13 +28,19 @@ rules); the diff is published with the results.
 
 EC2 in us-east-2, Ubuntu 24.04 from the public SSM parameter: an
 `m7i-flex.2xlarge` (8 vCPU, 32 GiB, 100 GB gp3), and for cells with at most 6
-agents an `m7i-flex.large` (2 vCPU, 8 GiB, 40 GB gp3) may stand in (see Running). Every version in `versions.env`, installed by
+agents an `m7i-flex.large` (2 vCPU, 8 GiB, 40 GB gp3) may stand in (see
+Running). Both have 8 GiB of swap. Every version in `versions.env`, installed by
 `infra/bootstrap.sh` with checksums. The run manifest records the AMI ID,
 instance ID, every tool version and the repo commit.
 
-Why 32 GiB: a Codex agent measured about 250 MB resident on OMAR 0.4.4, and the
-DSL ring of 40 keeps 40 agents alive at once (the DSL chain of 100 runs as two
-halves of 50). An 8 GiB machine ran out of memory at about 30 agents.
+Why the memory: a Codex agent started by the runtime (`dsl` arm) measured about
+250 MB resident on OMAR 0.4.4; one started with `spawn_agent` (`agent` arm)
+measured about 0.8 GB once running and close to 1 GB while starting. The DSL ring
+of 40 keeps 40 agents alive at once (the DSL chain of 100 runs as two halves of
+50), and an 8 GiB machine ran out of memory at about 30. The `agent` arm keeps
+at most 6 alive; six starting together peaked at 7.6 GiB in a Banking pilot and
+ran an 8 GiB machine without swap out of memory in a Philosophers pilot, which
+is why both machines have swap.
 
 ## Models
 
@@ -143,7 +149,20 @@ run/schedule.py --dry-run` prints the agent calls this takes).
 
 - `run/schedule.py` runs everything. Every (arm, cell, trial) is listed and
   shuffled once with seed 20261119, then run one at a time in that order, so
-  provider load and model updates during the run land on both arms alike.
+  provider load and model updates during the run land on both arms alike. The
+  order may be split across identical machines (same instance type and AMI),
+  each taking every Nth pick and still running one at a time; the machine is
+  recorded with every trial and reported as a covariate.
+- First run, under this tag: Savina Philosophers and Banking, both arms, on two
+  `m7i-flex.large` machines, stopping at 2026-11-25 00:00 UTC. Missing workers
+  and the other summer cells follow under a later tag, on the
+  `m7i-flex.2xlarge`, once OMAR's Codex delivery is fixed: in pilots on 2 vCPUs,
+  OMAR 0.4.4 gave up on a Codex app server that took over 3 s to answer (shown
+  as `os error 11`), so the `dsl` arm failed to hand five agents their tasks at
+  once in 4 of 7 missing-workers settings and in every 9-worker scatter-gather
+  run. Counting those would score a runtime bug as a coordination failure;
+  dropping them would hide it. Both are reported, with the fixed version's
+  rerun.
 - Machine: a cell runs only where both its arms fit in memory, and both arms of
   a cell always run on the same instance type. Cells with at most 6 agents
   (Savina, missing workers) may run on an `m7i-flex.large` (8 GiB); the rest
@@ -155,6 +174,10 @@ run/schedule.py --dry-run` prints the agent calls this takes).
   chain 20 and ring 10; 1,800 s for chain 50 and ring 25; 2,400 s for chain
   100; 3,600 s for ring 40; 7,200 s for a Savina trial. These are the summer's
   longest (the set it used for Opus), so a slower model is not cut short.
+- An agent may take as long as its trial to answer, in both arms: the `dsl`
+  arm's runtime waits for a reaction until the run's timeout, and the `agent`
+  arm's runner waits as long for a reply (reminding a silent agent after
+  180 s, then every 60 s).
 - Retries, the same rule in both arms: only when an agent never receives its
   task (its process fails to start, or the runtime fails to deliver the task to
   it), at most 3, every attempt logged in `*-attempts.csv` and counted per arm
@@ -171,6 +194,8 @@ run/schedule.py --dry-run` prints the agent calls this takes).
 
 Every cell is reported: failure rate with a Wilson 95% interval per arm, and a
 one-sided Fisher exact test where a gap is expected. No result is described as
-"100%". Tokens and wall time per trial come from the CLI session logs; cost is
-tokens times list price on the tag date. Raw logs, CSVs and the commands that
+"100%". Wall time and weekly Codex use before and after every trial come from the
+scheduler's ledger. Tokens are reported for the agents whose CLI kept a session
+log (Codex does not keep one for every agent the runtime starts), with that
+coverage stated; cost is tokens times list price on the tag date. Raw logs, CSVs and the commands that
 produced them are published with the results.

@@ -1,8 +1,9 @@
 #!/bin/sh
 # Launch one benchmark machine. It powers itself off after MAX_HOURS.
 # Usage: infra/launch.sh <aws-profile> [alert-email]
-#   INSTANCE_TYPE, VOLUME_GB, MAX_HOURS and NAME override the defaults.
-# Writes infra/instance.env (not committed) for sync.sh.
+#   INSTANCE_TYPE, VOLUME_GB, MAX_HOURS, NAME and AMI override the defaults; pass
+#   the first machine's AMI to a second one so both run the same image.
+# Writes infra/instance.env, or ENV_FILE (not committed), for sync.sh.
 set -eu
 cd "$(dirname "$0")/.."
 TYPE_OVERRIDE=${INSTANCE_TYPE:-}
@@ -12,7 +13,7 @@ PROFILE=$1 EMAIL=${2:-}
 NAME=${NAME:-omar-rerun} VOLUME_GB=${VOLUME_GB:-100} MAX_HOURS=${MAX_HOURS:-200}
 aws() { command aws --profile "$PROFILE" --region "$REGION" "$@"; }
 
-AMI=$(aws ssm get-parameter --name "$UBUNTU_AMI_PARAM" --query Parameter.Value --output text)
+AMI=${AMI:-$(aws ssm get-parameter --name "$UBUNTU_AMI_PARAM" --query Parameter.Value --output text)}
 KEY=$HOME/.ssh/$NAME-$PROFILE.pem
 if [ ! -f "$KEY" ]; then
     aws ec2 create-key-pair --key-name "$NAME" --key-type ed25519 \
@@ -56,5 +57,5 @@ if [ -n "$EMAIL" ]; then
 fi
 
 printf 'PROFILE=%s\nINSTANCE_ID=%s\nHOST=%s\nKEY=%s\nAMI=%s\nTYPE=%s\n' \
-    "$PROFILE" "$ID" "$HOST" "$KEY" "$AMI" "$INSTANCE_TYPE" > infra/instance.env
+    "$PROFILE" "$ID" "$HOST" "$KEY" "$AMI" "$INSTANCE_TYPE" > "${ENV_FILE:-infra/instance.env}"
 echo "$ID $INSTANCE_TYPE $AMI $HOST"

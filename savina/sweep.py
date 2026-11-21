@@ -80,19 +80,20 @@ def run(cmd, env=None):
 
 
 def agent_trial():
-    """Retry only a boot failure (no result came back); every failure is logged."""
+    """Retry only a boot failure (no result and no timeout); every failure is logged."""
     spec_file = os.path.join(HERE, "specs", f"{BENCH}.json")
     runner = os.environ.get("OMAR_MASS_BIN", os.path.join(ROOT, "summer", "target", "release", "omar-mass"))
     cmd = [runner, "graph", "--kind", "custom", "--spec", spec_file, "--coordination", "agent",
            "--max-messages", str(FUSE), "--backend", BACKEND.lower(), "--model", MODEL,
-           "--timeout-secs", "300"]
+           # A reply may take as long as the trial, as a dsl-arm agent's reaction may.
+           "--timeout-secs", str(TIMEOUT)]
     for attempt in range(1, RETRIES + 1):
         rc, out, err, t0 = run(cmd)
         try:
             result = json.loads(out[out.index("{"):])
         except ValueError:
             result = None
-        if result is not None:
+        if result is not None or err == "hard timeout":  # a timeout is an outcome
             return result, rc, err, t0
         new = not os.path.exists(ATTEMPTS)
         with open(ATTEMPTS, "a", newline="") as f:
@@ -104,9 +105,9 @@ def agent_trial():
     return None, rc, err, t0
 
 
-def score_agent(result):
+def score_agent(result, err=""):
     if result is None:
-        return {"success": False, "reason": "no result"}, {}
+        return {"success": False, "reason": "timed out" if err == "hard timeout" else "no result"}, {}
     messages = result.get("messages", [])
     completed = bool(result.get("completed"))
     if BENCH == "philosophers":
@@ -161,7 +162,7 @@ def main():
             continue
         if ARM == "agent":
             result, rc, err, t0 = agent_trial()
-            score, raw = score_agent(result)
+            score, raw = score_agent(result, err)
         else:
             outputs, completed, rc, err, t0 = dsl_trial()
             score, raw = score_dsl(outputs, completed)

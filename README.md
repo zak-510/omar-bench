@@ -33,7 +33,9 @@ python3 run/schedule.py --tier sol --pilot 3      # pilot: 3 trials of every cel
 python3 run/schedule.py --tier sol                # counted: needs the tagged commit
 ```
 
-`--max-agents 6` restricts a run to the cells an 8 GiB machine can hold.
+`--max-agents 6` restricts a run to the cells an 8 GiB machine can hold, and
+`--shard 0/2` / `--shard 1/2` split one run across two identical machines
+(launch the second with `NAME`, `AMI` and `ENV_FILE`; see `infra/launch.sh`).
 `--dry-run` prints the trials and agent calls a run would take. From your own
 machine, `infra/sync.sh pull` brings `results/` back.
 

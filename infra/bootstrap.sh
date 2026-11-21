@@ -12,6 +12,14 @@ sudo apt-get update -q
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
     tmux git python3 build-essential curl jq xz-utils ca-certificates
 
+# 8 GiB of swap: Codex agents peak near 1 GB each while starting, so six
+# starting at once can briefly outgrow an 8 GiB machine.
+if ! swapon --show=NAME --noheadings | grep -qx /swapfile; then
+    sudo fallocate -l 8G /swapfile && sudo chmod 600 /swapfile
+    sudo mkswap /swapfile >/dev/null && sudo swapon /swapfile
+    grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
+fi
+
 fetch() { # url sha256 file
     curl -fsSL "$1" -o "$3"
     echo "$2  $3" | sha256sum -c - >/dev/null || { echo "checksum mismatch: $1" >&2; exit 1; }

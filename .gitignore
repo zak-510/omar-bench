@@ -1,5 +1,5 @@
 .env
-infra/instance.env
+infra/instance*.env
 REVISION
 __pycache__/
 .DS_Store

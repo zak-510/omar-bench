@@ -19,6 +19,11 @@ what follows was changed.
   retries only a run whose agent never received its task (a failed boot, or
   the runtime failing to deliver the task) and logs every failed attempt to
   `*-attempts.csv`; a stall is an outcome.
+- **Reply limit:** the agent arm waited 300 s for an agent's reply, while the
+  DSL arm's runtime waits for a reaction until the run's timeout. The agent arm
+  now waits as long; the reminders at 180 s and every 60 s are unchanged.
+- **Timeouts are outcomes:** a run that hit the hard timeout used to be retried
+  like a failed boot. It is now recorded as an outcome (`rc` = `timeout`).
 - **Results:** written to the repo's `results/` (or `$RESULTS_DIR`), with each
   trial's start time and duration.
 - **Added, for Savina:** `graph --kind custom --spec FILE`, a postal topology

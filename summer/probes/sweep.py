@@ -172,7 +172,7 @@ def _run_once(args, per_wave_timeout, hard_timeout):
     except subprocess.TimeoutExpired:
         kill_tree(p)
         out, err = p.communicate()
-        return {"error": f"hard timeout after {hard_timeout}s", "rc": None,
+        return {"error": f"hard timeout after {hard_timeout}s", "rc": "timeout",
                 "stderr": (err or "").strip().replace("\n", " ")[-300:]}
     err = (err or "").strip().replace("\n", " ")[-300:]
     try:
@@ -184,15 +184,16 @@ def _run_once(args, per_wave_timeout, hard_timeout):
     d["rc"], d["stderr"] = p.returncode, err
     return d
 
-# 300s wave timeout: the re-nudge machinery fires at 180s.
 ATTEMPTS = OUT[:-4] + "-attempts.csv"
 
-def run(args, per_wave_timeout=300, hard_timeout=HARD_TIMEOUT, attempts=RETRIES):
-    """Retry boot failures only. A stall is an outcome of the arm and is never
-    retried; every failed boot attempt is kept in the -attempts.csv log."""
+# A reply may take as long as the trial, as an agent's reaction may in the dsl
+# arm; the re-nudge machinery still fires at 180s.
+def run(args, per_wave_timeout=HARD_TIMEOUT, hard_timeout=HARD_TIMEOUT, attempts=RETRIES):
+    """Retry boot failures only. A stall or timeout is an outcome of the arm and
+    is never retried; every failed boot attempt is kept in the -attempts.csv log."""
     for attempt in range(1, attempts + 1):
         d = run_once(args, per_wave_timeout, hard_timeout)
-        if "error" not in d:
+        if "error" not in d or d["rc"] == "timeout":
             return d
         new = not os.path.exists(ATTEMPTS)
         with open(ATTEMPTS, "a", newline="") as f:

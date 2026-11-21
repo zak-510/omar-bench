@@ -1,9 +1,9 @@
 #!/bin/sh
 # Copy the repo to the benchmark machine, or bring its results back.
-# Usage: infra/sync.sh push | pull | ssh
+# Usage: infra/sync.sh push | pull | ssh   (ENV_FILE picks another machine)
 set -eu
 cd "$(dirname "$0")/.."
-. infra/instance.env
+. "${ENV_FILE:-infra/instance.env}"
 SSH="ssh -i $KEY -o StrictHostKeyChecking=accept-new"
 case "${1:-}" in
     push) # What the machine runs: the commit, its tag, and whether the tree differs from it.

@@ -5,12 +5,15 @@ Every unit in run/plan.py appears once per trial it needs, and the list is
 shuffled with the pre-registered seed, so arms and benchmarks interleave and a
 run stopped early leaves a balanced sample. Each pick runs the next trial of its
 unit; the sweeps skip finished trials, so rerunning continues where it stopped.
+The ledger records weekly Codex use before and after every trial.
 
   python3 run/schedule.py --tier sol [--max-agents N] [--units a,b] [--quota 85]
-                          [--until 2026-11-25T18:00] [--pilot 3] [--dry-run]
+                          [--until 2026-11-25T18:00] [--shard 0/2] [--pilot 3] [--dry-run]
 
 --max-agents keeps units this machine has memory for; both arms of a unit
-always run on the same machine. Counted runs (no --pilot) refuse to start
+always run on the same instance type. --shard I/N splits the order across N
+identical machines: machine I takes picks I, I+N, I+2N..., so each machine's
+share stays interleaved, and writes to its own results folder. Counted runs (no --pilot) refuse to start
 unless REVISION names a clean, tagged commit.
 """
 import csv
@@ -50,7 +53,7 @@ def manifest(results, tier):
     meta = {k: out(["curl", "-s", "-H", f"X-aws-ec2-metadata-token: {token}",
                     f"http://169.254.169.254/latest/meta-data/{k}"])
             for k in ("instance-id", "instance-type", "ami-id")}
-    m = {"started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "tier": tier,
+    m = {"started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "tier": tier, "argv": sys.argv[1:],
          "revision": revision(), "seed": SEED, **meta,
          "versions": open(os.path.join(ROOT, "versions.env")).read(),
          "omar": out(["omar", "--version"]), "codex": out(["codex", "--version"]),
@@ -64,7 +67,9 @@ def main():
     tier = flag("--tier", "sol")
     model, backend = TIERS[tier]
     pilot = int(flag("--pilot", "0"))
-    results = os.path.join(ROOT, "results", "pilot" if pilot else "", tier)
+    shard, shards = (int(x) for x in flag("--shard", "0/1").split("/"))
+    results = os.path.join(ROOT, "results", "pilot" if pilot else "", tier,
+                           f"shard-{shard}-of-{shards}" if shards > 1 else "")
     rev = revision()
     if not pilot and "--dry-run" not in sys.argv and (not rev or "dirty" in rev or "tag:" not in rev):
         sys.exit(f"counted runs need a clean, tagged commit; REVISION says {rev!r}")
@@ -77,7 +82,7 @@ def main():
 
     order = [u for u in plan.units() for _ in range(pilot or u.trials)]
     random.Random(SEED).shuffle(order)
-    order = [u for u in order if u in units]
+    order = [u for u in order if u in units][shard::shards]
     ledger_path = os.path.join(results, "schedule.csv")
     finished = {}
     if os.path.exists(ledger_path):
@@ -108,11 +113,10 @@ def main():
             if until and time.strftime("%Y-%m-%dT%H:%M", time.gmtime()) >= until:
                 print(f"deadline {until} reached; stopping", flush=True)
                 break
-            if backend == "codex":
-                latest, _ = codex_quota.reading(newest=20)
-                if latest and latest[1] >= quota:
-                    print(f"weekly Codex use {latest[1]}% >= {quota}%; stopping", flush=True)
-                    break
+            used = codex_quota.reading() if backend == "codex" else None
+            if used and used[0] >= quota:
+                print(f"weekly Codex use {used[0]}% >= {quota}%; stopping", flush=True)
+                break
             argv = ["python3", *u.argv, "--tier", tier, "--trials", str(k), "--timeout", str(u.timeout)]
             if u.argv[0] == plan.SUMMER_AGENT:
                 argv = ["python3", u.argv[0], "--spawn-window", "6", "--model", model, "--backend", backend,
@@ -120,13 +124,15 @@ def main():
             started = time.time()
             print(f"=== {time.strftime('%H:%M:%S')} {u.name} {u.arm} trial {k}", flush=True)
             rc = subprocess.run(argv, cwd=ROOT, env=env).returncode
+            secs = round(time.time() - started)
+            after = codex_quota.reading() if backend == "codex" else None
             new = not os.path.exists(ledger_path)
             with open(ledger_path, "a", newline="") as f:
                 w = csv.writer(f)
                 if new:
-                    w.writerow(["unit", "arm", "trial", "started_at", "secs", "rc"])
-                w.writerow([u.name, u.arm, k, time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(started)),
-                            round(time.time() - started), rc])
+                    w.writerow(["unit", "arm", "trial", "started_at", "secs", "rc", "used_before", "used_after"])
+                w.writerow([u.name, u.arm, k, time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(started)), secs, rc,
+                            used[0] if used else "", after[0] if after else ""])
             if rc == 0:
                 finished[key] = k
     finally:

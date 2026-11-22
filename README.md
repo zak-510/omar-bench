@@ -1,62 +1,106 @@
+<div align="center">
+
 # omar-bench
 
-Does a runtime that owns coordination make agent teams fail less than agents
-coordinating through their prompts? Both arms run the same model, the same
-agent job text and the same machines; only who coordinates differs: an agent
-following a protocol in its prompt, or an OMAR program. What runs, how many
-times and how it is scored is fixed in [PREREGISTRATION.md](PREREGISTRATION.md)
-before anything counted runs, and every later change is a new tag with its
-reason.
+**Does coordination owned by a runtime make agent teams fail less than coordination written into their prompts?**
 
-Status: counted runs under way. Savina Philosophers and Banking on
-`gpt-6.1-sol` (`prereg-v1`, Philosophers from `prereg-v2`); BoundedBuffer and
-`claude-haiku-5-5` next (`prereg-v3`). The original study's probes follow
-once OMAR's Codex delivery fix is released.
+**Pre-registered multi-agent benchmarks on [OMAR](https://omar.rs): same model, same agents, same machines.**
 
-## Layout
+<p align="center">
+  <a href="PREREGISTRATION.md">Pre-registration</a>&nbsp; • &nbsp;
+  <a href="#benchmarks">Benchmarks</a>&nbsp; • &nbsp;
+  <a href="#quick-start">Quick Start</a>&nbsp; • &nbsp;
+  <a href="https://omar.rs">omar.rs</a>
+</p>
 
+</div>
+
+## Design
+
+Every benchmark runs in two arms. Only the coordinator differs.
+
+| Arm | Who coordinates | How |
+|-----|-----------------|-----|
+| `agent` | The agents | A protocol in their prompts; agents address each other by message |
+| `dsl` | OMAR | An OMAR program; agents only do the work they are handed |
+
+What runs, how many times and how it is scored is fixed in the
+[pre-registration](PREREGISTRATION.md) before any counted trial, and every
+later change is a new tag with its reason.
+
+## Benchmarks
+
+- **Savina Philosophers**: Five agents share five forks through an arbitrator. Tests mutual exclusion and starvation.
+- **Savina Banking**: Five accounts and a teller run 30 transfers. Tests consistent shared state.
+- **Savina BoundedBuffer**: Three producers and two consumers share a three-item buffer. Tests backpressure.
+- **Coordination probes**: Chain, ring, scatter-gather and missing workers, from the original study of July–August 2026.
+
+## Supported Models
+
+| Tier | Model | Agent CLI |
+|------|-------|-----------|
+| `sol` | `gpt-6.1-sol` | Codex CLI 0.162.0 |
+| `haiku55` | `claude-haiku-5-5` | Claude Code 2.1.326 |
+
+## Installation
+
+### Prerequisites
+
+- An AWS account and the AWS CLI (runs use EC2 in us-east-2)
+- A Codex login, and for Claude a token from `claude setup-token`
+- Python 3 on your own machine
+
+Everything else (OMAR 0.4.4, Node.js, Rust and both agent CLIs) is installed
+on the benchmark machine at the versions pinned in [`versions.env`](versions.env);
+OMAR and Node.js are checked against their checksums.
+
+## Quick Start
+
+#### Step 1: Launch a machine
+
+```bash
+infra/launch.sh <aws-profile>
+infra/sync.sh push
 ```
-PREREGISTRATION.md   the claim, arms, outcomes, trial counts, stopping rule and every change
-versions.env         every pinned version, checksum and the machine image
-infra/               launch an EC2 machine, install the toolchain, sync, sample memory,
-                     install a Claude Code token
-run/                 plan.py (the trial table), schedule.py (runs it), codex_quota.py
-savina/              Savina Philosophers, Banking and BoundedBuffer: both arms, their checker
-probes/              the original study's probes: chain, ring, scatter-gather, missing workers
-runner/              the agent-arm runner (Rust): delivers agents' addressed mail, routes nothing
-results/             counted results by model and machine; pilots stay in results/pilot/
-local/               OMAR and per-model configs, installed on each machine (not committed)
-```
 
-## Run
+#### Step 2: Install the toolchain and sign in
 
-```sh
-infra/launch.sh <aws-profile> [alert-email]           # one machine in us-east-2
-infra/sync.sh push && infra/sync.sh ssh
-# on the machine
+```bash
+infra/sync.sh ssh
 cd omar-bench && sh infra/bootstrap.sh
 . ~/omar-rerun.env && codex login --device-auth
-python3 run/schedule.py --tier sol --pilot 1          # pilot: 1 trial of every cell
-python3 run/schedule.py --tier sol                    # counted: needs a clean, tagged commit
 ```
 
-- Claude: make a token with `claude setup-token`, copy it, and run
-  `infra/claude-token.sh` from your own machine; then `--tier haiku55`.
-- Two machines: launch the second with `NAME` and `ENV_FILE` (see
-  `infra/launch.sh`), sync it with `ENV_FILE=… infra/sync.sh push`, and run
-  `--shard 0/2` on one and `--shard 1/2` on the other.
-- `--max-agents 6` keeps the cells an 8 GiB machine can hold, `--units` picks
-  cells, `--until` sets the deadline, and `--dry-run` prints the trials and
-  agent calls a run would take.
-- A counted run refuses to start from an untagged or modified commit, or when
-  an installed OMAR, Codex CLI or Claude Code differs from `versions.env`. Its
-  ledger records weekly Codex use before and after every trial.
-- `infra/sync.sh pull` brings `results/` back. Each scheduler start writes a
-  manifest with the commit, tag, machine, image and tool versions.
+For Claude, copy the token from `claude setup-token` and run
+`infra/claude-token.sh` from your own machine.
+
+#### Step 3: Run
+
+```bash
+python3 run/schedule.py --tier sol --pilot 1     # one pilot trial of every cell
+python3 run/schedule.py --tier sol               # the counted run
+```
+
+A counted run starts only from a clean, tagged commit with every tool at its
+pinned version. `infra/sync.sh pull` brings `results/` back to your machine.
+`--shard 0/2` and `--shard 1/2` split a run across two machines; `--dry-run`
+prints what a run would take.
+
+## Repository Layout
+
+| Path | Contents |
+|------|----------|
+| [`PREREGISTRATION.md`](PREREGISTRATION.md) | Claim, arms, outcomes, trial counts, stopping rule and every change |
+| [`savina/`](savina/) | Savina benchmarks: specs, both arms and the checker |
+| [`probes/`](probes/) | The original study's coordination probes |
+| [`runner/`](runner/) | The agent-arm runner (Rust) |
+| `run/` | Trial plan and scheduler |
+| `infra/` | Machine launch, setup and sync |
+| `results/` | Counted results, by model and machine |
 
 ## Tests
 
-```sh
-python3 savina/build.py && python3 savina/test_check.py   # rebuild both arms; checker and protocol tests
-(cd runner && cargo test --release --locked)              # the agent-arm runner
+```bash
+python3 savina/test_check.py
+(cd runner && cargo test --release --locked)
 ```

@@ -1,21 +1,33 @@
-# Coordination probes
+# Coordination Probes
 
-The probes from the original study of July–August 2026 (called the summer
-study in [../PREREGISTRATION.md](../PREREGISTRATION.md)): chain, ring,
-scatter-gather and missing workers, each in both arms. They run the same code
-as the original study; what changed and why is in [CHANGES.md](CHANGES.md).
+**The coordination probes from the original study of July–August 2026.**
 
-| Path | What it is |
-|---|---|
-| `sweep.py` | Agent-arm sweep: agents coordinate by addressed mail through the runner (`../runner/`) |
+The same code as the original study; every change is listed in
+[CHANGES.md](CHANGES.md). The pre-registration calls this the summer study.
+
+## Probes
+
+| Probe | Sizes | What it tests |
+|-------|-------|---------------|
+| Chain | 20, 50, 100 agents | Relaying a message without losing fields |
+| Ring | 10, 25, 40 agents | Passing a token for two laps, or stopping legally |
+| Scatter-gather | 5 or 9 workers | Gathering the right answer when some workers are corrupted |
+| Missing workers | 5 workers | Following a stated policy when workers fail |
+
+## Files
+
+| Path | Purpose |
+|------|---------|
+| `sweep.py` | Agent-arm sweep, through the [runner](../runner/) |
 | `dsl/dsl_sweep.py` | DSL-arm sweep of chain and scatter-gather |
-| `dsl/dsl41_sweep.py` | DSL-arm sweep of rings and missing workers, which need OMAR 0.4.1's features |
-| `dsl/gen.py`, `dsl/sg_gen.py` | The generators that write every `.omar` program |
-| `dsl/build_programs.sh` | Regenerates all 57 programs for the Claude, Codex and Stub backends |
-| `dsl/*.omar` | The generated programs |
-| `original-results/` | The original study's CSVs and its write-up, unchanged |
+| `dsl/dsl41_sweep.py` | DSL-arm sweep of rings and missing workers |
+| `dsl/gen.py`, `dsl/sg_gen.py` | Generators for every `.omar` program |
+| `dsl/build_programs.sh` | Regenerates all 57 programs |
+| `original-results/` | The original study's results, unchanged |
 
-```sh
-sh probes/dsl/build_programs.sh                  # regenerate the programs; no diff means none was edited by hand
+## Usage
+
+```bash
+sh probes/dsl/build_programs.sh
 python3 run/schedule.py --tier sol --units chain-20 --dry-run
 ```

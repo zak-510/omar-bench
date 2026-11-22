@@ -1,7 +1,7 @@
 # Pre-registration: coordination reliability, summer reproduction and Savina
 
 **Status: frozen** at tag `prereg-v1`, 2026-11-21, and amended at `prereg-v2`
-the same day (see Changes, at the end). No counted run starts before a tag, and
+and `prereg-v3` (see Changes, at the end). No counted run starts before a tag, and
 any later change gets a new tag with the reason stated.
 Pilot runs (kept in `results/pilot/`) never count; the pilots before this tag were
 used only to measure time, memory and usage, and are published with the results.
@@ -175,12 +175,13 @@ run/schedule.py --dry-run` prints the agent calls this takes).
   recorded with every trial and reported as a covariate.
 - First run (`prereg-v1`, Philosophers from `prereg-v2`): Savina Philosophers
   and Banking on `gpt-6.1-sol`, both arms, on two `m7i-flex.large` machines,
-  stopping at 2026-11-25 00:00 UTC. Second run (`prereg-v3`), on the same two
-  machines and with the same stop: BoundedBuffer on `gpt-6.1-sol`, then
-  Philosophers, Banking and BoundedBuffer on `claude-haiku-5-5`, both arms.
-  Each run is its own shuffled schedule, so either one stopped by the deadline
-  is still a balanced sample. Missing workers
-  and the other summer cells follow under a later tag, on the
+  stopping at 2026-11-25 00:00 UTC. Second run (`prereg-v3`), with the same
+  stop and five `m7i-flex.large` machines of the same image: BoundedBuffer on
+  `gpt-6.1-sol` on the first two, and on `claude-haiku-5-5` on the other three,
+  Philosophers, Banking, BoundedBuffer, scatter-gather and missing workers, both
+  arms. Each run is its own shuffled schedule, so either one stopped by the
+  deadline is still a balanced sample. The summer cells on `gpt-6.1-sol` follow
+  under a later tag, on the
   `m7i-flex.2xlarge`, once OMAR's Codex delivery is fixed: in pilots on 2 vCPUs,
   OMAR 0.4.4 gave up on a Codex app server that took over 3 s to answer (shown
   as `os error 11`), so the `dsl` arm failed to hand five agents their tasks at
@@ -209,6 +210,11 @@ run/schedule.py --dry-run` prints the agent calls this takes).
   in the results. A stall or timeout is an outcome of its arm.
 - Exclusions: only a trial whose logs show a provider outage or usage limit.
   The analysis lists each one with the log line, and the trial is run again.
+  On Claude, the scheduler checks for a usage limit before every trial and
+  every 5 minutes during it (`claude-limit.csv`), waits one out before
+  starting, and lists a trial that overlapped one in `exclusions.csv`.
+- Counted trials: the first 60 per arm and cell, in start order. A trial past
+  that count is reported and not counted.
 - Stopping: the run stops when every trial is done, when weekly Codex use
   reaches 85% (the guard keeps the account usable), or at a stated deadline.
   Because the order is shuffled and interleaved, a stopped run is a balanced
@@ -252,22 +258,36 @@ The v1 Philosophers trials (6 `agent`, 6 `dsl`, and one `agent` trial stopped
 mid-run for this change) are published separately as v1 and not counted.
 Banking was not affected and its v1 trials count.
 
-**`prereg-v3`, 2026-11-21: BoundedBuffer, and Savina on a second model.**
+**`prereg-v3`, 2026-11-22: BoundedBuffer, the second model, and two fixes.**
 BoundedBuffer is the third Savina benchmark because it is the
 producer-consumer pattern behind agent work queues, its rules can be checked
 from the events alone, and it fits 6 agents. It was chosen after the interim
 Philosophers (v1) and Banking results had been seen, for those reasons only,
 and before any BoundedBuffer trial ran. Its fuse is 500 deliveries by the same
-rule as the others (four times the fewest, 125). Phase 2 starts with Savina:
-`claude-haiku-5-5` runs Philosophers, Banking and BoundedBuffer in both arms,
-60 trials each, with Claude Code signed in by a token from `claude setup-token`
-and the model pinned in the workdir's settings (`infra/bootstrap.sh`). The
-summer cells on `claude-haiku-5-5` follow with the OMAR fix. Nothing in
+rule as the others (four times the fewest, 125).
+
+Phase 2 starts on the cells that fit an `m7i-flex.large`: `claude-haiku-5-5`
+runs Philosophers, Banking, BoundedBuffer, scatter-gather and missing workers
+in both arms, with Claude Code signed in by a token from `claude setup-token`
+and the model pinned in the workdir's settings (`infra/bootstrap.sh`). OMAR's
+Codex delivery bug does not reach Claude agents: the pilots on 0.4.4 showed no
+failed delivery on Claude, 9-worker scatter-gather included. Nothing in
 Philosophers or Banking changes: their specs and programs are byte-for-byte
-the same as at `prereg-v2`. The repository layout also changed at this tag,
-with no code changed: the original study's runner is now `runner/`, its probes
-`probes/` (results in `probes/original-results/`), and the OMAR tools each
-machine installs `local/`.
+the same as at `prereg-v2`.
+
+Two fixes, both found in the first run. The scheduler, restarted for
+`prereg-v2`, ran every pick of its share again on top of the Banking trials
+already done, so Banking ran 64 `agent` and 63 `dsl` trials before it was
+stopped; by the rule above, the first 60 per arm count, and the extras are
+reported. The scheduler now caps each unit at its share of the machine's
+picks. And on Claude, a usage limit stopped agents from answering in a pilot
+(eight scatter-gather runs timed out while it lasted), so the scheduler now
+detects one and the trial it touched is excluded and run again, as the
+exclusion rule says.
+
+The repository layout also changed at this tag, with no code changed: the
+original study's runner is now `runner/`, its probes `probes/` (results in
+`probes/original-results/`), and the OMAR tools each machine installs `local/`.
 
 The repository's history was also rebuilt at this tag, before it was first
 published, to drop unrelated earlier work; every commit kept its files. Counted

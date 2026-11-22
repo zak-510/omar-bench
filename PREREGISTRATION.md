@@ -1,7 +1,7 @@
 # Pre-registration: coordination reliability, summer reproduction and Savina
 
 **Status: frozen** at tag `prereg-v1`, 2026-11-21, and amended at `prereg-v2`
-to `prereg-v5` (see Changes, at the end). No counted run starts before a tag, and
+to `prereg-v6` (see Changes, at the end). No counted run starts before a tag, and
 any later change gets a new tag with the reason stated.
 Pilot runs (kept in `results/pilot/`) never count; the pilots before this tag were
 used only to measure time, memory and usage, and are published with the results.
@@ -318,4 +318,17 @@ can only help it. Claude's Philosophers, Banking and BoundedBuffer rerun in both
 arms under this tag; their trials so far are published as v3 and not counted.
 The Codex runs and Claude's summer cells, whose charter is the original
 study's, are unaffected and continue.
+
+**`prereg-v6`, 2026-11-22: request numbers in the `agent` arm.** The v5
+sentence was not enough: in 2 of 22 Claude Philosophers `agent`-arm trials the
+arbitrator still refused every request ("This is round 7. The only requests I
+have received are rounds 5, 6, 7"), and 2 more stalled after replies citing
+missing rounds. The cause is the number itself: the runner gave each request
+the run-wide delivery count. A Savina agent's requests are now numbered from 1
+in the order they reach it, so there is no gap to read, and the v5 sentence is
+replaced by one saying so. Again an `agent`-arm change that can only help it.
+Claude's Philosophers, Banking and BoundedBuffer `agent` arms rerun under this
+tag; their v5 trials are published and not counted. Claude's `dsl`-arm trials
+do not go through the runner and keep counting, as do Claude's summer cells and
+every Codex run (no Codex reply in 142 transcripts cites missing rounds).
 

@@ -1048,6 +1048,7 @@ impl Runner {
         }
 
         let mut fuse_hit = false;
+        let mut per_slot = vec![0usize; count + 1];
         while done.is_none() {
             let Some((from, to, body)) = queue.pop_front() else {
                 break;
@@ -1082,6 +1083,14 @@ impl Runner {
                     prompts::postal_custom(&spec.prompts[to - 1], from, &body)
                 }
             };
+            // A custom agent sees its own requests numbered 1, 2, 3...: a
+            // run-wide count leaves gaps an agent can read as lost memory.
+            let round = if matches!(topology, Topology::Custom { .. }) {
+                per_slot[to] += 1;
+                per_slot[to]
+            } else {
+                delivered
+            };
             let call = CallSpec {
                 role: if matches!(topology, Topology::Custom { .. }) {
                     Role::Actor
@@ -1089,7 +1098,7 @@ impl Runner {
                     Role::Node
                 },
                 slot: to,
-                round: delivered,
+                round,
                 payload,
             };
             let reply = self.dispatch(&task.id, &[call], &mut records)?.pop().flatten();
@@ -1295,7 +1304,7 @@ fn charter(name: &str, spec: &SessionSpec, run_dir: &RunDir) -> String {
         role = spec.role,
         ready = ready.display(),
         memory = if spec.role == Role::Actor {
-            "Its 'payload' field is your instruction for this message; follow it exactly. The earlier requests in this session are your memory of the run: keep track of what they told you, because nobody repeats it. Requests are numbered across the whole run and most go to other agents, so a gap in the numbers is normal, not missing memory."
+            "Its 'payload' field is your instruction for this message; follow it exactly. The earlier requests in this session are your memory of the run: keep track of what they told you, because nobody repeats it. Your requests are numbered from 1 in the order they reach you."
         } else {
             "Its 'payload' field is your complete, self-contained instruction; follow it exactly and treat every request independently of earlier ones."
         },

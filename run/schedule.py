@@ -10,7 +10,7 @@ use before and after every trial. On Claude, the scheduler waits out a usage
 limit before a trial and checks for one every 5 minutes during it; a trial that
 overlapped one is listed in exclusions.csv and run again.
 
-  python3 run/schedule.py --tier sol [--max-agents N] [--units a,b] [--quota 85]
+  python3 run/schedule.py --tier sol [--max-agents N] [--units a,b] [--quota 98]
                           [--until 2026-11-25T18:00] [--shard 0/2] [--pilot 3] [--dry-run]
 
 --max-agents keeps units this machine has memory for; both arms of a unit
@@ -175,7 +175,7 @@ def main():
     manifest(results, tier)
     env = dict(os.environ, RESULTS_DIR=results)
     mem = subprocess.Popen(["sh", os.path.join(ROOT, "infra", "memlog.sh"), os.path.join(results, "mem.csv")])
-    quota = float(flag("--quota", "85"))
+    quota = float(flag("--quota", "98"))
     # Also stop mid-trial if the limit is reached; the interrupted trial is rerun next time.
     guard = (subprocess.Popen(["python3", os.path.join(ROOT, "run", "codex_quota.py"), "--guard", str(quota)])
              if backend == "codex" else None)

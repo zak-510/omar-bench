@@ -2,8 +2,8 @@
 """Read Codex's weekly usage, as Codex's app server reports it.
 
   python3 run/codex_quota.py              the current reading
-  python3 run/codex_quota.py --guard 85   stop the runs once the weekly limit
-                                          reaches 85%, checking every minute
+  python3 run/codex_quota.py --guard 98   stop the runs once the weekly limit
+                                          reaches 98%, checking every minute
 
 The reading is account-wide (any Codex use counts), in whole percents, and
 costs no model call. Session logs are no use for this: agents started by the

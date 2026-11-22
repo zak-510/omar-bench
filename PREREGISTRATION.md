@@ -1,7 +1,7 @@
 # Pre-registration: coordination reliability, summer reproduction and Savina
 
-**Status: frozen** at tag `prereg-v1`, 2026-11-21, and amended at `prereg-v2`
-and `prereg-v3` (see Changes, at the end). No counted run starts before a tag, and
+**Status: frozen** at tag `prereg-v1`, 2026-11-21, and amended at `prereg-v2`,
+`prereg-v3` and `prereg-v4` (see Changes, at the end). No counted run starts before a tag, and
 any later change gets a new tag with the reason stated.
 Pilot runs (kept in `results/pilot/`) never count; the pilots before this tag were
 used only to measure time, memory and usage, and are published with the results.
@@ -216,7 +216,7 @@ run/schedule.py --dry-run` prints the agent calls this takes).
 - Counted trials: the first 60 per arm and cell, in start order. A trial past
   that count is reported and not counted.
 - Stopping: the run stops when every trial is done, when weekly Codex use
-  reaches 85% (the guard keeps the account usable), or at a stated deadline.
+  reaches 98% (so no trial runs into the limit), or at a stated deadline.
   Because the order is shuffled and interleaved, a stopped run is a balanced
   sample: the results give the runs achieved against the runs planned for
   every cell, and call a cell short of its planned n underpowered.
@@ -299,3 +299,9 @@ runs before this tag recorded the original commit IDs in their manifests:
 | `prereg-v2` | `bc90f91fb52d2319f304aca68d4ad98d326b5a69` | `03c21c44e0255487eae4fb0ebfb200628a885743` |
 
 `git rev-parse prereg-v1^{tree}` prints a tag's file tree.
+
+**`prereg-v4`, 2026-11-22: the Codex guard.** The run now stops at 98% of
+weekly Codex use instead of 85%. The 85% kept room for other use of the
+account, which the study does not need. A resource rule: no cell, trial count
+or outcome changes.
+

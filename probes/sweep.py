@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Scaling sweep for mass graph topologies. Writes CSV + DONE marker.
+"""Agent-arm sweep of the coordination probes (chain, ring, scatter-gather,
+missing workers) through the runner's `graph` command. Writes one CSV row per run.
 
 Paths default to the repo layout; override with env vars if needed:
-  OMAR_MASS_BIN  omar-mass binary (default: ../target/release/omar-mass)
-  OMAR_MASS_OUT  output dir       (default: ./results next to this script)
+  OMAR_MASS_BIN  the runner binary (default: runner/target/release/omar-mass)
+  OMAR_MASS_OUT  output dir        (default: $RESULTS_DIR, else results/)
 Add --daemon to detach and run in the background.
 """
 import csv, json, re, signal, subprocess, sys, time, os
@@ -65,8 +66,9 @@ assert ARM in ("agent", "runtime"), f"--arm must be agent or runtime, got {ARM}"
 SPAWN_WINDOW = flag("--spawn-window", 0)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BIN = os.environ.get("OMAR_MASS_BIN", os.path.normpath(os.path.join(HERE, "..", "target", "release", "omar-mass")))
-DIR = os.environ.get("OMAR_MASS_OUT", os.environ.get("RESULTS_DIR", os.path.join(HERE, "..", "..", "results")))
+ROOT = os.path.dirname(HERE)
+BIN = os.environ.get("OMAR_MASS_BIN", os.path.join(ROOT, "runner", "target", "release", "omar-mass"))
+DIR = os.environ.get("OMAR_MASS_OUT", os.environ.get("RESULTS_DIR", os.path.join(ROOT, "results")))
 os.makedirs(DIR, exist_ok=True)
 OUT = os.path.join(DIR, f"sweep-{SLUG}-{ARM}.csv")
 DONE = os.path.join(DIR, f"DONE-{SLUG}-{ARM}")

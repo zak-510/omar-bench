@@ -81,7 +81,7 @@ def run(cmd, env=None):
 def agent_trial():
     """Retry only a boot failure (no result and no timeout); every failure is logged."""
     spec_file = os.path.join(HERE, "specs", f"{BENCH}.json")
-    runner = os.environ.get("OMAR_MASS_BIN", os.path.join(ROOT, "summer", "target", "release", "omar-mass"))
+    runner = os.environ.get("OMAR_MASS_BIN", os.path.join(ROOT, "runner", "target", "release", "omar-mass"))
     cmd = [runner, "graph", "--kind", "custom", "--spec", spec_file, "--coordination", "agent",
            "--max-messages", str(FUSE), "--backend", BACKEND.lower(), "--model", MODEL,
            # A reply may take as long as the trial, as a dsl-arm agent's reaction may.
@@ -127,10 +127,10 @@ def dsl_trial():
     suffix = {"Codex": ".codex.omar", "Claude": ".omar", "Stub": ".stub.omar"}[BACKEND]
     name = {"philosophers": "Philosophers", "banking": "Banking", "boundedbuffer": "BoundedBuffer"}[BENCH]
     program = os.path.join(HERE, "programs", name + suffix)
-    dsl = os.path.join(ROOT, "summer", "probes", "dsl")
-    cmd = [os.path.join(dsl, "bin", "omar-dsl"), "-c", os.path.join(dsl, f"config-{TIER}.toml"), "run",
+    local = os.path.join(ROOT, "local")  # installed by infra/bootstrap.sh
+    cmd = [os.path.join(local, "bin", "omar-dsl"), "-c", os.path.join(local, f"config-{TIER}.toml"), "run",
            program, "--replace", "--fg", "--timeout-seconds", str(TIMEOUT)]
-    env = dict(os.environ, OMARC_BIN=os.path.join(dsl, "bin", "omarc"))
+    env = dict(os.environ, OMARC_BIN=os.path.join(local, "bin", "omarc"))
     for attempt in range(1, RETRIES + 1):
         rc, out, err, t0 = run(cmd, env)
         outputs = dict(re.findall(r'Output (\S+) = "(.*)"', out))

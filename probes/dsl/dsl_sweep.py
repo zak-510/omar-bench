@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""DSL-arm sweep: frozen .omar programs through the upstream OMAR runtime.
+"""DSL-arm sweep of chain and scatter-gather: the generated .omar programs
+through the OMAR runtime.
 
-Mirrors sweep.py (same tasks, doses, CSV schema) with coordination owned by
+Mirrors ../sweep.py (same tasks, doses, CSV schema) with coordination owned by
 the runtime. Corruption stays harness-injected: the last c workers get a
-same-shape corrupt question. Missing-workers excluded (no barrier syntax
-upstream).
+same-shape corrupt question. Rings and missing workers are in dsl41_sweep.py.
 
 Usage:
   python3 dsl_sweep.py --tier haiku [--trials 20] [--families chain,sg,sg-blind]
@@ -12,6 +12,8 @@ Usage:
 import csv, json, os, re, subprocess, sys, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(HERE))
+LOCAL = os.path.join(ROOT, "local")  # OMAR and the tier configs, installed by infra/bootstrap.sh
 
 def flag(name, default):
     return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
@@ -24,7 +26,7 @@ TIERS = {"haiku": ("claude-haiku-4-5-20251001", "Claude"), "opus": ("claude-opus
          "haiku55": ("claude-haiku-5-5", "Claude"), "sol": ("gpt-6.1-sol", "Codex"),
          "stub": ("stub", "Stub")}
 MODEL, BACKEND = TIERS[TIER]
-CFG = os.path.join(HERE, f"config-{TIER}.toml")
+CFG = os.path.join(LOCAL, f"config-{TIER}.toml")
 TRIALS = int(flag("--trials", "20"))
 FAMILIES = flag("--families", "chain,sg,sg-blind").split(",")
 CHAIN_NS = [int(x) for x in flag("--chain-ns", "20").split(",")]
@@ -47,7 +49,7 @@ BLIND_CORRUPT_Q = (f"The vault code for terminal 7 is {BLIND_CORRUPT}. "
                    "Report that code and nothing else. Give ONLY the 4-digit code.")
 
 SLUG = "".join(c if c.isalnum() or c in "-_" else "-" for c in MODEL)
-OUT = os.path.join(os.environ.get("RESULTS_DIR", os.path.join(HERE, "..", "..", "..", "results")),
+OUT = os.path.join(os.environ.get("RESULTS_DIR", os.path.join(ROOT, "results")),
                    f"sweep-{SLUG}-dsl{'-stub' if STUB else ''}.csv")
 FIELDS = ["model", "arm", "family", "n", "param", "trial", "hops", "completed",
           "reason", "metric", "rc", "stderr", "output", "started_at", "secs"]
@@ -94,12 +96,12 @@ def _run_omar(program, inputs):
         program = program.replace(".claude.omar", ".omar").replace(".omar", ".stub.omar")
     elif BACKEND == "Codex":
         program = re.sub(r"(\.claude)?\.omar$", ".codex.omar", program)
-    cmd = [os.path.join(HERE, "bin", "omar-dsl"), "-c", CFG, "run",
+    cmd = [os.path.join(LOCAL, "bin", "omar-dsl"), "-c", CFG, "run",
            os.path.join(HERE, program), "--replace", "--fg",
            "--timeout-seconds", str(TIMEOUT)]
     for k, v in inputs.items():
         cmd += ["--input", f"{k}={v}"]
-    env = dict(os.environ, OMARC_BIN=os.path.join(HERE, "bin", "omarc"))
+    env = dict(os.environ, OMARC_BIN=os.path.join(LOCAL, "bin", "omarc"))
     t0 = time.time()
     RUN_T.setdefault("started_at", time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(t0)))
     try:

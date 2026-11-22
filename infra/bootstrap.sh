@@ -37,18 +37,18 @@ if [ ! -x "$OPT/omar-$OMAR_VERSION/omar" ]; then
     mkdir -p "$OPT/omar-$OMAR_VERSION" && tar -xzf /tmp/omar.tgz -C "$OPT/omar-$OMAR_VERSION" --strip-components 1
 fi
 
-# The DSL arm calls bin/omar-dsl and bin/omarc next to its sweep scripts.
-DSLBIN=$ROOT/summer/probes/dsl/bin
-mkdir -p "$DSLBIN"
-ln -sfn "$OPT/omar-$OMAR_VERSION/omar" "$DSLBIN/omar-dsl"
-ln -sfn "$OPT/omar-$OMAR_VERSION/omarc" "$DSLBIN/omarc"
-ln -sfn "$OPT/omar-$OMAR_VERSION/lib" "$DSLBIN/lib"
+# Both DSL arms call local/bin/omar-dsl and local/bin/omarc, with a config per tier.
+LOCAL=$ROOT/local
+mkdir -p "$LOCAL/bin"
+ln -sfn "$OPT/omar-$OMAR_VERSION/omar" "$LOCAL/bin/omar-dsl"
+ln -sfn "$OPT/omar-$OMAR_VERSION/omarc" "$LOCAL/bin/omarc"
+ln -sfn "$OPT/omar-$OMAR_VERSION/lib" "$LOCAL/bin/lib"
 
 # The agent arm's runner, built once with the pinned compiler.
 command -v rustup >/dev/null 2>&1 || curl -fsSL https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none
 rustup toolchain install "$RUST_VERSION" --profile minimal
 rustup default "$RUST_VERSION"   # OMAR builds code reactions with plain `cargo`
-(cd summer && cargo "+$RUST_VERSION" build --release --locked)
+(cd runner && cargo "+$RUST_VERSION" build --release --locked)
 
 # Codex reads its model from CODEX_HOME, Claude Code from the workdir's
 # settings; nothing else on the machine sets one.
@@ -56,14 +56,14 @@ cp infra/codex-config.toml "$HOME/codex-home/config.toml"
 printf '{"model": "%s"}\n' "$CLAUDE_MODEL" > "$HOME/wd/haiku55/.claude/settings.json"
 for tier in sol stub haiku55; do
     printf '[dashboard]\nsession_prefix = "dslprobe-"\n\n[agent]\ndefault_workdir = "%s"\n' \
-        "$HOME/wd/$tier" > "summer/probes/dsl/config-$tier.toml"
+        "$HOME/wd/$tier" > "$LOCAL/config-$tier.toml"
 done
 
 cat > "$HOME/omar-rerun.env" <<EOF
 export PATH=$OPT/node/bin:$HOME/.cargo/bin:$OPT/omar-$OMAR_VERSION:\$PATH
 export CODEX_HOME=$HOME/codex-home
 export OMAR_BIN=$OPT/omar-$OMAR_VERSION/omar
-export OMAR_MASS_BIN=$ROOT/summer/target/release/omar-mass
+export OMAR_MASS_BIN=$ROOT/runner/target/release/omar-mass
 export RESULTS_DIR=$ROOT/results
 export DISABLE_AUTOUPDATER=1   # keep Claude Code at the pinned version
 if [ -f $HOME/.claude-token ]; then export CLAUDE_CODE_OAUTH_TOKEN=\$(cat $HOME/.claude-token); fi

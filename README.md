@@ -10,8 +10,8 @@ reason.
 
 Status: counted runs under way. Savina Philosophers and Banking on
 `gpt-6.1-sol` (`prereg-v1`, Philosophers from `prereg-v2`); BoundedBuffer and
-`claude-haiku-5-5` next (`prereg-v3`). The summer probes follow once OMAR's
-Codex delivery fix is released.
+`claude-haiku-5-5` next (`prereg-v3`). The original study's probes follow
+once OMAR's Codex delivery fix is released.
 
 ## Layout
 
@@ -22,8 +22,10 @@ infra/               launch an EC2 machine, install the toolchain, sync, sample 
                      install a Claude Code token
 run/                 plan.py (the trial table), schedule.py (runs it), codex_quota.py
 savina/              Savina Philosophers, Banking and BoundedBuffer: both arms, their checker
-summer/              the summer probes: agent-arm runner (Rust) and DSL programs
+probes/              the original study's probes: chain, ring, scatter-gather, missing workers
+runner/              the agent-arm runner (Rust): delivers agents' addressed mail, routes nothing
 results/             counted results by model and machine; pilots stay in results/pilot/
+local/               OMAR and per-model configs, installed on each machine (not committed)
 ```
 
 ## Run
@@ -56,5 +58,5 @@ python3 run/schedule.py --tier sol                    # counted: needs a clean, 
 
 ```sh
 python3 savina/build.py && python3 savina/test_check.py   # rebuild both arms; checker and protocol tests
-(cd summer && cargo test --release --locked)              # the agent-arm runner
+(cd runner && cargo test --release --locked)              # the agent-arm runner
 ```

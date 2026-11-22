@@ -19,8 +19,8 @@ later post.
 
 | Arm | What owns coordination | How it runs |
 |---|---|---|
-| `agent` | The agents, following the protocol written in their prompts | `summer/` runner: OMAR `spawn_agent` plus a file mailbox that delivers addressed messages and records them |
-| `dsl` | The OMAR program | `.omar` programs from `summer/probes/dsl/build_programs.sh` |
+| `agent` | The agents, following the protocol written in their prompts | `runner/`: OMAR `spawn_agent` plus a file mailbox that delivers addressed messages and records them |
+| `dsl` | The OMAR program | `.omar` programs from `probes/dsl/build_programs.sh` and `savina/build.py` |
 
 Both arms run on OMAR 0.4.4. Agent prompts are the summer's, identical across
 arms except for the coordination clauses (routing instructions and address
@@ -264,5 +264,8 @@ rule as the others (four times the fewest, 125). Phase 2 starts with Savina:
 and the model pinned in the workdir's settings (`infra/bootstrap.sh`). The
 summer cells on `claude-haiku-5-5` follow with the OMAR fix. Nothing in
 Philosophers or Banking changes: their specs and programs are byte-for-byte
-the same as at `prereg-v2`.
+the same as at `prereg-v2`. The repository layout also changed at this tag,
+with no code changed: the original study's runner is now `runner/`, its probes
+`probes/` (results in `probes/original-results/`), and the OMAR tools each
+machine installs `local/`.
 

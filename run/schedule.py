@@ -138,7 +138,7 @@ def main():
                 print(f"weekly Codex use {used[0]}% >= {quota}%; stopping", flush=True)
                 break
             argv = ["python3", *u.argv, "--tier", tier, "--trials", str(k), "--timeout", str(u.timeout)]
-            if u.argv[0] == plan.SUMMER_AGENT:
+            if u.argv[0] == plan.PROBE_AGENT:
                 argv = ["python3", u.argv[0], "--spawn-window", "6", "--model", model, "--backend", backend,
                         *u.argv[1:], "--trials", str(k), "--hard-timeout", str(u.timeout)]
             started = time.time()

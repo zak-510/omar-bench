@@ -10,9 +10,9 @@ from collections import namedtuple
 
 Unit = namedtuple("Unit", "name arm trials agents steps calls timeout argv")
 
-SUMMER_DSL = "summer/probes/dsl/dsl_sweep.py"
-SUMMER_DSL41 = "summer/probes/dsl/dsl41_sweep.py"
-SUMMER_AGENT = "summer/probes/sweep.py"
+PROBE_DSL = "probes/dsl/dsl_sweep.py"
+PROBE_DSL41 = "probes/dsl/dsl41_sweep.py"
+PROBE_AGENT = "probes/sweep.py"
 SAVINA = "savina/sweep.py"
 
 # One scatter-gather trial runs every corruption level: 5 with 5 workers, 9
@@ -42,19 +42,19 @@ def units():
         out.append(Unit(name, "dsl", trials, agents_dsl, *dsl_cost, timeout, dsl_argv))
 
     pair("scatter-gather", 5, 10, SG_AGENT, SG_DSL, 900,
-         [SUMMER_AGENT, "--only", "sg"], [SUMMER_DSL, "--families", "sg,sg-blind"])
+         [PROBE_AGENT, "--only", "sg"], [PROBE_DSL, "--families", "sg,sg-blind"])
     for n, trials, timeout in ((20, 30, 900), (50, 30, 1800), (100, 40, 2400)):
         pair(f"chain-{n}", trials, min(n, 50), (n, n), (n, n), timeout,
-             [SUMMER_AGENT, "--only", "chain", "--chain-ns", str(n)],
-             [SUMMER_DSL, "--families", "chain", "--chain-ns", str(n)], agents_agent=6)
+             [PROBE_AGENT, "--only", "chain", "--chain-ns", str(n)],
+             [PROBE_DSL, "--families", "chain", "--chain-ns", str(n)], agents_agent=6)
     for n, timeout in ((10, 900), (25, 1800), (40, 3600)):
         pair(f"ring-{n}", 14, n, (2 * n, 2 * n), (2 * n, 2 * n), timeout,
-             [SUMMER_AGENT, "--only", "ring", "--ring-ns", str(n)],
-             [SUMMER_DSL41, "--families", "ring-judged", "--ring-ns", str(n)], agents_agent=6)
+             [PROBE_AGENT, "--only", "ring", "--ring-ns", str(n)],
+             [PROBE_DSL41, "--families", "ring-judged", "--ring-ns", str(n)], agents_agent=6)
         out.append(Unit(f"ring-{n}-nostop", "dsl", 10, n, 2 * n, 2 * n, timeout,
-                        [SUMMER_DSL41, "--families", "ring-bounded", "--ring-ns", str(n)]))
+                        [PROBE_DSL41, "--families", "ring-bounded", "--ring-ns", str(n)]))
     pair("missing-workers", 15, 6, MISSING_AGENT, MISSING_DSL, 900,
-         [SUMMER_AGENT, "--only", "sg-missing"], [SUMMER_DSL41, "--families", "sg-missing"])
+         [PROBE_AGENT, "--only", "sg-missing"], [PROBE_DSL41, "--families", "sg-missing"])
     pair("philosophers", 60, 6, (PHIL_AGENT, PHIL_AGENT), (PHIL_DSL_ROUNDS, 30), 7200,
          [SAVINA, "--bench", "philosophers", "--arm", "agent"],
          [SAVINA, "--bench", "philosophers", "--arm", "dsl"])

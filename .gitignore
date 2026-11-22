@@ -4,10 +4,9 @@ REVISION
 __pycache__/
 .DS_Store
 
-# Installed by infra/bootstrap.sh on the machine, never committed
-summer/target/
-summer/probes/dsl/bin/
-summer/probes/dsl/config-*.toml
+# Built or installed on the machine by infra/bootstrap.sh, never committed
+runner/target/
+local/
 
 # Pilot runs stay local; counted results are committed
 results/pilot/

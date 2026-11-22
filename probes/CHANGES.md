@@ -1,17 +1,17 @@
-# Changes from the summer study
+# Changes from the original study
 
-Copied from the summer `omar-mass/studies/mass` tree (Rust runner, probes and
-DSL programs), with its results in `results-2026-summer/` for reference. Only
-what follows was changed.
+The runner (`../runner/`), the probes and their DSL programs are copied from
+the original study of July–August 2026, with its results in
+`original-results/` for reference. Only what follows was changed.
 
 - **OMAR 0.4.4 syntax:** reactions are declared with `task`, not `prompt`.
   Applied to the generators; `probes/dsl/build_programs.sh` regenerates every
-  program for the Claude, Codex and Stub backends. The summer's shipped
+  program for the Claude, Codex and Stub backends. The original study's
   programs are byte-for-byte the generators' output, so nothing is hand-edited.
 - **OMAR 0.4.4 runs in the background by default:** both DSL sweeps pass `--fg`
   so a run prints its outputs and cleans up its session.
 - **One runtime for both arms:** the agent arm and the DSL arm both run on
-  OMAR 0.4.4 (the summer used 0.4.0 and 0.4.1).
+  OMAR 0.4.4 (the original study used 0.4.0 and 0.4.1).
 - **Codex:** the sweeps take a `sol` tier; the agent-arm sweep passes
   `--backend` through to the runner, which already supported it.
 - **Retries, the same rule in both arms:** the agent arm used to retry stalls
@@ -32,3 +32,5 @@ what follows was changed.
   charter that keeps earlier messages as memory instead of treating each one
   alone. Chain, ring and scatter-gather are unchanged.
 - **Ring scoring:** see the correction in `PREREGISTRATION.md`.
+- **Layout:** the runner moved to `runner/` and the probes to `probes/`, with
+  the installed OMAR tools in `local/`; no code changed in the move.

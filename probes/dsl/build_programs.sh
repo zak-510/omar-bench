@@ -1,6 +1,6 @@
 #!/bin/sh
 # Regenerate every DSL-arm program from gen.py / sg_gen.py, for each backend.
-# The summer's shipped programs are exactly these generators' output (Claude
+# The original study's programs are exactly these generators' output (Claude
 # backend), so nothing here is hand-edited. Naming, as the sweeps expect:
 #   Claude  X.omar            (chain-100 halves: Chain100a.claude.omar, Chain100b.claude.omar)
 #   Codex   X.codex.omar

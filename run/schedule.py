@@ -42,6 +42,22 @@ def revision():
     return open(path).read().strip() if os.path.exists(path) else ""
 
 
+def version_drift():
+    """Installed CLI versions that differ from versions.env, as 'name: want, have'."""
+    pins = dict(line.strip().split("=", 1) for line in open(os.path.join(ROOT, "versions.env"))
+                if "=" in line and not line.startswith("#"))
+    drift = []
+    for name, cmd in (("OMAR_VERSION", ["omar", "--version"]), ("CODEX_CLI_VERSION", ["codex", "--version"]),
+                      ("CLAUDE_CODE_VERSION", ["claude", "--version"])):
+        try:
+            have = subprocess.run(cmd, capture_output=True, text=True, timeout=30).stdout
+        except (OSError, subprocess.TimeoutExpired):
+            have = ""
+        if pins.get(name, "") not in have:
+            drift.append(f"{name}: want {pins.get(name)}, have {have.strip() or 'nothing'}")
+    return drift
+
+
 def manifest(results, tier):
     def out(cmd):
         try:
@@ -71,8 +87,12 @@ def main():
     results = os.path.join(ROOT, "results", "pilot" if pilot else "", tier,
                            f"shard-{shard}-of-{shards}" if shards > 1 else "")
     rev = revision()
-    if not pilot and "--dry-run" not in sys.argv and (not rev or "dirty" in rev or "tag:" not in rev):
-        sys.exit(f"counted runs need a clean, tagged commit; REVISION says {rev!r}")
+    if not pilot and "--dry-run" not in sys.argv:
+        if not rev or "dirty" in rev or "tag:" not in rev:
+            sys.exit(f"counted runs need a clean, tagged commit; REVISION says {rev!r}")
+        drift = version_drift()
+        if drift:
+            sys.exit("installed versions differ from versions.env: " + "; ".join(drift))
 
     units = plan.units()
     keep = set(flag("--units", "").split(",")) - {""}

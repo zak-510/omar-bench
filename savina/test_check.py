@@ -1,14 +1,9 @@
 """The checker passes a correct run and catches each failure it names.
 Run: python3 savina/test_check.py"""
-import os
-import re
 from collections import deque
 
 import check
 import spec
-
-FUSE = int(re.search(r"^FUSE = (\d+)", open(os.path.join(os.path.dirname(__file__), "sweep.py")).read(),
-                     re.M).group(1))
 
 
 def correct_philosophers_trace():
@@ -147,13 +142,115 @@ def test_agent_protocol_fits_the_fuse():
     events, dev = check.philosophers_agent(msgs)
     ok = check.philosophers(events, True)
     assert dev == 0 and ok["success"] and ok["safety_violations"] == 0, (dev, ok)
-    assert len(msgs) < FUSE, len(msgs)
+    assert len(msgs) < spec.FUSE["philosophers"], len(msgs)
+    return len(msgs)
+
+
+def correct_buffer_trace():
+    """What the DSL manager writes when every agent answers at once and right."""
+    P, C, B, PER = spec.PRODUCERS, spec.CONSUMERS, spec.BUFFER, spec.PER_PRODUCER
+    buf, nxt, asked, hold, trace, finished = deque(), [1] * P, [0] * P, [None] * C, [], 0
+    made, answered = [], []
+    while True:
+        for p in made:
+            buf.append((p + 1, asked[p]))
+            trace.append(f"put {p + 1} {asked[p]}")
+            asked[p] = 0
+        for c in answered:
+            p, k = hold[c]
+            trace.append(f"done {c + 1} {p} {k} {sum(spec.item(p, k))}")
+            hold[c] = None
+            finished += 1
+        if finished == spec.ROUNDS:
+            return ";".join(trace) + ";"
+        answered = []
+        for c in range(C):
+            if hold[c] is None and buf:
+                hold[c] = buf.popleft()
+                trace.append(f"take {c + 1} {hold[c][0]} {hold[c][1]}")
+                answered.append(c)
+        room = B - len(buf) - sum(1 for k in asked if k)
+        made = []
+        for p in sorted(range(P), key=lambda p: (nxt[p], p)):
+            if room > 0 and not asked[p] and nxt[p] <= PER:
+                asked[p], nxt[p], room = nxt[p], nxt[p] + 1, room - 1
+                made.append(p)
+
+
+def rule_following_buffer():
+    """The agent-arm protocol played exactly, one delivery at a time in order sent."""
+    man, P, msgs = spec.MANAGER_NODE, spec.PRODUCERS, []
+    buf, nxt, finished = deque(), {p: 1 for p in range(1, P + 1)}, 0
+    queue = deque([(0, a, b) for a, b in spec.boundedbuffer_seeds()])
+
+    def give(c):
+        if buf:
+            p, k = buf.popleft()
+            queue.append((man, c, f"take P{p}-{k}: {spec.item_text(p, k).split(': ', 1)[1]}"))
+        else:
+            queue.append((man, c, "empty"))
+
+    while queue:
+        frm, to, body = queue.popleft()
+        msgs.append({"from": frm, "to": to, "body": body})
+        if to == man:
+            if body.startswith("put"):
+                k = int(body.split("-", 1)[1].split(":")[0])
+                if len(buf) < spec.BUFFER:
+                    buf.append((frm, k))
+                    queue.append((man, frm, f"stored P{frm}-{k}"))
+                else:
+                    queue.append((man, frm, f"full P{frm}-{k}"))
+            else:
+                if body.startswith("done"):
+                    finished += 1
+                    if finished == spec.ROUNDS:
+                        return msgs
+                give(frm)
+        elif to <= P:
+            if body.startswith("stored"):
+                nxt[to] += 1
+            if nxt[to] <= spec.PER_PRODUCER:
+                queue.append((to, man, f"put {spec.item_text(to, nxt[to])}"))
+        elif body.startswith("take"):
+            p, k = (int(x) for x in body.split()[1].rstrip(":")[1:].split("-"))
+            queue.append((to, man, f"done P{p}-{k}: {sum(spec.item(p, k))}"))
+        else:
+            queue.append((to, man, "ready"))
+    return msgs
+
+
+def test_boundedbuffer():
+    log = correct_buffer_trace()
+    ok = check.boundedbuffer(check.boundedbuffer_dsl(log), True)
+    assert ok["success"] and ok["overflows"] == 0 and ok["wrong_answers"] == 0, ok
+    assert not check.boundedbuffer(check.boundedbuffer_dsl(log), False)["success"]
+    # One item more than the buffer holds.
+    over = [("put", 1, k) for k in range(1, spec.BUFFER + 2)]
+    assert check.boundedbuffer(over, True)["overflows"] == 1
+    # An item handed out that the buffer never held, and one finished twice.
+    bad = check.boundedbuffer([("take", 1, 2, 9)] + check.boundedbuffer_dsl(log), True)
+    assert not bad["success"] and bad["safety_violations"] >= 1, bad
+    events = check.boundedbuffer_dsl(log)
+    twice = events + [e for e in events if e[0] == "done"][:1]
+    assert not check.boundedbuffer(twice, True)["success"]
+    # An item never finished.
+    short = [e for e in events if not (e[0] == "done" and e[2:4] == (3, 10))]
+    assert check.boundedbuffer(short, True)["reason"] == "items missing"
+    # Agent arm: the protocol followed exactly fits the fuse and passes.
+    msgs = rule_following_buffer()
+    events, dev = check.boundedbuffer_agent(msgs)
+    ok = check.boundedbuffer(events, True)
+    assert dev == 0 and ok["success"], (dev, ok)
+    assert len(msgs) < spec.FUSE["boundedbuffer"], len(msgs)
     return len(msgs)
 
 
 if __name__ == "__main__":
     test_philosophers()
     print(f"agent-arm Philosophers protocol, followed exactly: {test_agent_protocol_fits_the_fuse()} "
-          f"deliveries (fuse {FUSE})")
+          f"deliveries (fuse {spec.FUSE['philosophers']})")
+    print(f"agent-arm BoundedBuffer protocol, followed exactly: {test_boundedbuffer()} "
+          f"deliveries (fuse {spec.FUSE['boundedbuffer']})")
     test_banking()
     print("check.py: all tests pass")

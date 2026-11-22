@@ -17,6 +17,9 @@ CREDIT = re.compile(r"\bcredit\s+T(\d+)\s*:?\s*\$?\s*([\d,]+)", re.I)
 CREDITED = re.compile(r"\bcredited\s+T(\d+)\b", re.I)
 DENIED = re.compile(r"\bdenied\s+T(\d+)\b", re.I)
 BALANCE = re.compile(r"\bbalance\s*:?\s*\$?\s*(-?[\d,]+)", re.I)
+STORED = re.compile(r"^\W*stored\s+P(\d+)\s*-\s*(\d+)", re.I)
+TAKE = re.compile(r"^\W*take\s+P(\d+)\s*-\s*(\d+)", re.I)
+DONE_ITEM = re.compile(r"\bdone\s+P(\d+)\s*-\s*(\d+)\s*:?\s*(-?\d+)", re.I)
 
 
 def _int(s):
@@ -172,3 +175,92 @@ def banking_dsl(log):
             vals = item.split(" ", 1)[1].split(",")
             reported = {i + 1: int(v) for i, v in enumerate(vals)}
     return decisions, reported
+
+
+# --------------------------------------------------------------- BoundedBuffer
+def boundedbuffer(events, completed):
+    """events: ('put', p, k) when item Pp-k enters the buffer, ('take', c, p, k)
+    when consumer c is given it, and ('done', c, p, k, answer) when c finishes it."""
+    every = {(p, k) for p in range(1, spec.PRODUCERS + 1) for k in range(1, spec.PER_PRODUCER + 1)}
+    buf, held, stored, done = set(), {}, set(), {}
+    overflows = violations = 0
+    for ev in events:
+        if ev[0] == "put":
+            it = ev[1:]
+            if it in stored:
+                violations += 1  # stored twice
+            stored.add(it)
+            buf.add(it)
+            if len(buf) > spec.BUFFER:
+                overflows += 1
+        elif ev[0] == "take":
+            c, it = ev[1], ev[2:]
+            if it not in buf:
+                violations += 1  # handed out an item the buffer did not hold
+            buf.discard(it)
+            held[c] = it
+        else:
+            _, c, p, k, answer = ev
+            it = (p, k)
+            if held.get(c) != it or it in done:
+                violations += 1  # finished an item it was not given, or twice
+            held.pop(c, None)
+            done[it] = answer
+    all_done = set(done) == every
+    wrong = sum(1 for (p, k), a in done.items() if (p, k) not in every or a != sum(spec.item(p, k)))
+    ok = completed and overflows == 0 and violations == 0 and all_done
+    reason = ("" if ok else "not finished" if not completed else "buffer overflow" if overflows
+              else "item repeated or handed out wrongly" if violations else "items missing")
+    return {"success": ok, "reason": reason, "overflows": overflows, "safety_violations": violations,
+            "items_done": len(done), "wrong_answers": wrong}
+
+
+def boundedbuffer_agent(messages):
+    """Delivery log -> events. An item enters the buffer when the manager's
+    'stored ITEM' reaches its producer, is handed out by 'take ITEM' reaching a
+    consumer, and is finished by that consumer's 'done ITEM: ANSWER'."""
+    man, events, deviations = spec.MANAGER_NODE, [], 0
+    prods = range(1, spec.PRODUCERS + 1)
+    cons = range(spec.PRODUCERS + 1, spec.PRODUCERS + spec.CONSUMERS + 1)
+    for m in messages:
+        body = m.get("body") or ""
+        f, t, low = m["from"], m["to"], body.lower()
+        if f == man and t in prods:
+            s = STORED.search(body)
+            if s:
+                events.append(("put", int(s.group(1)), int(s.group(2))))
+            elif "full" not in low:
+                deviations += 1
+        elif f == man and t in cons:
+            g = TAKE.search(body)
+            if g:
+                events.append(("take", t - spec.PRODUCERS, int(g.group(1)), int(g.group(2))))
+            elif "empty" not in low:
+                deviations += 1
+        elif f in cons and t == man:
+            d = DONE_ITEM.search(body)
+            if d:
+                events.append(("done", f - spec.PRODUCERS, int(d.group(1)), int(d.group(2)), int(d.group(3))))
+            elif "ready" not in low:
+                deviations += 1
+        elif f in prods and t == man:
+            if "put" not in low:
+                deviations += 1
+        elif f != 0:
+            deviations += 1
+    return events, deviations
+
+
+def boundedbuffer_dsl(log):
+    events = []
+    for item in (log or "").split(";"):
+        parts = item.split()
+        if len(parts) == 3 and parts[0] == "put":
+            events.append(("put", int(parts[1]), int(parts[2])))
+        elif len(parts) == 4 and parts[0] == "take":
+            events.append(("take", int(parts[1]), int(parts[2]), int(parts[3])))
+        elif len(parts) >= 4 and parts[0] == "done":
+            ans = re.search(r"-?\d+", " ".join(parts[4:]))
+            events.append(("done", int(parts[1]), int(parts[2]), int(parts[3]), int(ans.group()) if ans else None))
+    return events
+

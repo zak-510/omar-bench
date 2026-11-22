@@ -28,7 +28,8 @@ rules); the diff is published with the results.
 
 ## Machine and versions
 
-EC2 in us-east-2, Ubuntu 24.04 from the public SSM parameter: an
+EC2 in us-east-2, Ubuntu 24.04 (`ami-06013a79bb46505e8`, the image the public
+SSM parameter named on 2026-11-20): an
 `m7i-flex.2xlarge` (8 vCPU, 32 GiB, 100 GB gp3), and for cells with at most 6
 agents an `m7i-flex.large` (2 vCPU, 8 GiB, 40 GB gp3) may stand in (see
 Running). Both have 8 GiB of swap. Every version in `versions.env`, installed by
@@ -64,12 +65,13 @@ the session logs and reported.
    missing workers (n = 5, 7 policy and failure settings).
 2. **Savina concurrency benchmarks, adapted for agents:** Savina's own
    concurrency category minus LogisticMap (excluded by Lingua Franca's Savina
-   port paper as violating actor semantics), leaving 7. Phase 1 runs
-   **Philosophers** and **Banking**, chosen before any results for the launch
-   case studies. BoundedBuffer, CigaretteSmoker, SleepingBarber, Dictionary and
-   SortedList follow in a later tag, and all seven are reported.
+   port paper as violating actor semantics), leaving 7. **Philosophers** and
+   **Banking** were chosen before any results, for the launch case studies;
+   **BoundedBuffer** was added at `prereg-v3`, before any of its trials (see
+   Changes). CigaretteSmoker, SleepingBarber, Dictionary and SortedList follow
+   in a later tag, and all seven are reported.
    - Size: 5 agents, 30 rounds, for every Savina benchmark (DPBench's default).
-   - The coordinator role (Savina's arbitrator or teller) is an agent following
+   - The coordinator role (Savina's arbitrator, teller or buffer manager) is an agent following
      Savina's correct protocol in the `agent` arm and a code reaction in the
      `dsl` arm. That is the treatment.
    - Everything an agent is asked to do comes from `savina/spec.py`, which
@@ -92,9 +94,23 @@ the session logs and reported.
      the payee and teller; the teller agent runs the schedule. DSL arm: the
      teller is a code reaction that keeps the ledger and gives the paying
      account its current balance with each request.
+   - **BoundedBuffer** (Savina's producer-consumer with a bounded buffer): 3
+     producers make 10 items each, every item a sum with one right answer, and
+     2 consumers answer them. The manager's buffer holds at most 3 items, so
+     the producers, who outnumber the consumers, fill it. Agent arm: a producer
+     offers its next item to the manager agent, which stores it or says the
+     buffer is full; a consumer asks for an item, and the manager hands it the
+     oldest stored one or says the buffer is empty. DSL arm: the manager is a
+     code reaction that stores what producers make, hands the oldest item to
+     every idle consumer, and asks producers for more only while the buffer has
+     room for what is already on its way.
    - Agent arm: the summer runner's postal mode with each agent's prompt from
-     `savina/specs/`, one delivery at a time, cut after 400 deliveries (four
-     times the fewest a correct run needs; agents are never told).
+     `savina/specs/`, one delivery at a time, cut after 400 deliveries (500 for
+     BoundedBuffer): four times the fewest a correct run needs, and agents are
+     never told. Every agent answers only whoever wrote to it, so each turn
+     sends one message. Followed exactly, the protocols finish well under the
+     cut: 120 deliveries for Philosophers and 160 for BoundedBuffer
+     (`savina/test_check.py`).
 
 ## Outcomes (same definition in both arms)
 
@@ -108,9 +124,10 @@ the session logs and reported.
 | Missing workers, no policy | Reported as the share that answer, per arm | No failure label: this cell measures consistency |
 | Savina Philosophers | Run finishes, no fork held by two philosophers at once, nobody eats without both forks, everyone eats meals 1 to 6 exactly once | Any of those broken, or no finish (deadlock, silence, the 400-delivery cut) |
 | Savina Banking | Run finishes, all 30 transfers decided once and in order, no overdraft, no covered transfer refused, right amounts and payees, final balances right | Any of those broken, or no finish |
+| Savina BoundedBuffer | Run finishes, the buffer never holds more than 3 items, no item stored twice or handed out without being stored, every item answered exactly once by the consumer it was given to | Any of those broken, or no finish (deadlock, silence, the 500-delivery cut) |
 
-Wrong meal answers are content errors, not coordination: reported per arm,
-not part of success.
+Wrong answers to meals and items are content errors, not coordination:
+reported per arm, not part of success.
 
 **Correction to the summer analysis.** The summer write-up counted an
 agent-arm ring that kept passing until the 2n message cap as a failure, and a
@@ -143,8 +160,9 @@ table for the scheduler.
 | Missing workers, no policy | consistency | 30 | (same 15) | 30 (15 per setting) |
 | Savina Philosophers | planned at 11.4% | 60 | 60 | 60 |
 | Savina Banking | planned at 11.4% | 60 | 60 | 60 |
+| Savina BoundedBuffer | planned at 11.4% | 60 | 60 | 60 |
 
-That is 482 runs in the `agent` arm and 512 in `dsl` per model (`python3
+That is 542 runs in the `agent` arm and 572 in `dsl` per model (`python3
 run/schedule.py --dry-run` prints the agent calls this takes).
 
 ## Running
@@ -155,8 +173,13 @@ run/schedule.py --dry-run` prints the agent calls this takes).
   order may be split across identical machines (same instance type and AMI),
   each taking every Nth pick and still running one at a time; the machine is
   recorded with every trial and reported as a covariate.
-- First run, under this tag: Savina Philosophers and Banking, both arms, on two
-  `m7i-flex.large` machines, stopping at 2026-11-25 00:00 UTC. Missing workers
+- First run (`prereg-v1`, Philosophers from `prereg-v2`): Savina Philosophers
+  and Banking on `gpt-6.1-sol`, both arms, on two `m7i-flex.large` machines,
+  stopping at 2026-11-25 00:00 UTC. Second run (`prereg-v3`), on the same two
+  machines and with the same stop: BoundedBuffer on `gpt-6.1-sol`, then
+  Philosophers, Banking and BoundedBuffer on `claude-haiku-5-5`, both arms.
+  Each run is its own shuffled schedule, so either one stopped by the deadline
+  is still a balanced sample. Missing workers
   and the other summer cells follow under a later tag, on the
   `m7i-flex.2xlarge`, once OMAR's Codex delivery is fixed: in pilots on 2 vCPUs,
   OMAR 0.4.4 gave up on a Codex app server that took over 3 s to answer (shown
@@ -228,4 +251,18 @@ Philosophers is rerun in both arms under v2, on the same machines and schedule.
 The v1 Philosophers trials (6 `agent`, 6 `dsl`, and one `agent` trial stopped
 mid-run for this change) are published separately as v1 and not counted.
 Banking was not affected and its v1 trials count.
+
+**`prereg-v3`, 2026-11-21: BoundedBuffer, and Savina on a second model.**
+BoundedBuffer is the third Savina benchmark because it is the
+producer-consumer pattern behind agent work queues, its rules can be checked
+from the events alone, and it fits 6 agents. It was chosen after the interim
+Philosophers (v1) and Banking results had been seen, for those reasons only,
+and before any BoundedBuffer trial ran. Its fuse is 500 deliveries by the same
+rule as the others (four times the fewest, 125). Phase 2 starts with Savina:
+`claude-haiku-5-5` runs Philosophers, Banking and BoundedBuffer in both arms,
+60 trials each, with Claude Code signed in by a token from `claude setup-token`
+and the model pinned in the workdir's settings (`infra/bootstrap.sh`). The
+summer cells on `claude-haiku-5-5` follow with the OMAR fix. Nothing in
+Philosophers or Banking changes: their specs and programs are byte-for-byte
+the same as at `prereg-v2`.
 

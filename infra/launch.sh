@@ -1,8 +1,8 @@
 #!/bin/sh
 # Launch one benchmark machine. It powers itself off after MAX_HOURS.
 # Usage: infra/launch.sh <aws-profile> [alert-email]
-#   INSTANCE_TYPE, VOLUME_GB, MAX_HOURS, NAME and AMI override the defaults; pass
-#   the first machine's AMI to a second one so both run the same image.
+#   INSTANCE_TYPE, VOLUME_GB, MAX_HOURS, NAME and AMI override the defaults. The
+#   image is UBUNTU_AMI from versions.env unless AMI says otherwise.
 # Writes infra/instance.env, or ENV_FILE (not committed), for sync.sh.
 set -eu
 cd "$(dirname "$0")/.."
@@ -13,7 +13,7 @@ PROFILE=$1 EMAIL=${2:-}
 NAME=${NAME:-omar-rerun} VOLUME_GB=${VOLUME_GB:-100} MAX_HOURS=${MAX_HOURS:-200}
 aws() { command aws --profile "$PROFILE" --region "$REGION" "$@"; }
 
-AMI=${AMI:-$(aws ssm get-parameter --name "$UBUNTU_AMI_PARAM" --query Parameter.Value --output text)}
+AMI=${AMI:-$UBUNTU_AMI}
 KEY=$HOME/.ssh/$NAME-$PROFILE.pem
 if [ ! -f "$KEY" ]; then
     aws ec2 create-key-pair --key-name "$NAME" --key-type ed25519 \

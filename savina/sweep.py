@@ -2,7 +2,7 @@
 """Run Savina trials in one arm and score each with check.py.
 
 Usage:
-  python3 savina/sweep.py --bench philosophers|banking --arm agent|dsl --tier sol|stub
+  python3 savina/sweep.py --bench philosophers|banking|boundedbuffer --arm agent|dsl --tier sol|haiku55|stub
                           [--trials N] [--timeout SECS]
 
 One CSV row per trial in $RESULTS_DIR/savina-<bench>-<model>-<arm>.csv, the
@@ -22,6 +22,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 import check  # noqa: E402
+import spec  # noqa: E402
 
 
 def flag(name, default):
@@ -33,13 +34,11 @@ ARM = flag("--arm", "dsl")
 TIER = flag("--tier", "sol")
 TRIALS = int(flag("--trials", "3"))
 TIMEOUT = int(flag("--timeout", "3600"))
-assert BENCH in ("philosophers", "banking") and ARM in ("agent", "dsl"), (BENCH, ARM)
+assert BENCH in spec.FUSE and ARM in ("agent", "dsl"), (BENCH, ARM)
 TIERS = {"sol": ("gpt-6.1-sol", "Codex"), "haiku55": ("claude-haiku-5-5", "Claude"),
          "opus55": ("claude-opus-5-5", "Claude"), "stub": ("stub", "Stub")}
 MODEL, BACKEND = TIERS[TIER]
-# Agent arm: total deliveries allowed before the run is cut, a safety fuse the
-# agents are never told about: four times the fewest deliveries a correct run needs.
-FUSE = 400
+FUSE = spec.FUSE[BENCH]  # agent arm only; see spec.py
 RETRIES = 3
 
 RESULTS = os.environ.get("RESULTS_DIR", os.path.join(ROOT, "results"))
@@ -51,7 +50,7 @@ ATTEMPTS = OUT[:-4] + "-attempts.csv"
 FIELDS = ["model", "arm", "bench", "trial", "completed", "success", "reason", "safety_violations",
           "meal_counts", "wrong_answers", "overdrafts", "wrongful_denials", "wrong_transfers",
           "decided", "balances_ok", "deviations", "deliveries", "detail", "rc", "stderr",
-          "started_at", "secs"]
+          "started_at", "secs", "overflows", "items_done"]
 
 
 def done_trials():
@@ -113,6 +112,9 @@ def score_agent(result, err=""):
     if BENCH == "philosophers":
         events, dev = check.philosophers_agent(messages)
         score = check.philosophers(events, completed)
+    elif BENCH == "boundedbuffer":
+        events, dev = check.boundedbuffer_agent(messages)
+        score = check.boundedbuffer(events, completed)
     else:
         decisions, reported, dev = check.banking_agent(messages)
         score = check.banking(decisions, reported, completed)
@@ -123,7 +125,8 @@ def score_agent(result, err=""):
 
 def dsl_trial():
     suffix = {"Codex": ".codex.omar", "Claude": ".omar", "Stub": ".stub.omar"}[BACKEND]
-    program = os.path.join(HERE, "programs", ("Philosophers" if BENCH == "philosophers" else "Banking") + suffix)
+    name = {"philosophers": "Philosophers", "banking": "Banking", "boundedbuffer": "BoundedBuffer"}[BENCH]
+    program = os.path.join(HERE, "programs", name + suffix)
     dsl = os.path.join(ROOT, "summer", "probes", "dsl")
     cmd = [os.path.join(dsl, "bin", "omar-dsl"), "-c", os.path.join(dsl, f"config-{TIER}.toml"), "run",
            program, "--replace", "--fg", "--timeout-seconds", str(TIMEOUT)]
@@ -147,6 +150,9 @@ def score_dsl(outputs, completed):
     if BENCH == "philosophers":
         log = outputs.get("a.log")
         score = check.philosophers(check.philosophers_dsl(log), completed and log is not None)
+    elif BENCH == "boundedbuffer":
+        log = outputs.get("m.log")
+        score = check.boundedbuffer(check.boundedbuffer_dsl(log), completed and log is not None)
     else:
         log = outputs.get("t.log")
         decisions, reported = check.banking_dsl(log)

@@ -26,6 +26,9 @@ MISSING_AGENT, MISSING_DSL = (7 * 5, 7 * 8), (7 * 2, 7 * 5)
 # Philosophers 5 seeds + 30 meals x (hungry, eat, done); Banking 1 seed +
 # 24 approved x 3 + 6 refused x 2 + 5 balance reports x 2.
 PHIL_AGENT, BANK_AGENT = 5 + 30 * 3, 1 + 24 * 3 + 6 * 2 + 5 * 2
+# BoundedBuffer: 5 seeds + 30 items x (put, stored, take, done). DSL: 30 items
+# made and 30 answered, two consumers working at once.
+BUFFER_AGENT, BUFFER_DSL = 5 + 30 * 4, (30, 60)
 # DSL arbitrator: at most 2 of 5 philosophers eat at once, so 30 meals take 15 rounds.
 PHIL_DSL_ROUNDS = 15
 
@@ -58,6 +61,9 @@ def units():
     pair("banking", 60, 6, (BANK_AGENT, BANK_AGENT), (30, 30), 7200,
          [SAVINA, "--bench", "banking", "--arm", "agent"],
          [SAVINA, "--bench", "banking", "--arm", "dsl"])
+    pair("boundedbuffer", 60, 6, (BUFFER_AGENT, BUFFER_AGENT), BUFFER_DSL, 7200,
+         [SAVINA, "--bench", "boundedbuffer", "--arm", "agent"],
+         [SAVINA, "--bench", "boundedbuffer", "--arm", "dsl"])
     return out
 
 

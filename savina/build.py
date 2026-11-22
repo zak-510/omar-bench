@@ -35,7 +35,14 @@ def agent_specs():
         + [spec.teller_agent_prompt()],
         "seeds": spec.banking_seeds(),
     }
-    return {"philosophers": phil, "banking": bank}
+    buffer = {
+        "name": "boundedbuffer",
+        "prompts": [spec.producer_agent_prompt(p) for p in range(1, spec.PRODUCERS + 1)]
+        + [spec.consumer_agent_prompt(c) for c in range(1, spec.CONSUMERS + 1)]
+        + [spec.manager_agent_prompt()],
+        "seeds": spec.boundedbuffer_seeds(),
+    }
+    return {"philosophers": phil, "banking": bank, "boundedbuffer": buffer}
 
 
 # ------------------------------------------------------------------ DSL arm
@@ -229,6 +236,151 @@ def banking_program(backend):
             + "\n".join(wiring) + "\n}\n")
 
 
+MANAGER = r"""
+        let _ = &start;
+        const P: usize = @P@;
+        const C: usize = @C@;
+        const B: usize = @B@;
+        const PER: usize = @PER@;
+        let made = [@MADE@];
+        let dones = [@DONES@];
+        let clean = |s: &str| -> String {
+            s.chars().map(|c| if c == ';' || c == '\n' || c == '\u{1e}' || c == '\u{1f}' { ' ' } else { c })
+                .collect::<String>().trim().to_string()
+        };
+        let num = |s: &str| -> Vec<usize> { s.split(',').map(|x| x.parse().unwrap()).collect() };
+        let join = |v: &Vec<usize>| v.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(",");
+        let mut buf: Vec<(usize, usize, String)> = self.buf.split('\u{1e}').filter(|e| !e.is_empty())
+            .map(|e| {
+                let f: Vec<&str> = e.splitn(3, '\u{1f}').collect();
+                (f[0].parse().unwrap(), f[1].parse().unwrap(), f[2].to_string())
+            })
+            .collect();
+        let mut next = num(&self.next);
+        let mut asked = num(&self.asked);
+        let mut hold = num(&self.hold); // p * 100 + k per consumer, 0 when idle
+        for p in 0..P {
+            if let Some(text) = &made[p] {
+                buf.push((p + 1, asked[p], clean(text)));
+                self.trace.push_str(&format!("put {} {};", p + 1, asked[p]));
+                asked[p] = 0;
+            }
+        }
+        for c in 0..C {
+            if let Some(ans) = &dones[c] {
+                self.trace.push_str(&format!("done {} {} {} {};", c + 1, hold[c] / 100, hold[c] % 100, clean(ans)));
+                hold[c] = 0;
+                self.finished += 1;
+            }
+        }
+        let mut gives: Vec<Option<String>> = vec![None; C];
+        for c in 0..C {
+            if hold[c] == 0 && !buf.is_empty() {
+                let (p, k, text) = buf.remove(0);
+                hold[c] = p * 100 + k;
+                gives[c] = Some(format!("Item P{}-{}: {}", p, k, text));
+                self.trace.push_str(&format!("take {} {} {};", c + 1, p, k));
+            }
+        }
+        let mut reqs: Vec<Option<String>> = vec![None; P];
+        let mut room = B.saturating_sub(buf.len() + asked.iter().filter(|&&k| k > 0).count());
+        let mut order: Vec<usize> = (0..P).collect();
+        order.sort_by_key(|&p| (next[p], p));
+        for &p in &order {
+            if room > 0 && asked[p] == 0 && next[p] <= PER {
+                asked[p] = next[p];
+                reqs[p] = Some(format!("Make item P{}-{}.", p + 1, next[p]));
+                next[p] += 1;
+                room -= 1;
+            }
+        }
+        self.next = join(&next);
+        self.asked = join(&asked);
+        self.hold = join(&hold);
+        self.buf = buf.iter().map(|(p, k, t)| format!("{}\u{1f}{}\u{1f}{}", p, k, t)).collect::<Vec<_>>().join("\u{1e}");
+        @WRITES@
+        if self.finished == @TOTAL@ {
+            log = Some(self.trace.clone());
+            request_stop();
+        }
+"""
+
+
+def boundedbuffer_program(backend):
+    teams = []
+    for p in range(1, spec.PRODUCERS + 1):
+        items = "\n".join(spec.item_text(p, k) for k in range(1, spec.PER_PRODUCER + 1))
+        prompt = (spec.PRODUCER_JOB.format(p=p, np=spec.PRODUCERS, per=spec.PER_PRODUCER)
+                  + "\n\nYour items, in order:\n" + items
+                  + "\n\nThe manager has room in the buffer for the item named below. Set `item` to "
+                  "that item's question only, exactly as listed above.\n\n$(request)")
+        teams.append(f'''team Producer{p}[agent : {backend}]
+{{
+    input request : string
+    output item : string
+
+    // @title Make one item
+    // @desc Runs only when the manager has room in the buffer for this producer's next item.
+    task agent(request) -> item """
+{indent(prompt, "        ")}
+    """
+}}''')
+    for c in range(1, spec.CONSUMERS + 1):
+        prompt = (spec.CONSUMER_JOB.format(c=c, nc=spec.CONSUMERS)
+                  + "\n\nThe manager has taken the item below out of the buffer for you. Set `done` "
+                  "to the answer only.\n\n$(take)")
+        teams.append(f'''team Consumer{c}[agent : {backend}]
+{{
+    input take : string
+    output done : string
+
+    // @title Work one item
+    // @desc Answers the item the manager has taken out of the buffer for this consumer.
+    task agent(take) -> done """
+{indent(prompt, "        ")}
+    """
+}}''')
+    P, C = spec.PRODUCERS, spec.CONSUMERS
+    code = (MANAGER.replace("@P@", str(P)).replace("@C@", str(C)).replace("@B@", str(spec.BUFFER))
+            .replace("@PER@", str(spec.PER_PRODUCER)).replace("@TOTAL@", str(spec.ROUNDS))
+            .replace("@MADE@", ", ".join(f"i{p}" for p in range(1, P + 1)))
+            .replace("@DONES@", ", ".join(f"d{c}" for c in range(1, C + 1)))
+            .replace("@WRITES@", " ".join([f"r{p} = reqs[{p - 1}].take();" for p in range(1, P + 1)]
+                                          + [f"g{c} = gives[{c - 1}].take();" for c in range(1, C + 1)])))
+    ports = ([f"    input i{p} : string" for p in range(1, P + 1)] + [f"    input d{c} : string" for c in range(1, C + 1)]
+             + [f"    output r{p} : string" for p in range(1, P + 1)] + [f"    output g{c} : string" for c in range(1, C + 1)])
+    triggers = ", ".join([f"i{p}" for p in range(1, P + 1)] + [f"d{c}" for c in range(1, C + 1)])
+    effects = ", ".join([f"r{p}?" for p in range(1, P + 1)] + [f"g{c}?" for c in range(1, C + 1)])
+    manager = f'''team Manager
+{{
+{chr(10).join(ports)}
+    output log : string
+    timer start(1ms, 0)
+    state buf : string = ""
+    state next : string = "{",".join(["1"] * P)}"
+    state asked : string = "{",".join(["0"] * P)}"
+    state hold : string = "{",".join(["0"] * C)}"
+    state finished : int = 0
+    state trace : string = ""
+
+    // @title Run the buffer
+    // @desc Stores each item a producer makes, hands the oldest stored item to every idle
+    // consumer, and asks producers for more only while the buffer has room for what is already
+    // on its way. Ends the run after the last item is finished. The trace records every item
+    // stored, handed out and finished, for the checker.
+    reaction(start, {triggers}) -> {effects}, log? {{={code}    =}}
+}}'''
+    wiring = ([f"    p{p} = Producer{p}()" for p in range(1, P + 1)] + [f"    c{c} = Consumer{c}()" for c in range(1, C + 1)])
+    for p in range(1, P + 1):
+        wiring += [f"    m.r{p} -> p{p}.request", f"    p{p}.item -> m.i{p} after 0"]
+    for c in range(1, C + 1):
+        wiring += [f"    m.g{c} -> c{c}.take", f"    c{c}.done -> m.d{c} after 0"]
+    return (f"// Savina BoundedBuffer (producer-consumer with a bounded buffer), DSL arm, backend={backend}. "
+            "Generated by savina/build.py.\n"
+            + "\n\n".join(teams) + "\n\n" + manager + "\n\nmain BoundedBuffer {\n    m = Manager()\n"
+            + "\n".join(wiring) + "\n}\n")
+
+
 def main():
     os.makedirs(os.path.join(HERE, "specs"), exist_ok=True)
     os.makedirs(os.path.join(HERE, "programs"), exist_ok=True)
@@ -240,6 +392,8 @@ def main():
             f.write(philosophers_program(backend))
         with open(os.path.join(HERE, "programs", f"Banking{suffix}"), "w") as f:
             f.write(banking_program(backend))
+        with open(os.path.join(HERE, "programs", f"BoundedBuffer{suffix}"), "w") as f:
+            f.write(boundedbuffer_program(backend))
     decisions, final = spec.expected_banking()
     print(f"banking: {sum(not ok for ok in decisions.values())} of {spec.ROUNDS} transfers should be "
           f"denied; final balances {final}")

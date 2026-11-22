@@ -1,15 +1,19 @@
-"""Savina Philosophers and Banking, adapted for agents: the one source for sizes,
+"""Savina Philosophers, Banking and BoundedBuffer, adapted for agents: the one source for sizes,
 schedules and prompts. build.py renders both arms from it, so the two arms
 cannot drift apart: an agent's job text is shared, and only the coordination
 instructions differ (the agent arm carries them in its prompts, the DSL arm in
 its wiring and code reactions).
 
 Sizes follow the pre-registration: 5 agents and 30 rounds per benchmark. A
-round is one meal (Philosophers) or one transfer (Banking)."""
+round is one meal (Philosophers), one transfer (Banking) or one item
+(BoundedBuffer)."""
 import random
 
 N = 5
 ROUNDS = 30
+# Agent arm: deliveries allowed before the runner cuts a trial, which the agents
+# are never told: four times the fewest a correct run needs (seeds included).
+FUSE = {"philosophers": 400, "banking": 400, "boundedbuffer": 500}
 
 # ---------------------------------------------------------------- Philosophers
 # Savina's arbitrator variant: a philosopher eats only while the arbitrator has
@@ -172,3 +176,99 @@ New message from {{sender}}:
 
 def banking_seeds():
     return [(TELLER_NODE, "start: run the transfers")]
+
+
+# --------------------------------------------------------------- BoundedBuffer
+# Savina's Producer-Consumer with Bounded Buffer: producers hand items to a
+# manager whose buffer holds at most BUFFER of them, and consumers take them
+# out. Three producers outpace two consumers, so the buffer fills and empties.
+PRODUCERS, CONSUMERS, BUFFER = 3, 2, 3
+PER_PRODUCER = ROUNDS // PRODUCERS  # 10 items each
+MANAGER_NODE = N + 1
+
+
+def item(p, k):
+    """Item k of producer p: a sum with a single checkable answer."""
+    a = 10 + (p * 13 + k * 7) % 90
+    b = 10 + (p * 5 + k * 11) % 90
+    return a, b
+
+
+def item_text(p, k):
+    a, b = item(p, k)
+    return f"P{p}-{k}: what is {a} + {b}? Answer with the number only."
+
+
+PRODUCER_JOB = """You are producer {p} of {np}. You make {per} items, in order; each item is a \
+question that a consumer will answer."""
+
+CONSUMER_JOB = """You are consumer {c} of {nc}. You work items one at a time: each item is a \
+question, and you answer it."""
+
+
+def producer_agent_prompt(p):
+    items = "\n".join(item_text(p, k) for k in range(1, PER_PRODUCER + 1))
+    return (PRODUCER_JOB.format(p=p, np=PRODUCERS, per=PER_PRODUCER) + f"""
+
+Your items, in order:
+{items}
+
+Protocol. Your items go to the manager, node {MANAGER_NODE}, who keeps them in a buffer that holds \
+at most {BUFFER} items. Each turn you send at most one message: if a reply has more than one 'To:' \
+line, only one of them is delivered. To offer an item, send 'put ITEM: QUESTION' to node \
+{MANAGER_NODE}, with the item's name and question exactly as listed above. If node {MANAGER_NODE} \
+replies 'stored ITEM', that item is in the buffer: offer your next item. If node {MANAGER_NODE} \
+replies 'full ITEM', the buffer had no room: offer the same item again. Once node {MANAGER_NODE} has \
+stored item P{p}-{PER_PRODUCER}, you are finished: send nothing more and end every later turn with \
+'Decision: WAIT'. Only the manager finishes the run.
+
+New message from {{sender}}:
+
+{{body}}""")
+
+
+def consumer_agent_prompt(c):
+    return (CONSUMER_JOB.format(c=c, nc=CONSUMERS) + f"""
+
+Protocol. Items come from the manager, node {MANAGER_NODE}. Each turn you send at most one message: \
+if a reply has more than one 'To:' line, only one of them is delivered. To ask for an item, send \
+'ready' to node {MANAGER_NODE}. If node {MANAGER_NODE} sends you 'take ITEM: QUESTION', answer the \
+question and send 'done ITEM: ANSWER' to node {MANAGER_NODE}, with the number only as ANSWER. That \
+message also asks for your next item, so do not send 'ready' with it. If node {MANAGER_NODE} \
+replies 'empty', there was no item for you: send 'ready' to node {MANAGER_NODE} again. Only the \
+manager finishes the run.
+
+New message from {{sender}}:
+
+{{body}}""")
+
+
+def manager_agent_prompt():
+    first, last = PRODUCERS + 1, PRODUCERS + CONSUMERS
+    return f"""You are the manager of a buffer between {PRODUCERS} producers (nodes 1 to {PRODUCERS}) \
+and {CONSUMERS} consumers (nodes {first} and {last}). The buffer holds at most {BUFFER} items and \
+starts empty. There are {ROUNDS} items in all, {PER_PRODUCER} from each producer, named P1-1 to \
+P{PRODUCERS}-{PER_PRODUCER}.
+
+Protocol. Each turn you send at most one message: if a reply has more than one 'To:' line, only \
+one of them is delivered. Always reply to the node whose message you are answering.
+- 'put ITEM: QUESTION' from a producer: if the buffer holds fewer than {BUFFER} items, add the item \
+and its question to the buffer and send 'stored ITEM' to that producer. Otherwise send 'full ITEM' \
+to that producer and leave the buffer as it is.
+- 'ready' from a consumer: if the buffer holds an item, take the one that has been there longest \
+out of the buffer and send 'take ITEM: QUESTION' to that consumer. Otherwise send 'empty' to that \
+consumer.
+- 'done ITEM: ANSWER' from a consumer: that item is finished. If all {ROUNDS} items are now \
+finished, finish the run: put every item's answer, by item name, between <answer> and </answer>, \
+and end with 'Decision: DONE'. Otherwise answer it as you would 'ready' from that consumer.
+Never hold more than {BUFFER} items, never hand out an item twice, and never lose one.
+
+New message from {{sender}}:
+
+{{body}}"""
+
+
+def boundedbuffer_seeds():
+    return ([(p, "start: offer your first item") for p in range(1, PRODUCERS + 1)]
+            + [(PRODUCERS + c, "start: ask for an item") for c in range(1, CONSUMERS + 1)])
+

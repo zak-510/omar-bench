@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 ROOT=$(pwd)
 . ./versions.env
 OPT=$HOME/opt
-mkdir -p "$OPT" "$HOME/wd/sol" "$HOME/wd/stub" "$HOME/codex-home"
+mkdir -p "$OPT" "$HOME/wd/sol" "$HOME/wd/stub" "$HOME/wd/haiku55/.claude" "$HOME/codex-home"
 
 sudo apt-get update -q
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
@@ -50,9 +50,11 @@ rustup toolchain install "$RUST_VERSION" --profile minimal
 rustup default "$RUST_VERSION"   # OMAR builds code reactions with plain `cargo`
 (cd summer && cargo "+$RUST_VERSION" build --release --locked)
 
-# Codex reads its model from CODEX_HOME; nothing else on the machine sets one.
+# Codex reads its model from CODEX_HOME, Claude Code from the workdir's
+# settings; nothing else on the machine sets one.
 cp infra/codex-config.toml "$HOME/codex-home/config.toml"
-for tier in sol stub; do
+printf '{"model": "%s"}\n' "$CLAUDE_MODEL" > "$HOME/wd/haiku55/.claude/settings.json"
+for tier in sol stub haiku55; do
     printf '[dashboard]\nsession_prefix = "dslprobe-"\n\n[agent]\ndefault_workdir = "%s"\n' \
         "$HOME/wd/$tier" > "summer/probes/dsl/config-$tier.toml"
 done
@@ -63,5 +65,7 @@ export CODEX_HOME=$HOME/codex-home
 export OMAR_BIN=$OPT/omar-$OMAR_VERSION/omar
 export OMAR_MASS_BIN=$ROOT/summer/target/release/omar-mass
 export RESULTS_DIR=$ROOT/results
+export DISABLE_AUTOUPDATER=1   # keep Claude Code at the pinned version
+if [ -f $HOME/.claude-token ]; then export CLAUDE_CODE_OAUTH_TOKEN=\$(cat $HOME/.claude-token); fi
 EOF
 echo "done. next: . ~/omar-rerun.env && codex login --device-auth"

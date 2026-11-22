@@ -86,6 +86,10 @@ pinned version. `infra/sync.sh pull` brings `results/` back to your machine.
 `--shard 0/2` and `--shard 1/2` split a run across two machines; `--dry-run`
 prints what a run would take.
 
+## Known Issues
+
+- **OMAR 0.4.4 and Codex**: OMAR gives up on a Codex agent's app server that takes more than 3 seconds to answer, so the `dsl` arm can fail to hand tasks to several Codex agents starting at once. Savina trials recover on the pre-registered retry; the probes run on Codex once the fix is released. See [Running](PREREGISTRATION.md#running).
+
 ## Repository Layout
 
 | Path | Contents |

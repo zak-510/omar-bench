@@ -27,7 +27,7 @@ def _int(s):
 
 
 # ---------------------------------------------------------------- Philosophers
-def philosophers(events, completed):
+def philosophers(events, completed, count=spec.MEALS):
     """events: ('grant', i) when philosopher i is given both forks, and
     ('done', i, k, answer) when it hands them back after meal k."""
     owner = {f: None for f in range(1, spec.N + 1)}
@@ -49,9 +49,9 @@ def philosophers(events, completed):
                 if owner[f] == i:
                     owner[f] = None
             meals[i].append((k, answer))
-    counts_ok = all([k for k, _ in meals[i]] == list(range(1, spec.MEALS + 1)) for i in meals)
+    counts_ok = all([k for k, _ in meals[i]] == list(range(1, count + 1)) for i in meals)
     wrong = sum(1 for i in meals for k, a in meals[i]
-                if a is None or k < 1 or k > spec.MEALS or a != sum(spec.meal(i, k)))
+                if a is None or k < 1 or k > count or a != sum(spec.meal(i, k)))
     ok = completed and violations == 0 and counts_ok
     reason = ("" if ok else "not finished" if not completed
               else "fork held by two" if violations else "wrong meal count")

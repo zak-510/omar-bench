@@ -2,7 +2,7 @@
 """Run Savina trials in one arm and score each with check.py.
 
 Usage:
-  python3 savina/sweep.py --bench philosophers|banking|boundedbuffer --arm agent|dsl --tier sol|haiku55|stub
+  python3 savina/sweep.py --bench philosophers|philosophers-90|banking|boundedbuffer --arm agent|dsl --tier sol|haiku55|stub
                           [--trials N] [--timeout SECS]
 
 One CSV row per trial in $RESULTS_DIR/savina-<bench>-<model>-<arm>.csv, the
@@ -109,9 +109,9 @@ def score_agent(result, err=""):
         return {"success": False, "reason": "timed out" if err == "hard timeout" else "no result"}, {}
     messages = result.get("messages", [])
     completed = bool(result.get("completed"))
-    if BENCH == "philosophers":
+    if BENCH in spec.PHILOSOPHER_MEALS:
         events, dev = check.philosophers_agent(messages)
-        score = check.philosophers(events, completed)
+        score = check.philosophers(events, completed, spec.PHILOSOPHER_MEALS[BENCH])
     elif BENCH == "boundedbuffer":
         events, dev = check.boundedbuffer_agent(messages)
         score = check.boundedbuffer(events, completed)
@@ -125,7 +125,8 @@ def score_agent(result, err=""):
 
 def dsl_trial():
     suffix = {"Codex": ".codex.omar", "Claude": ".omar", "Stub": ".stub.omar"}[BACKEND]
-    name = {"philosophers": "Philosophers", "banking": "Banking", "boundedbuffer": "BoundedBuffer"}[BENCH]
+    name = {"philosophers": "Philosophers", "philosophers-90": "Philosophers90", "banking": "Banking",
+            "boundedbuffer": "BoundedBuffer"}[BENCH]
     program = os.path.join(HERE, "programs", name + suffix)
     local = os.path.join(ROOT, "local")  # installed by infra/bootstrap.sh
     cmd = [os.path.join(local, "bin", "omar-dsl"), "-c", os.path.join(local, f"config-{TIER}.toml"), "run",
@@ -147,9 +148,10 @@ def dsl_trial():
 
 
 def score_dsl(outputs, completed):
-    if BENCH == "philosophers":
+    if BENCH in spec.PHILOSOPHER_MEALS:
         log = outputs.get("a.log")
-        score = check.philosophers(check.philosophers_dsl(log), completed and log is not None)
+        score = check.philosophers(check.philosophers_dsl(log), completed and log is not None,
+                                   spec.PHILOSOPHER_MEALS[BENCH])
     elif BENCH == "boundedbuffer":
         log = outputs.get("m.log")
         score = check.boundedbuffer(check.boundedbuffer_dsl(log), completed and log is not None)

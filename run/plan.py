@@ -31,6 +31,8 @@ PHIL_AGENT, BANK_AGENT = 5 + 30 * 3, 1 + 24 * 3 + 6 * 2 + 5 * 2
 BUFFER_AGENT, BUFFER_DSL = 5 + 30 * 4, (30, 60)
 # DSL arbitrator: at most 2 of 5 philosophers eat at once, so 30 meals take 15 rounds.
 PHIL_DSL_ROUNDS = 15
+# Philosophers-90: the same at 18 meals each.
+PHIL90_AGENT, PHIL90_DSL = 5 + 90 * 3, (45, 90)
 
 
 def units():
@@ -61,6 +63,9 @@ def units():
     pair("banking", 60, 6, (BANK_AGENT, BANK_AGENT), (30, 30), 7200,
          [SAVINA, "--bench", "banking", "--arm", "agent"],
          [SAVINA, "--bench", "banking", "--arm", "dsl"])
+    pair("philosophers-90", 30, 6, (PHIL90_AGENT, PHIL90_AGENT), PHIL90_DSL, 14400,
+         [SAVINA, "--bench", "philosophers-90", "--arm", "agent"],
+         [SAVINA, "--bench", "philosophers-90", "--arm", "dsl"])
     pair("boundedbuffer", 60, 6, (BUFFER_AGENT, BUFFER_AGENT), BUFFER_DSL, 7200,
          [SAVINA, "--bench", "boundedbuffer", "--arm", "agent"],
          [SAVINA, "--bench", "boundedbuffer", "--arm", "dsl"])

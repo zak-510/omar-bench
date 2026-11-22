@@ -13,13 +13,15 @@ N = 5
 ROUNDS = 30
 # Agent arm: deliveries allowed before the runner cuts a trial, which the agents
 # are never told: four times the fewest a correct run needs (seeds included).
-FUSE = {"philosophers": 400, "banking": 400, "boundedbuffer": 500}
+FUSE = {"philosophers": 400, "banking": 400, "boundedbuffer": 500, "philosophers-90": 1100}
 
 # ---------------------------------------------------------------- Philosophers
 # Savina's arbitrator variant: a philosopher eats only while the arbitrator has
 # given it both of its forks. Philosopher i uses fork i (left) and fork i%N+1
 # (right), so neighbours share a fork.
 MEALS = ROUNDS // N  # 6 meals each
+# Philosophers at more than one length: meals per philosopher, by bench name.
+PHILOSOPHER_MEALS = {"philosophers": MEALS, "philosophers-90": 18}
 
 
 def forks(i):
@@ -45,11 +47,11 @@ You eat {meals} meals, one at a time, and you may eat only while you hold both o
 ARBITRATOR_NODE = N + 1
 
 
-def philosopher_agent_prompt(i):
+def philosopher_agent_prompt(i, count=MEALS):
     left, right = forks(i)
     lnb, rnb = (i - 2) % N + 1, i % N + 1
-    meals = "\n".join(meal_text(i, k) for k in range(1, MEALS + 1))
-    return (PHILOSOPHER_JOB.format(i=i, n=N, left=left, right=right, lnb=lnb, rnb=rnb, meals=MEALS)
+    meals = "\n".join(meal_text(i, k) for k in range(1, count + 1))
+    return (PHILOSOPHER_JOB.format(i=i, n=N, left=left, right=right, lnb=lnb, rnb=rnb, meals=count)
             + f"""
 
 Your meals, in order:
@@ -62,7 +64,7 @@ you 'eat', you hold both forks: do your next uneaten meal, then send 'done meal 
 {ARBITRATOR_NODE} (K is the meal number). That message gives both forks back and, if you have meals \
 left, also asks for your forks again, so do not send 'hungry' with it. If node {ARBITRATOR_NODE} \
 sends you 'denied', send 'hungry' to node {ARBITRATOR_NODE} again. Once you have sent 'done' for \
-meal {MEALS}, you are finished: send nothing more and end every later turn with 'Decision: WAIT'. \
+meal {count}, you are finished: send nothing more and end every later turn with 'Decision: WAIT'. \
 Only the arbitrator finishes the run.
 
 New message from {{sender}}:
@@ -70,11 +72,11 @@ New message from {{sender}}:
 {{body}}""")
 
 
-def arbitrator_agent_prompt():
+def arbitrator_agent_prompt(count=MEALS):
     table = "\n".join(f"Philosopher {i} uses forks {forks(i)[0]} and {forks(i)[1]}."
                       for i in range(1, N + 1))
     return f"""You are the arbitrator for {N} philosophers (nodes 1 to {N}) at a round table with \
-{N} forks. Each philosopher must eat {MEALS} meals.
+{N} forks. Each philosopher must eat {count} meals.
 {table}
 All forks start free.
 
@@ -83,8 +85,8 @@ one of them is delivered. When philosopher i sends 'hungry': if both of its fork
 now held by philosopher i; send 'eat' to node i. Otherwise send 'denied' to node i. When philosopher \
 i sends 'done meal K: ANSWER', both of its forks are free again and its meal K is eaten. If it has \
 meals left, that message also asks for its forks again: answer it as you would 'hungry' from \
-philosopher i. If it has eaten all {MEALS}, send nothing (Decision: WAIT). Never let a fork be held \
-by two philosophers at once. When all {N} philosophers have eaten {MEALS} meals each ({ROUNDS} in \
+philosopher i. If it has eaten all {count}, send nothing (Decision: WAIT). Never let a fork be held \
+by two philosophers at once. When all {N} philosophers have eaten {count} meals each ({N * count} in \
 all), finish the run: put every philosopher's meal answers, in order, between <answer> and \
 </answer>, and end with 'Decision: DONE'.
 

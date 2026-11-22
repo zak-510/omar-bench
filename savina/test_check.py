@@ -6,7 +6,7 @@ import check
 import spec
 
 
-def correct_philosophers_trace():
+def correct_philosophers_trace(count=spec.MEALS):
     """What the DSL arbitrator writes for a run where every answer is right."""
     holder, eaten, trace = [0] * spec.N, [0] * spec.N, []
     pending = []
@@ -20,11 +20,11 @@ def correct_philosophers_trace():
         pending = []
         for i in sorted(range(spec.N), key=lambda i: (eaten[i], i)):
             l, r = i, (i + 1) % spec.N
-            if eaten[i] < spec.MEALS and holder[l] == 0 and holder[r] == 0:
+            if eaten[i] < count and holder[l] == 0 and holder[r] == 0:
                 holder[l] = holder[r] = i + 1
                 trace.append(f"grant {i + 1} {eaten[i] + 1}")
                 pending.append(i)
-        if all(e == spec.MEALS for e in eaten):
+        if all(e == count for e in eaten):
             return ";".join(trace) + ";"
 
 
@@ -101,7 +101,7 @@ def test_banking():
     assert check.banking(d, rep, True)["success"]
 
 
-def rule_following_philosophers():
+def rule_following_philosophers(count=spec.MEALS):
     """The agent-arm protocol in savina/spec.py played by agents that follow it
     exactly, one delivery at a time in the order sent, as the runner delivers."""
     arb, msgs, held, eaten = spec.ARBITRATOR_NODE, [], {}, {i: 0 for i in range(1, spec.N + 1)}
@@ -123,9 +123,9 @@ def rule_following_philosophers():
                 for f in spec.forks(i):
                     del held[f]
                 eaten[i] += 1
-                if all(e == spec.MEALS for e in eaten.values()):
+                if all(e == count for e in eaten.values()):
                     return msgs
-                if eaten[i] < spec.MEALS:  # a done with meals left also asks again
+                if eaten[i] < count:  # a done with meals left also asks again
                     answer_hungry(i)
             else:
                 answer_hungry(i)
@@ -137,13 +137,24 @@ def rule_following_philosophers():
     return msgs
 
 
-def test_agent_protocol_fits_the_fuse():
-    msgs = rule_following_philosophers()
+def test_agent_protocol_fits_the_fuse(bench="philosophers"):
+    count = spec.PHILOSOPHER_MEALS[bench]
+    msgs = rule_following_philosophers(count)
     events, dev = check.philosophers_agent(msgs)
-    ok = check.philosophers(events, True)
+    ok = check.philosophers(events, True, count)
     assert dev == 0 and ok["success"] and ok["safety_violations"] == 0, (dev, ok)
-    assert len(msgs) < spec.FUSE["philosophers"], len(msgs)
+    assert len(msgs) < spec.FUSE[bench], len(msgs)
     return len(msgs)
+
+
+def test_longer_philosophers():
+    count = spec.PHILOSOPHER_MEALS["philosophers-90"]
+    log = correct_philosophers_trace(count)
+    ok = check.philosophers(check.philosophers_dsl(log), True, count)
+    assert ok["success"] and ok["wrong_answers"] == 0, ok
+    # The 30-round scorer must not pass an 18-meal run, nor the reverse.
+    assert not check.philosophers(check.philosophers_dsl(log), True)["success"]
+    assert not check.philosophers(check.philosophers_dsl(correct_philosophers_trace()), True, count)["success"]
 
 
 def correct_buffer_trace():
@@ -250,6 +261,9 @@ if __name__ == "__main__":
     test_philosophers()
     print(f"agent-arm Philosophers protocol, followed exactly: {test_agent_protocol_fits_the_fuse()} "
           f"deliveries (fuse {spec.FUSE['philosophers']})")
+    test_longer_philosophers()
+    print(f"agent-arm Philosophers-90 protocol, followed exactly: "
+          f"{test_agent_protocol_fits_the_fuse('philosophers-90')} deliveries (fuse {spec.FUSE['philosophers-90']})")
     print(f"agent-arm BoundedBuffer protocol, followed exactly: {test_boundedbuffer()} "
           f"deliveries (fuse {spec.FUSE['boundedbuffer']})")
     test_banking()

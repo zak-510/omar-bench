@@ -11,12 +11,13 @@ limit before a trial and checks for one every 5 minutes during it; a trial that
 overlapped one is listed in exclusions.csv and run again.
 
   python3 run/schedule.py --tier sol [--max-agents N] [--units a,b] [--quota 98]
-                          [--until 2026-11-25T18:00] [--shard 0/2] [--pilot 3] [--dry-run]
+                          [--until 2026-11-25T18:00] [--shard 0/2] [--name NAME] [--pilot 3] [--dry-run]
 
 --max-agents keeps units this machine has memory for; both arms of a unit
 always run on the same instance type. --shard I/N splits the order across N
 identical machines: machine I takes picks I, I+N, I+2N..., so each machine's
-share stays interleaved, and writes to its own results folder. Counted runs (no --pilot) refuse to start
+share stays interleaved, and writes to its own results folder. --name puts a
+run's results in a folder of their own under the tier. Counted runs (no --pilot) refuse to start
 unless REVISION names a clean, tagged commit.
 """
 import collections
@@ -132,7 +133,7 @@ def main():
     model, backend = TIERS[tier]
     pilot = int(flag("--pilot", "0"))
     shard, shards = (int(x) for x in flag("--shard", "0/1").split("/"))
-    results = os.path.join(ROOT, "results", "pilot" if pilot else "", tier,
+    results = os.path.join(ROOT, "results", "pilot" if pilot else "", tier, flag("--name", ""),
                            f"shard-{shard}-of-{shards}" if shards > 1 else "")
     rev = revision()
     if not pilot and "--dry-run" not in sys.argv:

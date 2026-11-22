@@ -1,7 +1,7 @@
 # Pre-registration: coordination reliability, summer reproduction and Savina
 
 **Status: frozen** at tag `prereg-v1`, 2026-11-21, and amended at `prereg-v2`
-to `prereg-v6` (see Changes, at the end). No counted run starts before a tag, and
+to `prereg-v7` (see Changes, at the end). No counted run starts before a tag, and
 any later change gets a new tag with the reason stated.
 Pilot runs (kept in `results/pilot/`) never count; the pilots before this tag were
 used only to measure time, memory and usage, and are published with the results.
@@ -124,6 +124,7 @@ the session logs and reported.
 | Missing workers, no policy | Reported as the share that answer, per arm | No failure label: this cell measures consistency |
 | Savina Philosophers | Run finishes, no fork held by two philosophers at once, nobody eats without both forks, everyone eats meals 1 to 6 exactly once | Any of those broken, or no finish (deadlock, silence, the 400-delivery cut) |
 | Savina Banking | Run finishes, all 30 transfers decided once and in order, no overdraft, no covered transfer refused, right amounts and payees, final balances right | Any of those broken, or no finish |
+| Savina Philosophers-90 | As Philosophers, with 18 meals each (90 in all) | As Philosophers, or no finish (the 1,100-delivery cut) |
 | Savina BoundedBuffer | Run finishes, the buffer never holds more than 3 items, no item stored twice or handed out without being stored, every item answered exactly once by the consumer it was given to | Any of those broken, or no finish (deadlock, silence, the 500-delivery cut) |
 
 Wrong answers to meals and items are content errors, not coordination:
@@ -161,6 +162,7 @@ table for the scheduler.
 | Savina Philosophers | planned at 11.4% | 60 | 60 | 60 |
 | Savina Banking | planned at 11.4% | 60 | 60 | 60 |
 | Savina BoundedBuffer | planned at 11.4% | 60 | 60 | 60 |
+| Savina Philosophers-90 (`gpt-6.1-sol` only) | the rule's floor | 30 | 30 | 30 |
 
 That is 542 runs in the `agent` arm and 572 in `dsl` per model (`python3
 run/schedule.py --dry-run` prints the agent calls this takes).
@@ -198,7 +200,8 @@ run/schedule.py --dry-run` prints the agent calls this takes).
   tag; the scheduler refuses anything else. Pilots write to `results/pilot/`.
 - Timeouts, the same in both arms: 900 s for scatter-gather, missing workers,
   chain 20 and ring 10; 1,800 s for chain 50 and ring 25; 2,400 s for chain
-  100; 3,600 s for ring 40; 7,200 s for a Savina trial. These are the summer's
+  100; 3,600 s for ring 40; 7,200 s for a Savina trial (14,400 s for Philosophers-90,
+  three times as long). These are the summer's
   longest (the set it used for Opus), so a slower model is not cut short.
 - An agent may take as long as its trial to answer, in both arms: the `dsl`
   arm's runtime waits for a reaction until the run's timeout, and the `agent`
@@ -331,4 +334,20 @@ Claude's Philosophers, Banking and BoundedBuffer `agent` arms rerun under this
 tag; their v5 trials are published and not counted. Claude's `dsl`-arm trials
 do not go through the runner and keep counting, as do Claude's summer cells and
 every Codex run (no Codex reply in 142 transcripts cites missing rounds).
+
+**`prereg-v7`, 2026-11-22: Philosophers at three times the length.** A first
+point on a scaling curve, on `gpt-6.1-sol`: Philosophers with the same 5
+philosophers, prompts and protocol, but 18 meals each (90 in all) instead of 6.
+It asks whether a gap opens as the coordinator has to keep track of more,
+which the 30-round cells cannot show. Prediction, written before any of its
+trials: the `agent` arm's failure rate is higher at 90 meals than at 30, and
+the `dsl` arm stays at or near 0%. Whatever it shows is reported. 30 trials per
+arm (the rule's floor), on two new `m7i-flex.large` machines of the same image,
+in its own results folder (`results/sol/philosophers-90/`), stopping at
+2026-11-25 00:00 UTC. The fuse follows the same rule (four times the fewest,
+4 x 275 = 1,100); followed exactly, the protocol finishes in 336 deliveries
+(`savina/test_check.py`). The 30-round Philosophers specs and programs are
+byte-for-byte unchanged. The runs already going keep the code they started
+with, since adding a cell to the plan reorders the shuffled schedule of any
+run started after it.
 

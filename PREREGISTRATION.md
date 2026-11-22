@@ -269,3 +269,13 @@ with no code changed: the original study's runner is now `runner/`, its probes
 `probes/` (results in `probes/original-results/`), and the OMAR tools each
 machine installs `local/`.
 
+The repository's history was also rebuilt at this tag, before it was first
+published, to drop unrelated earlier work; every commit kept its files. Counted
+runs before this tag recorded the original commit IDs in their manifests:
+
+| Tag | Commit recorded by its runs | File tree, the same in both |
+|---|---|---|
+| `prereg-v1` | `3789a5cdf9e795195ecd03b30a83e0ea80b8b533` | `33342cf6879f5a041b090b590f16b2d8db56017e` |
+| `prereg-v2` | `bc90f91fb52d2319f304aca68d4ad98d326b5a69` | `03c21c44e0255487eae4fb0ebfb200628a885743` |
+
+`git rev-parse prereg-v1^{tree}` prints a tag's file tree.

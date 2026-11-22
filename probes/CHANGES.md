@@ -30,7 +30,9 @@ the original study of July–August 2026, with its results in
   whose agents' prompts come from a file. The runner still only delivers
   addressed mail, now also logging every delivery and reply. Its agents get a
   charter that keeps earlier messages as memory instead of treating each one
-  alone. Chain, ring and scatter-gather are unchanged.
+  alone, and that says requests are numbered across the whole run, so a gap in
+  the numbers is not missing memory. Chain, ring and scatter-gather are
+  unchanged.
 - **Ring scoring:** see the correction in `PREREGISTRATION.md`.
 - **Layout:** the runner moved to `runner/` and the probes to `probes/`, with
   the installed OMAR tools in `local/`; no code changed in the move.

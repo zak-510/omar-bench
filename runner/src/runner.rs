@@ -1295,7 +1295,7 @@ fn charter(name: &str, spec: &SessionSpec, run_dir: &RunDir) -> String {
         role = spec.role,
         ready = ready.display(),
         memory = if spec.role == Role::Actor {
-            "Its 'payload' field is your instruction for this message; follow it exactly. The earlier requests in this session are your memory of the run: keep track of what they told you, because nobody repeats it."
+            "Its 'payload' field is your instruction for this message; follow it exactly. The earlier requests in this session are your memory of the run: keep track of what they told you, because nobody repeats it. Requests are numbered across the whole run and most go to other agents, so a gap in the numbers is normal, not missing memory."
         } else {
             "Its 'payload' field is your complete, self-contained instruction; follow it exactly and treat every request independently of earlier ones."
         },

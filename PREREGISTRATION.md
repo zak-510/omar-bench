@@ -1,7 +1,7 @@
 # Pre-registration: coordination reliability, summer reproduction and Savina
 
-**Status: frozen** at tag `prereg-v1`, 2026-11-21, and amended at `prereg-v2`,
-`prereg-v3` and `prereg-v4` (see Changes, at the end). No counted run starts before a tag, and
+**Status: frozen** at tag `prereg-v1`, 2026-11-21, and amended at `prereg-v2`
+to `prereg-v5` (see Changes, at the end). No counted run starts before a tag, and
 any later change gets a new tag with the reason stated.
 Pilot runs (kept in `results/pilot/`) never count; the pilots before this tag were
 used only to measure time, memory and usage, and are published with the results.
@@ -304,4 +304,18 @@ runs before this tag recorded the original commit IDs in their manifests:
 weekly Codex use instead of 85%. The 85% kept room for other use of the
 account, which the study does not need. A resource rule: no cell, trial count
 or outcome changes.
+
+**`prereg-v5`, 2026-11-22: the Savina charter on Claude.** Found while reading
+the transcripts of the first counted Claude Philosophers trials: all three
+`agent`-arm failures were the arbitrator refusing to act, each time citing "no
+record of rounds 1-5". The runner numbers requests across the whole run, and
+its charter for Savina agents says the earlier requests are their memory, so
+Claude read the rounds that went to the philosophers as memory it had lost.
+Codex never did this: no reply in any of its 142 `agent`-arm transcripts cites
+missing rounds. The charter now says requests are numbered across the whole
+run and a gap is not missing memory. A change to the `agent` arm only, which
+can only help it. Claude's Philosophers, Banking and BoundedBuffer rerun in both
+arms under this tag; their trials so far are published as v3 and not counted.
+The Codex runs and Claude's summer cells, whose charter is the original
+study's, are unaffected and continue.
 

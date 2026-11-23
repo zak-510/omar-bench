@@ -30,8 +30,8 @@ later change is a new tag with its reason.
 
 Every trial is filed under one cause, and the causes are reported apart: a
 broken invariant, unfinished work, a lost message, a failure of the machinery
-around the agents. A trial the model provider or the benchmark itself spoiled
-is listed with its evidence and run again. The headings are in
+around the agents. A trial the model provider spoiled, or one the scorer
+itself failed on, is listed with its evidence and run again. The headings are in
 [`savina/`](savina/#scoring), and how an agent's reply is read is in
 [`runner/`](runner/#action-rules).
 

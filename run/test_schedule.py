@@ -106,7 +106,7 @@ print("a provider limit during a trial: listed, and the cell runs one more")
 
 # A trial the sweep names as not the arm's doing is treated the same, with its reason.
 sweep.update({("agent", 2): {"void": "provider: API Error: 529 overloaded"},
-              ("dsl", 3): {"void": "harness: killed: the runner did not stop at the time limit"}})
+              ("dsl", 3): {"void": "harness: the scorer failed: ValueError('x')"}})
 rows, excl, code = go(units="banking")
 assert sorted((e["arm"], e["trial"], e["reason"].split(":")[0]) for e in excl) == \
     [("agent", "2", "provider"), ("dsl", "3", "harness")], excl

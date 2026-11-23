@@ -42,7 +42,7 @@ filed under one cause, and the causes are reported apart.
 | `protocol` | Agent arm: a message was lost or unreadable, and the run failed | Yes |
 | `runtime` | Agents did not start or never answered, or the runtime failed | Yes |
 | `provider` | The model provider was limited, down or signed out | No: listed, run again |
-| `harness` | The benchmark's own code or machine failed | No: listed, run again |
+| `harness` | The benchmark's own scorer failed on the trial | No: listed with its record, run again |
 
 ## Usage
 

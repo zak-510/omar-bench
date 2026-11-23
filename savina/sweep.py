@@ -14,8 +14,8 @@ full delivery log or trace in the matching .jsonl, and every failed boot
 attempt in -attempts.csv. Completed trials are skipped on a rerun.
 
 Each row carries a `cause` (check.py): what the trial was, kept apart from
-what merely went wrong around it. A trial that the provider or the benchmark's
-own machinery spoiled is named in $VOID_FILE, for the scheduler to list and
+what merely went wrong around it. A trial that the provider spoiled, or that
+the scorer failed on, is named in $VOID_FILE, for the scheduler to list and
 run again.
 """
 import csv
@@ -196,14 +196,22 @@ def main():
         try:
             if ARM == "agent":
                 result, rc, err, t0, attempts = agent_trial()
-                score = check.agent(BENCH, result, rc, err)
                 raw = {k: result[k] for k in ("messages", "output", "end", "end_node", "evidence")
                        if result and k in result}
             else:
                 outputs, completed, rc, err, t0, attempts = dsl_trial()
-                score, raw = check.dsl(BENCH, outputs, completed, rc, err), {"outputs": outputs}
+                raw = {"outputs": outputs}
         finally:
             machine.clear()
+        # The record is kept before it is scored, so that a trial the scorer
+        # cannot read is still there to be read.
+        with open(RAW, "a") as f:
+            f.write(json.dumps({"trial": trial, **raw}) + "\n")
+        try:
+            score = (check.agent(BENCH, result, rc, err) if ARM == "agent"
+                     else check.dsl(BENCH, outputs, completed, rc, err))
+        except Exception as e:  # noqa: BLE001: whatever it is, the trial must not vanish
+            score = {"success": False, "cause": "harness", "reason": f"the scorer failed: {e!r}"[:200]}
         row = {"model": MODEL, "arm": ARM, "bench": BENCH, "trial": trial, "rc": rc,
                "stderr": err[-300:], "started_at": time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(t0)),
                "secs": round(time.time() - t0), "attempts": attempts, **score}
@@ -213,10 +221,9 @@ def main():
             if new:
                 w.writeheader()
             w.writerow(row)
-        with open(RAW, "a") as f:
-            f.write(json.dumps({"trial": trial, **raw}) + "\n")
         if score["cause"] in ("provider", "harness"):
-            void(trial, score["cause"], score.get("evidence") or err[-200:].replace("\n", " | "))
+            void(trial, score["cause"], score.get("evidence") or (score["reason"] if score["cause"] == "harness"
+                                                                   else err[-200:].replace("\n", " | ")))
         print(f"  {BENCH} {ARM} t{trial}: {score['cause']} {score.get('reason', '')} "
               f"({row['secs']}s)", flush=True)
 

@@ -213,8 +213,9 @@ def test_causes():
     # No result at all, and a runner that had to be killed.
     none = check.agent("banking", None, rc=1, stderr="Agents never became ready after 4 attempts")
     assert (none["success"], none["cause"], none["reason"]) == (False, "runtime", "no result")
+    # Like a dsl run stopped at the hard timeout, it did not finish, and counts.
     killed = check.agent("banking", {"completed": False, "end": "killed", "messages": [], "hops": 0})
-    assert killed["cause"] == "harness" and not killed["success"]
+    assert killed["cause"] == "runtime" and not killed["success"]
     # The dsl arm: what the runtime says when it stops.
     silent = "Error: topology failed: \"reaction 'p1.reaction.0' invocation '11': 'p1.agent' did not answer within 7200s\""
     for stderr, want in ((silent, "runtime"), ("failed to deliver ... (os error 11)", "runtime"),
@@ -324,6 +325,27 @@ esac
         assert len(void) == 1 and void[0]["trial"] == 5 and void[0]["reason"].startswith("provider:"), void
         # Every run that failed had its session ended by name; the two that finished ended their own.
         assert open(os.path.join(tmp, "stopped")).read().split() == ["calm-otter"] * 6
+
+
+def test_a_trial_the_scorer_cannot_read_is_kept_and_voided_not_lost():
+    import csv
+    with tempfile.TemporaryDirectory() as tmp:
+        broken = os.path.join(tmp, "check.py")  # a scorer that fails on every trial
+        patched = open(os.path.join(HERE, "sweep.py")).read().replace(
+            "import check  # noqa: E402", "import check  # noqa: E402\ncheck.agent = lambda *a: 1 / 0")
+        assert "1 / 0" in patched
+        open(os.path.join(tmp, "sweep.py"), "w").write(patched.replace(
+            "HERE = os.path.dirname(os.path.abspath(__file__))", f"HERE = {HERE!r}"))
+        env = dict(os.environ, RESULTS_DIR=tmp, OMAR_MASS_BIN=BIN, VOID_FILE=os.path.join(tmp, "void"))
+        out = subprocess.run([sys.executable, os.path.join(tmp, "sweep.py"), "--bench", "banking", "--arm", "agent",
+                              "--tier", "mock", "--trials", "1"], env=env, capture_output=True, text=True)
+        assert out.returncode == 0, out.stderr[-400:]
+        row = list(csv.DictReader(open(os.path.join(tmp, "savina-banking-mock-agent.csv"))))[0]
+        assert (row["success"], row["cause"]) == ("False", "harness") and "scorer failed" in row["reason"], row
+        # Its whole record is on disk, and the scheduler is told to run it again.
+        assert len(json.loads(open(os.path.join(tmp, "savina-banking-mock-agent.jsonl")).readline())["messages"]) == 95
+        assert json.loads(open(os.path.join(tmp, "void")).readline())["reason"].startswith("harness: the scorer failed")
+        assert not os.path.exists(broken)
 
 
 def test_every_fault_is_tested():

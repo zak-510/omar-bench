@@ -9,9 +9,8 @@ Add --daemon to detach and run in the background.
 
 Each row says how its run ended (`end`) and, in `trouble`, whether the
 machinery around the agents stopped it (run/machine.py); every delivery and
-reply is kept in the matching .jsonl. A run that the provider or the
-benchmark's own machinery spoiled is named in $VOID_FILE, for the scheduler
-to list its trial and run it again.
+reply is kept in the matching .jsonl. A run that the provider spoiled is named
+in $VOID_FILE, for the scheduler to list its trial and run it again.
 """
 import csv, json, re, signal, subprocess, sys, time, os
 
@@ -235,8 +234,9 @@ def run(args, per_wave_timeout=HARD_TIMEOUT, hard_timeout=HARD_TIMEOUT, attempts
 def log(family, n, param, trial, d, metric):
     end = d.get("end") or ("no-result" if "error" in d else "")
     evidence = d.get("evidence") or ""
-    trouble = "harness" if end == "killed" else machine.trouble(
-        end=end, silent_secs=d.get("silent_secs"), evidence=evidence,
+    # A runner that had to be killed is a run that did not finish, as in the dsl arm.
+    trouble = machine.trouble(
+        end="deadline" if end == "killed" else end, silent_secs=d.get("silent_secs"), evidence=evidence,
         rc=0 if d.get("rc") in (0, "timeout") else d.get("rc"), stderr=d.get("stderr", ""))
     row = {"model": MODEL, "arm": ARM, "family": family, "n": n, "param": param, "trial": trial,
            "hops": d.get("hops"), "completed": d.get("completed"),
@@ -249,7 +249,7 @@ def log(family, n, param, trial, d, metric):
     with open(RAW, "a") as f:
         f.write(json.dumps({"family": family, "n": n, "param": param, "trial": trial,
                             **{k: d.get(k) for k in ("messages", "output", "end", "end_node", "evidence")}}) + "\n")
-    if trouble in ("provider", "harness") and os.environ.get("VOID_FILE"):
+    if trouble == "provider" and os.environ.get("VOID_FILE"):
         with open(os.environ["VOID_FILE"], "a") as f:
             f.write(json.dumps({"unit": family, "arm": ARM, "trial": trial,
                                 "reason": f"{trouble}: {evidence[-200:] or row['reason']}"}) + "\n")

@@ -13,8 +13,8 @@ are never merged:
   protocol        agent arm: a message was lost or unreadable, and the run failed
   runtime         the machinery of the arm failed (agents that did not start
                   or never answered, the runtime failing)
-  not counted     the provider or the benchmark itself failed: listed in
-                  exclusions.csv with the reason, and run again
+  not counted     the provider was limiting use, or the scorer itself failed:
+                  listed in exclusions.csv with the reason, and run again
 
 Reliability is ok / counted, where counted is every trial not listed as not
 counted, up to the planned number in start order. Runtime failures count: a

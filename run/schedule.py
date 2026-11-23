@@ -9,12 +9,12 @@ trials, so rerunning continues where it stopped.
 
 Before every trial the scheduler clears any agent an earlier trial left behind
 and records what the machine looks like; the ledger also records weekly Codex
-use before and after. A trial is not an outcome of its arm, is listed in
+use before and after. A trial due on a machine whose leftover agents will not
+stop is not started. A trial is not an outcome of its arm, is listed in
 exclusions.csv with the reason, and is run again, in exactly these cases: the
 provider was limiting use during it (checked before every trial and every 5
-minutes during it on Claude, before and after it on Codex), the sweep found
-the provider or the benchmark's own machinery at fault (savina/check.py,
-`cause`), or the machine was not clean when it was due to start.
+minutes during it on Claude, before and after it on Codex), or the sweep found
+the provider at fault or could not score the trial (savina/check.py, `cause`).
 
   python3 run/schedule.py --tier sol [--max-agents N] [--units a,b] [--quota 98]
                           [--until 2026-11-25T18:00] [--shard 0/2] [--name NAME] [--pilot 3] [--dry-run]

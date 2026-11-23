@@ -308,8 +308,8 @@ def cause(score, *, arm, end="", lost=0, deviations=0, silent_secs=None, evidenc
                    an agent that never answered a delivered request, the
                    runtime failing to deliver or exiting with an error
     provider       the model provider was limited, down or signed out
-    harness        the benchmark's own code or machine failed (set by the
-                   sweep and scheduler, never here)
+    harness        the benchmark's own code failed to score the trial (set
+                   by the sweep, never here)
     """
     if score.get("success"):
         return "success"
@@ -348,13 +348,11 @@ def agent(bench, result, rc=0, stderr=""):
     score.update(deviations=dev, deliveries=result.get("hops"), detail=result.get("reason", ""),
                  completed=completed, end=end, lost=lost, undelivered=result.get("undelivered", ""),
                  silent_secs=result.get("silent_secs", ""), evidence=evidence[-300:].replace("\n", " | "))
-    if end == "killed":
-        # The runner stops itself at the time limit; one that had to be killed
-        # is the benchmark's failure, whatever its agents were doing.
-        score["cause"] = "harness"
-    else:
-        score["cause"] = cause(score, arm="agent", end=end, lost=lost, deviations=dev,
-                               silent_secs=result.get("silent_secs"), evidence=evidence)
+    # A runner that had to be killed past its time limit is filed as the dsl
+    # arm's runtime is when it has to be: a run that did not finish, counted.
+    score["cause"] = cause(score, arm="agent", end="deadline" if end == "killed" else end, lost=lost,
+                           deviations=dev, silent_secs=result.get("silent_secs"), evidence=evidence,
+                           stderr=stderr)
     return score
 
 

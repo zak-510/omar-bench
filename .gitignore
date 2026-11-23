@@ -11,5 +11,8 @@ local/
 # Pilot runs stay local; counted results are committed
 results/pilot/
 
+# Snapshots of machines and runs taken while a run is going
+status-checks/
+
 # OMAR writes the generated crate for code reactions beside the program
 savina/programs/src-gen/

@@ -17,6 +17,13 @@ import time
 
 def reading(timeout=30):
     """(used percent, resets at) for the weekly limit, or None if Codex did not say."""
+    s = state(timeout)
+    return (s["used"], s["resets_at"]) if s else None
+
+
+def state(timeout=30):
+    """Weekly use and whether Codex is refusing work right now: {"used",
+    "resets_at", "limited"}, or None if Codex did not say."""
     try:
         p = subprocess.Popen(["codex", "app-server"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                              stderr=subprocess.DEVNULL, text=True)
@@ -37,8 +44,14 @@ def reading(timeout=30):
             except ValueError:
                 continue
             if msg.get("id") == 1:
-                primary = ((msg.get("result") or {}).get("rateLimits") or {}).get("primary") or {}
-                return (primary["usedPercent"], primary.get("resetsAt")) if "usedPercent" in primary else None
+                result = msg.get("result") or {}
+                limits = result.get("rateLimits") or {}
+                primary = limits.get("primary") or {}
+                if "usedPercent" not in primary:
+                    return None
+                limited = (result.get("ordinaryUsageAllowed") is False or bool(limits.get("rateLimitReachedType"))
+                           or bool(limits.get("spendControlReached")))
+                return {"used": primary["usedPercent"], "resets_at": primary.get("resetsAt"), "limited": limited}
         return None
     finally:
         p.kill()

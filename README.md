@@ -28,6 +28,13 @@ What runs, how many times and how it is scored is fixed in the
 [pre-registration](PREREGISTRATION.md) before any counted trial, and every
 later change is a new tag with its reason.
 
+Every trial is filed under one cause, and the causes are reported apart: a
+broken invariant, unfinished work, a lost message, a failure of the machinery
+around the agents. A trial the model provider or the benchmark itself spoiled
+is listed with its evidence and run again. The headings are in
+[`savina/`](savina/#scoring), and how an agent's reply is read is in
+[`runner/`](runner/#action-rules).
+
 ## Benchmarks
 
 - **Savina Philosophers**: Five agents share five forks through an arbitrator. Tests mutual exclusion and starvation.
@@ -72,7 +79,8 @@ cd omar-bench && sh infra/bootstrap.sh
 ```
 
 For Claude, copy the token from `claude setup-token` and run
-`infra/claude-token.sh` from your own machine.
+`infra/claude-token.sh` from your own machine, then `sh infra/claude-onboard.sh`
+on the benchmark machine.
 
 #### Step 3: Run
 
@@ -82,9 +90,15 @@ python3 run/schedule.py --tier sol               # the counted run
 ```
 
 A counted run starts only from a clean, tagged commit with every tool at its
-pinned version. `infra/sync.sh pull` brings `results/` back to your machine.
-`--shard 0/2` and `--shard 1/2` split a run across two machines; `--dry-run`
-prints what a run would take.
+pinned version, and writes under `results/<tag>/`. `infra/sync.sh pull` brings
+`results/` back to your machine. `--shard 0/2` and `--shard 1/2` split a run
+across two machines; `--dry-run` prints what a run would take.
+
+#### Step 4: Read the results
+
+```bash
+python3 run/report.py results/<tag>
+```
 
 ## Known Issues
 
@@ -98,13 +112,17 @@ prints what a run would take.
 | [`savina/`](savina/) | Savina benchmarks: specs, both arms and the checker |
 | [`probes/`](probes/) | The original study's coordination probes |
 | [`runner/`](runner/) | The agent-arm runner (Rust) |
-| `run/` | Trial plan and scheduler |
+| `run/` | Trial plan, scheduler, results table and the audit of earlier runs |
 | `infra/` | Machine launch, setup and sync |
 | `results/` | Counted results, by model and machine |
 
 ## Tests
 
+None of these uses a model.
+
 ```bash
-python3 savina/test_check.py
-(cd runner && cargo test --release --locked)
+(cd runner && cargo test --release --locked && cargo build --release --locked)
+python3 savina/test_check.py      # the scorer
+python3 savina/test_harness.py    # runner and scorer together: scripted agents, and a recorded trial replayed
+python3 run/test_schedule.py      # which trials run, count, and are run again
 ```

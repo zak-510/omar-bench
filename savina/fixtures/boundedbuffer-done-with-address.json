@@ -1,0 +1,3006 @@
+{
+"source": "claude-haiku-5-5, BoundedBuffer, agent arm, trial 1 of shard 0 of 3, started 2026-11-22T20:54:42Z at prereg-v6; recorded as 'fuse: 500 message cap hit'",
+"trial": 1,
+"messages": [
+{
+"from": 0,
+"to": 1,
+"body": "start: offer your first item",
+"reply": "To: node 6\n<answer>\nput P1-1: what is 30 + 26? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 0,
+"to": 2,
+"body": "start: offer your first item",
+"reply": "To: node 6\n<answer>\nput P2-1: what is 43 + 31? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 0,
+"to": 3,
+"body": "start: offer your first item",
+"reply": "To: node 6\n<answer>\nput P3-1: what is 56 + 36? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 0,
+"to": 4,
+"body": "start: ask for an item",
+"reply": "To: node 6\n<answer>\nready\n</answer>\nDecision: WAIT"
+},
+{
+"from": 0,
+"to": 5,
+"body": "start: ask for an item",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 1,
+"to": 6,
+"body": "put P1-1: what is 30 + 26? Answer with the number only.",
+"reply": "To: node 1\n<answer>stored P1-1</answer>\nDecision: WAIT"
+},
+{
+"from": 2,
+"to": 6,
+"body": "put P2-1: what is 43 + 31? Answer with the number only.",
+"reply": "To: node 2\n<answer>stored P2-1</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-1: what is 56 + 36? Answer with the number only.",
+"reply": "To: node 3\n<answer>stored P3-1</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "ready",
+"reply": "To: node 4\n<answer>take P1-1: what is 30 + 26? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>take P2-1: what is 43 + 31? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 1,
+"body": "stored P1-1",
+"reply": "To: node 6\n<answer>\nput P1-2: what is 37 + 37? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 2,
+"body": "stored P2-1",
+"reply": "To: node 6\n<answer>\nput P2-2: what is 50 + 42? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "stored P3-1",
+"reply": "To: node 6\n<answer>\nput P3-2: what is 63 + 47? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P1-1: what is 30 + 26? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P1-1: 56\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "take P2-1: what is 43 + 31? Answer with the number only.",
+"reply": "To: node 6\n<answer>done P2-1: 74</answer>\nDecision: WAIT"
+},
+{
+"from": 1,
+"to": 6,
+"body": "put P1-2: what is 37 + 37? Answer with the number only.",
+"reply": "To: node 1\n<answer>stored P1-2</answer>\nDecision: WAIT"
+},
+{
+"from": 2,
+"to": 6,
+"body": "put P2-2: what is 50 + 42? Answer with the number only.",
+"reply": "To: node 2\n<answer>stored P2-2</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-2: what is 63 + 47? Answer with the number only.",
+"reply": "To: node 3\n<answer>full P3-2</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P1-1: 56",
+"reply": "To: node 4\n<answer>take P3-1: what is 56 + 36? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "done P2-1: 74",
+"reply": "To: node 5\n<answer>take P1-2: what is 37 + 37? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 1,
+"body": "stored P1-2",
+"reply": "To: node 6\n<answer>\nput P1-3: what is 44 + 48? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 2,
+"body": "stored P2-2",
+"reply": "To: node 6\n<answer>\nput P2-3: what is 57 + 53? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "full P3-2",
+"reply": "To: node 6\n<answer>\nput P3-2: what is 63 + 47? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P3-1: what is 56 + 36? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P3-1: 92\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "take P1-2: what is 37 + 37? Answer with the number only.",
+"reply": "To: node 6\n<answer>done P1-2: 74</answer>\nDecision: WAIT"
+},
+{
+"from": 1,
+"to": 6,
+"body": "put P1-3: what is 44 + 48? Answer with the number only.",
+"reply": "To: node 1\n<answer>stored P1-3</answer>\nDecision: WAIT"
+},
+{
+"from": 2,
+"to": 6,
+"body": "put P2-3: what is 57 + 53? Answer with the number only.",
+"reply": "To: node 2\n<answer>stored P2-3</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-2: what is 63 + 47? Answer with the number only.",
+"reply": "To: node 3\n<answer>full P3-2</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P3-1: 92",
+"reply": "To: node 4\n<answer>take P2-2: what is 50 + 42? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "done P1-2: 74",
+"reply": "To: node 5\n<answer>take P1-3: what is 44 + 48? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 1,
+"body": "stored P1-3",
+"reply": "To: node 6\n<answer>\nput P1-4: what is 51 + 59? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 2,
+"body": "stored P2-3",
+"reply": "To: node 6\n<answer>\nput P2-4: what is 64 + 64? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "full P3-2",
+"reply": "To: node 6\n<answer>\nput P3-2: what is 63 + 47? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P2-2: what is 50 + 42? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P2-2: 92\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "take P1-3: what is 44 + 48? Answer with the number only.",
+"reply": "To: node 6\n<answer>done P1-3: 92</answer>\nDecision: WAIT"
+},
+{
+"from": 1,
+"to": 6,
+"body": "put P1-4: what is 51 + 59? Answer with the number only.",
+"reply": "To: node 1\n<answer>stored P1-4</answer>\nDecision: WAIT"
+},
+{
+"from": 2,
+"to": 6,
+"body": "put P2-4: what is 64 + 64? Answer with the number only.",
+"reply": "To: node 2\n<answer>stored P2-4</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-2: what is 63 + 47? Answer with the number only.",
+"reply": "To: node 3\n<answer>full P3-2</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P2-2: 92",
+"reply": "To: node 4\n<answer>take P2-3: what is 57 + 53? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "done P1-3: 92",
+"reply": "To: node 5\n<answer>take P1-4: what is 51 + 59? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 1,
+"body": "stored P1-4",
+"reply": "To: node 6\n<answer>\nput P1-5: what is 58 + 70? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 2,
+"body": "stored P2-4",
+"reply": "To: node 6\n<answer>\nput P2-5: what is 71 + 75? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "full P3-2",
+"reply": "To: node 6\n<answer>\nput P3-2: what is 63 + 47? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P2-3: what is 57 + 53? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P2-3: 110\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "take P1-4: what is 51 + 59? Answer with the number only.",
+"reply": "To: node 6\n<answer>done P1-4: 110</answer>\nDecision: WAIT"
+},
+{
+"from": 1,
+"to": 6,
+"body": "put P1-5: what is 58 + 70? Answer with the number only.",
+"reply": "To: node 1\n<answer>stored P1-5</answer>\nDecision: WAIT"
+},
+{
+"from": 2,
+"to": 6,
+"body": "put P2-5: what is 71 + 75? Answer with the number only.",
+"reply": "To: node 2\n<answer>stored P2-5</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-2: what is 63 + 47? Answer with the number only.",
+"reply": "To: node 3\n<answer>full P3-2</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P2-3: 110",
+"reply": "To: node 4\n<answer>take P2-4: what is 64 + 64? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "done P1-4: 110",
+"reply": "To: node 5\n<answer>take P1-5: what is 58 + 70? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 1,
+"body": "stored P1-5",
+"reply": "To: node 6\n<answer>\nput P1-6: what is 65 + 81? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 2,
+"body": "stored P2-5",
+"reply": "To: node 6\n<answer>\nput P2-6: what is 78 + 86? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "full P3-2",
+"reply": "To: node 6\n<answer>\nput P3-2: what is 63 + 47? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P2-4: what is 64 + 64? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P2-4: 128\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "take P1-5: what is 58 + 70? Answer with the number only.",
+"reply": "To: node 6\n<answer>done P1-5: 128</answer>\nDecision: WAIT"
+},
+{
+"from": 1,
+"to": 6,
+"body": "put P1-6: what is 65 + 81? Answer with the number only.",
+"reply": "To: node 1\n<answer>stored P1-6</answer>\nDecision: WAIT"
+},
+{
+"from": 2,
+"to": 6,
+"body": "put P2-6: what is 78 + 86? Answer with the number only.",
+"reply": "To: node 2\n<answer>stored P2-6</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-2: what is 63 + 47? Answer with the number only.",
+"reply": "To: node 3\n<answer>full P3-2</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P2-4: 128",
+"reply": "To: node 4\n<answer>take P2-5: what is 71 + 75? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "done P1-5: 128",
+"reply": "To: node 5\n<answer>take P1-6: what is 65 + 81? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 1,
+"body": "stored P1-6",
+"reply": "To: node 6\n<answer>\nput P1-7: what is 72 + 92? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 2,
+"body": "stored P2-6",
+"reply": "To: node 6\n<answer>\nput P2-7: what is 85 + 97? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "full P3-2",
+"reply": "To: node 6\n<answer>\nput P3-2: what is 63 + 47? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P2-5: what is 71 + 75? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P2-5: 146\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "take P1-6: what is 65 + 81? Answer with the number only.",
+"reply": "To: node 6\n<answer>done P1-6: 146</answer>\nDecision: WAIT"
+},
+{
+"from": 1,
+"to": 6,
+"body": "put P1-7: what is 72 + 92? Answer with the number only.",
+"reply": "To: node 1\n<answer>stored P1-7</answer>\nDecision: WAIT"
+},
+{
+"from": 2,
+"to": 6,
+"body": "put P2-7: what is 85 + 97? Answer with the number only.",
+"reply": "To: node 2\n<answer>stored P2-7</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-2: what is 63 + 47? Answer with the number only.",
+"reply": "To: node 3\n<answer>full P3-2</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P2-5: 146",
+"reply": "To: node 4\n<answer>take P2-6: what is 78 + 86? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "done P1-6: 146",
+"reply": "To: node 5\n<answer>take P1-7: what is 72 + 92? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 1,
+"body": "stored P1-7",
+"reply": "To: node 6\n<answer>\nput P1-8: what is 79 + 13? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 2,
+"body": "stored P2-7",
+"reply": "To: node 6\n<answer>\nput P2-8: what is 92 + 18? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "full P3-2",
+"reply": "To: node 6\n<answer>\nput P3-2: what is 63 + 47? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P2-6: what is 78 + 86? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P2-6: 164\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "take P1-7: what is 72 + 92? Answer with the number only.",
+"reply": "To: node 6\n<answer>done P1-7: 164</answer>\nDecision: WAIT"
+},
+{
+"from": 1,
+"to": 6,
+"body": "put P1-8: what is 79 + 13? Answer with the number only.",
+"reply": "To: node 1\n<answer>stored P1-8</answer>\nDecision: WAIT"
+},
+{
+"from": 2,
+"to": 6,
+"body": "put P2-8: what is 92 + 18? Answer with the number only.",
+"reply": "To: node 2\n<answer>stored P2-8</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-2: what is 63 + 47? Answer with the number only.",
+"reply": "To: node 3\n<answer>full P3-2</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P2-6: 164",
+"reply": "To: node 4\n<answer>take P2-7: what is 85 + 97? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "done P1-7: 164",
+"reply": "To: node 5\n<answer>take P1-8: what is 79 + 13? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 1,
+"body": "stored P1-8",
+"reply": "To: node 6\n<answer>\nput P1-9: what is 86 + 24? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 2,
+"body": "stored P2-8",
+"reply": "To: node 6\n<answer>\nput P2-9: what is 99 + 29? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "full P3-2",
+"reply": "To: node 6\n<answer>\nput P3-2: what is 63 + 47? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P2-7: what is 85 + 97? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P2-7: 182\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "take P1-8: what is 79 + 13? Answer with the number only.",
+"reply": "To: node 6\n<answer>done P1-8: 92</answer>\nDecision: WAIT"
+},
+{
+"from": 1,
+"to": 6,
+"body": "put P1-9: what is 86 + 24? Answer with the number only.",
+"reply": "To: node 1\n<answer>stored P1-9</answer>\nDecision: WAIT"
+},
+{
+"from": 2,
+"to": 6,
+"body": "put P2-9: what is 99 + 29? Answer with the number only.",
+"reply": "To: node 2\n<answer>stored P2-9</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-2: what is 63 + 47? Answer with the number only.",
+"reply": "To: node 3\n<answer>full P3-2</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P2-7: 182",
+"reply": "To: node 4\n<answer>take P2-8: what is 92 + 18? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "done P1-8: 92",
+"reply": "To: node 5\n<answer>take P1-9: what is 86 + 24? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 1,
+"body": "stored P1-9",
+"reply": "To: node 6\n<answer>\nput P1-10: what is 93 + 35? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 2,
+"body": "stored P2-9",
+"reply": "To: node 6\n<answer>\nput P2-10: what is 16 + 40? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "full P3-2",
+"reply": "To: node 6\n<answer>\nput P3-2: what is 63 + 47? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P2-8: what is 92 + 18? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P2-8: 110\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "take P1-9: what is 86 + 24? Answer with the number only.",
+"reply": "To: node 6\n<answer>done P1-9: 110</answer>\nDecision: WAIT"
+},
+{
+"from": 1,
+"to": 6,
+"body": "put P1-10: what is 93 + 35? Answer with the number only.",
+"reply": "To: node 1\n<answer>stored P1-10</answer>\nDecision: WAIT"
+},
+{
+"from": 2,
+"to": 6,
+"body": "put P2-10: what is 16 + 40? Answer with the number only.",
+"reply": "To: node 2\n<answer>stored P2-10</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-2: what is 63 + 47? Answer with the number only.",
+"reply": "To: node 3\n<answer>full P3-2</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P2-8: 110",
+"reply": "To: node 4\n<answer>take P2-9: what is 99 + 29? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "done P1-9: 110",
+"reply": "To: node 5\n<answer>take P1-10: what is 93 + 35? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 1,
+"body": "stored P1-10",
+"reply": "Decision: WAIT"
+},
+{
+"from": 6,
+"to": 2,
+"body": "stored P2-10",
+"reply": "Node 6 has stored P2-10, so all 10 of my items are in the buffer and I am finished. Sending nothing more.\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "full P3-2",
+"reply": "To: node 6\n<answer>\nput P3-2: what is 63 + 47? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P2-9: what is 99 + 29? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P2-9: 128\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "take P1-10: what is 93 + 35? Answer with the number only.",
+"reply": "To: node 6\n<answer>done P1-10: 128</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-2: what is 63 + 47? Answer with the number only.",
+"reply": "To: node 3\n<answer>stored P3-2</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P2-9: 128",
+"reply": "To: node 4\n<answer>take P2-10: what is 16 + 40? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "done P1-10: 128",
+"reply": "To: node 5\n<answer>take P3-2: what is 63 + 47? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "stored P3-2",
+"reply": "To: node 6\n<answer>\nput P3-3: what is 70 + 58? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P2-10: what is 16 + 40? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P2-10: 56\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "take P3-2: what is 63 + 47? Answer with the number only.",
+"reply": "To: node 6\n<answer>done P3-2: 110</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-3: what is 70 + 58? Answer with the number only.",
+"reply": "To: node 3\n<answer>stored P3-3</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P2-10: 56",
+"reply": "To: node 4\n<answer>take P3-3: what is 70 + 58? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "done P3-2: 110",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "stored P3-3",
+"reply": "To: node 6\n<answer>\nput P3-4: what is 77 + 69? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P3-3: what is 70 + 58? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P3-3: 128\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-4: what is 77 + 69? Answer with the number only.",
+"reply": "To: node 3\n<answer>stored P3-4</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P3-3: 128",
+"reply": "To: node 4\n<answer>take P3-4: what is 77 + 69? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "stored P3-4",
+"reply": "To: node 6\n<answer>\nput P3-5: what is 84 + 80? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P3-4: what is 77 + 69? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P3-4: 146\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-5: what is 84 + 80? Answer with the number only.",
+"reply": "To: node 3\n<answer>stored P3-5</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P3-4: 146",
+"reply": "To: node 4\n<answer>take P3-5: what is 84 + 80? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "stored P3-5",
+"reply": "To: node 6\n<answer>\nput P3-6: what is 91 + 91? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P3-5: what is 84 + 80? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P3-5: 164\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-6: what is 91 + 91? Answer with the number only.",
+"reply": "To: node 3\n<answer>stored P3-6</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P3-5: 164",
+"reply": "To: node 4\n<answer>take P3-6: what is 91 + 91? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "stored P3-6",
+"reply": "To: node 6\n<answer>\nput P3-7: what is 98 + 12? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P3-6: what is 91 + 91? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P3-6: 182\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-7: what is 98 + 12? Answer with the number only.",
+"reply": "To: node 3\n<answer>stored P3-7</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P3-6: 182",
+"reply": "To: node 4\n<answer>take P3-7: what is 98 + 12? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "stored P3-7",
+"reply": "To: node 6\n<answer>\nput P3-8: what is 15 + 23? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P3-7: what is 98 + 12? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P3-7: 110\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-8: what is 15 + 23? Answer with the number only.",
+"reply": "To: node 3\n<answer>stored P3-8</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P3-7: 110",
+"reply": "To: node 4\n<answer>take P3-8: what is 15 + 23? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "stored P3-8",
+"reply": "To: node 6\n<answer>\nput P3-9: what is 22 + 34? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P3-8: what is 15 + 23? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P3-8: 38\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-9: what is 22 + 34? Answer with the number only.",
+"reply": "To: node 3\n<answer>stored P3-9</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P3-8: 38",
+"reply": "To: node 4\n<answer>take P3-9: what is 22 + 34? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "stored P3-9",
+"reply": "To: node 6\n<answer>\nput P3-10: what is 29 + 45? Answer with the number only.\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P3-9: what is 22 + 34? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P3-9: 56\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 3,
+"to": 6,
+"body": "put P3-10: what is 29 + 45? Answer with the number only.",
+"reply": "To: node 3\n<answer>stored P3-10</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P3-9: 56",
+"reply": "To: node 4\n<answer>take P3-10: what is 29 + 45? Answer with the number only.</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 3,
+"body": "stored P3-10",
+"reply": "Decision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "take P3-10: what is 29 + 45? Answer with the number only.",
+"reply": "To: node 6\n<answer>\ndone P3-10: 74\n</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 4,
+"to": 6,
+"body": "done P3-10: 74",
+"reply": "To: node 4\n<answer>\nP1-1: 56\nP1-2: 74\nP1-3: 92\nP1-4: 110\nP1-5: 128\nP1-6: 146\nP1-7: 164\nP1-8: 92\nP1-9: 110\nP1-10: 128\nP2-1: 74\nP2-2: 92\nP2-3: 110\nP2-4: 128\nP2-5: 146\nP2-6: 164\nP2-7: 182\nP2-8: 110\nP2-9: 128\nP2-10: 56\nP3-1: 92\nP3-2: 110\nP3-3: 128\nP3-4: 146\nP3-5: 164\nP3-6: 182\nP3-7: 110\nP3-8: 38\nP3-9: 56\nP3-10: 74\n</answer>\nDecision: DONE"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 4,
+"body": "P1-1: 56\nP1-2: 74\nP1-3: 92\nP1-4: 110\nP1-5: 128\nP1-6: 146\nP1-7: 164\nP1-8: 92\nP1-9: 110\nP1-10: 128\nP2-1: 74\nP2-2: 92\nP2-3: 110\nP2-4: 128\nP2-5: 146\nP2-6: 164\nP2-7: 182\nP2-8: 110\nP2-9: 128\nP2-10: 56\nP3-1: 92\nP3-2: 110\nP3-3: 128\nP3-4: 146\nP3-5: 164\nP3-6: 182\nP3-7: 110\nP3-8: 38\nP3-9: 56\nP3-10: 74",
+"reply": "No message sent to node 6. This broadcast lists the answers already collected from all items (P1-1 to P3-10), and I have no pending item to answer.\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+},
+{
+"from": 6,
+"to": 5,
+"body": "empty",
+"reply": "To: node 6\n<answer>ready</answer>\nDecision: WAIT"
+},
+{
+"from": 5,
+"to": 6,
+"body": "ready",
+"reply": "To: node 5\n<answer>empty</answer>\nDecision: WAIT"
+}
+]
+}

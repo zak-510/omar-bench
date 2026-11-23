@@ -13,6 +13,8 @@ import csv, json, os, re, subprocess, sys, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
+sys.path.insert(0, os.path.join(ROOT, "run"))
+import machine  # noqa: E402
 LOCAL = os.path.join(ROOT, "local")  # OMAR and the tier configs, installed by infra/bootstrap.sh
 
 def flag(name, default):
@@ -52,7 +54,7 @@ SLUG = "".join(c if c.isalnum() or c in "-_" else "-" for c in MODEL)
 OUT = os.path.join(os.environ.get("RESULTS_DIR", os.path.join(ROOT, "results")),
                    f"sweep-{SLUG}-dsl{'-stub' if STUB else ''}.csv")
 FIELDS = ["model", "arm", "family", "n", "param", "trial", "hops", "completed",
-          "reason", "metric", "rc", "stderr", "output", "started_at", "secs"]
+          "reason", "metric", "rc", "stderr", "output", "started_at", "secs", "trouble"]
 
 def load_done():
     if not os.path.exists(OUT):
@@ -65,12 +67,20 @@ DONE = load_done()
 RUN_T = {}  # start and seconds of the trial being logged
 
 def log(family, n, param, trial, row):
+    # Whether the runtime or the provider stopped the run, rather than its agents
+    # (run/machine.py). A run the provider spoiled is named for the scheduler,
+    # which lists its trial and runs it again.
+    trouble = machine.trouble(rc=row.get("rc"), stderr=row.get("stderr", ""))
+    if trouble == "provider" and os.environ.get("VOID_FILE"):
+        with open(os.environ["VOID_FILE"], "a") as f:
+            f.write(json.dumps({"unit": family, "arm": "dsl", "trial": trial,
+                                "reason": "provider: " + row.get("stderr", "")[-200:]}) + "\n")
     new = not os.path.exists(OUT)
     with open(OUT, "a", newline="") as f:
         w = csv.DictWriter(f, fieldnames=FIELDS, extrasaction="ignore", restval="")
         if new: w.writeheader()
         w.writerow({"model": MODEL, "arm": "dsl", "family": family, "n": n,
-                    "param": param, "trial": trial, **row, **RUN_T})
+                    "param": param, "trial": trial, **row, **RUN_T, "trouble": trouble})
     RUN_T.clear()
 
 BOOT_FAILURE = "failed to deliver"  # the runtime could not hand an agent its task
@@ -109,7 +119,11 @@ def _run_omar(program, inputs):
                            timeout=TIMEOUT + 120, env=env)
         rc, out, err = p.returncode, p.stdout, p.stderr
     except subprocess.TimeoutExpired as e:
-        rc, out, err = -9, (e.stdout or ""), "hard timeout"
+        text = lambda x: x.decode(errors="replace") if isinstance(x, bytes) else (x or "")
+        rc, out, err = -9, text(e.stdout), "hard timeout"
+        machine.stop_dsl(cmd[0], CFG, out + text(e.stderr))
+    if rc not in (0, -9):  # a run that ends well ends its own session
+        machine.stop_dsl(cmd[0], CFG, out + err)
     outputs = dict(re.findall(r'Output (\S+) = "(.*)"', out))
     RUN_T["secs"] = RUN_T.get("secs", 0) + round(time.time() - t0)
     return {"rc": rc, "outputs": outputs, "stdout": out,

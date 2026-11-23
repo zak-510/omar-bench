@@ -6,8 +6,17 @@ Paths default to the repo layout; override with env vars if needed:
   OMAR_MASS_BIN  the runner binary (default: runner/target/release/omar-mass)
   OMAR_MASS_OUT  output dir        (default: $RESULTS_DIR, else results/)
 Add --daemon to detach and run in the background.
+
+Each row says how its run ended (`end`) and, in `trouble`, whether the
+machinery around the agents stopped it (run/machine.py); every delivery and
+reply is kept in the matching .jsonl. A run that the provider or the
+benchmark's own machinery spoiled is named in $VOID_FILE, for the scheduler
+to list its trial and run it again.
 """
 import csv, json, re, signal, subprocess, sys, time, os
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "run"))
+import machine  # noqa: E402
 
 def _raw_flag(name, default):
     """--name V from argv, else env, else default."""
@@ -54,6 +63,9 @@ RING_NS = sizes("ring", [10, 25, 40])
 RETRIES = flag("--retries", 3)
 RETRY_BACKOFF_SECS = flag("--retry-backoff", 30)
 HARD_TIMEOUT = flag("--hard-timeout", 2400)
+# Both arms stop a run this long after its time limit. The runner stops itself
+# then and keeps its record; killing it is the last resort.
+GRACE, KILL_AFTER = 120, 300
 MODEL = _raw_flag("--model", "claude-haiku-4-5-20251001")
 BACKEND = _raw_flag("--backend", "claude")
 SLUG = "".join(c if c.isalnum() or c in "-_" else "-" for c in MODEL)
@@ -71,6 +83,7 @@ BIN = os.environ.get("OMAR_MASS_BIN", os.path.join(ROOT, "runner", "target", "re
 DIR = os.environ.get("OMAR_MASS_OUT", os.environ.get("RESULTS_DIR", os.path.join(ROOT, "results")))
 os.makedirs(DIR, exist_ok=True)
 OUT = os.path.join(DIR, f"sweep-{SLUG}-{ARM}.csv")
+RAW = OUT[:-4] + ".jsonl"
 DONE = os.path.join(DIR, f"DONE-{SLUG}-{ARM}")
 LOG = os.path.join(DIR, f"sweep-{SLUG}-{ARM}.log")
 
@@ -103,7 +116,8 @@ SG_WIDE_N = 9
 SG_WIDE_LEVELS = list(range(SG_WIDE_N))  # 0..8, one honest worker always left
 
 FIELDS = ["model", "arm", "family", "n", "param", "trial", "hops", "completed",
-          "reason", "metric", "rc", "stderr", "output", "started_at", "secs"]
+          "reason", "metric", "rc", "stderr", "output", "started_at", "secs",
+          "end", "lost", "silent_secs", "evidence", "trouble"]
 
 def cell_key(family, n, param, trial):
     return (str(family), str(n), str(param), str(trial))
@@ -162,20 +176,23 @@ def run_once(args, per_wave_timeout, hard_timeout):
 
 def _run_once(args, per_wave_timeout, hard_timeout):
     cmd = [BIN, "graph"] + args + ["--timeout-secs", str(per_wave_timeout),
+                                   "--deadline-secs", str(hard_timeout + GRACE),
                                    "--model", MODEL, "--backend", BACKEND, "--coordination", ARM]
     kind = args[args.index("--kind") + 1]
     if SPAWN_WINDOW and kind in ("chain", "ring"):
         cmd += ["--spawn-window", str(SPAWN_WINDOW)]
-    # Own process group so kill_tree reaches the agents.
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                          text=True, start_new_session=True)
     try:
-        out, err = p.communicate(timeout=hard_timeout)
+        out, err = p.communicate(timeout=hard_timeout + GRACE + KILL_AFTER)
     except subprocess.TimeoutExpired:
+        # The runner stops itself at its deadline; reaching this is our failure.
         kill_tree(p)
         out, err = p.communicate()
-        return {"error": f"hard timeout after {hard_timeout}s", "rc": "timeout",
-                "stderr": (err or "").strip().replace("\n", " ")[-300:]}
+        return {"error": f"killed: the runner did not stop at {hard_timeout + GRACE}s", "rc": "timeout",
+                "end": "killed", "stderr": (err or "").strip().replace("\n", " ")[-300:]}
+    finally:
+        machine.clear()  # a runner that failed half-started leaves agents
     err = (err or "").strip().replace("\n", " ")[-300:]
     try:
         d = json.loads(out)
@@ -211,16 +228,30 @@ def run(args, per_wave_timeout=HARD_TIMEOUT, hard_timeout=HARD_TIMEOUT, attempts
     return d
 
 def log(family, n, param, trial, d, metric):
+    end = d.get("end") or ("no-result" if "error" in d else "")
+    evidence = d.get("evidence") or ""
+    trouble = "harness" if end == "killed" else machine.trouble(
+        end=end, silent_secs=d.get("silent_secs"), evidence=evidence,
+        rc=0 if d.get("rc") in (0, "timeout") else d.get("rc"), stderr=d.get("stderr", ""))
     row = {"model": MODEL, "arm": ARM, "family": family, "n": n, "param": param, "trial": trial,
            "hops": d.get("hops"), "completed": d.get("completed"),
            "reason": d.get("reason", d.get("error", "")), "metric": metric,
            "rc": d.get("rc"), "stderr": d.get("stderr", ""),
            "output": (d.get("output") or "")[:60],
-           "started_at": d.get("started_at", ""), "secs": d.get("secs", "")}
+           "started_at": d.get("started_at", ""), "secs": d.get("secs", ""),
+           "end": end, "lost": d.get("errors", ""), "silent_secs": d.get("silent_secs", ""),
+           "evidence": evidence[-300:].replace("\n", " | "), "trouble": trouble}
+    with open(RAW, "a") as f:
+        f.write(json.dumps({"family": family, "n": n, "param": param, "trial": trial,
+                            **{k: d.get(k) for k in ("messages", "output", "end", "end_node", "evidence")}}) + "\n")
+    if trouble in ("provider", "harness") and os.environ.get("VOID_FILE"):
+        with open(os.environ["VOID_FILE"], "a") as f:
+            f.write(json.dumps({"unit": family, "arm": ARM, "trial": trial,
+                                "reason": f"{trouble}: {evidence[-200:] or row['reason']}"}) + "\n")
     # Append + fsync per row.
     header = not os.path.exists(OUT) or os.path.getsize(OUT) == 0
     with open(OUT, "a", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=FIELDS)
+        w = csv.DictWriter(f, fieldnames=FIELDS, extrasaction="ignore", restval="")
         if header: w.writeheader()
         w.writerow(row)
         f.flush(); os.fsync(f.fileno())

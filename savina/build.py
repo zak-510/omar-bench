@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Render both arms of each Savina benchmark from spec.py.
 
-  specs/<bench>.json      agent arm: one prompt per agent plus the seed messages,
-                          for the runner's `--kind custom`
+  specs/<bench>.json      agent arm: one prompt per agent, the seed messages and
+                          who may finish the run, for the runner's `--kind custom`
   programs/<Bench>.omar   DSL arm, one file per backend: .omar (Claude),
                           .codex.omar, .stub.omar (harness dry runs)
 
@@ -28,12 +28,14 @@ def agent_specs():
         "prompts": [spec.philosopher_agent_prompt(i) for i in range(1, spec.N + 1)]
         + [spec.arbitrator_agent_prompt()],
         "seeds": spec.philosophers_seeds(),
+        "finishers": [spec.FINISHER],
     }
     bank = {
         "name": "banking",
         "prompts": [spec.account_agent_prompt(i) for i in range(1, spec.N + 1)]
         + [spec.teller_agent_prompt()],
         "seeds": spec.banking_seeds(),
+        "finishers": [spec.FINISHER],
     }
     buffer = {
         "name": "boundedbuffer",
@@ -41,12 +43,14 @@ def agent_specs():
         + [spec.consumer_agent_prompt(c) for c in range(1, spec.CONSUMERS + 1)]
         + [spec.manager_agent_prompt()],
         "seeds": spec.boundedbuffer_seeds(),
+        "finishers": [spec.FINISHER],
     }
     longer = {
         "name": "philosophers-90",
         "prompts": [spec.philosopher_agent_prompt(i, 18) for i in range(1, spec.N + 1)]
         + [spec.arbitrator_agent_prompt(18)],
         "seeds": spec.philosophers_seeds(),
+        "finishers": [spec.FINISHER],
     }
     return {"philosophers": phil, "banking": bank, "boundedbuffer": buffer, "philosophers-90": longer}
 

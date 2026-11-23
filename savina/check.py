@@ -3,27 +3,46 @@
 Each arm is first reduced to the same ordered events, then one checker scores
 them. Agent arm: the runner's delivery log (who sent what to whom, in delivery
 order). DSL arm: the trace its code reaction writes to `log`.
+
+`cause` then files every trial under one heading, so that a failure of
+coordination is never mixed with a failure of the machinery around it.
 """
+import os
 import re
+import sys
 
 import spec
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "run"))
+import machine  # noqa: E402
+
 # Agent messages are free text inside <answer> tags; these patterns read the
-# protocol's message shapes and nothing looser.
+# protocol's message shapes and nothing looser. An event is the message's
+# shape alone: a 'done' whose answer cannot be read is still a 'done', with a
+# wrong answer, as it is in the dsl arm.
 EAT = re.compile(r"^\W*eat\b", re.I)
-DONE_MEAL = re.compile(r"done\s+meal\s+(\d+)\s*:?\s*(-?\d+)", re.I)
+DONE_MEAL = re.compile(r"done\s+meal\s+(\d+)(?:\s*:?\s*(-?\d+))?", re.I)
 TRANSFER = re.compile(r"\btransfer\s+T(\d+)\b", re.I)
-CREDIT = re.compile(r"\bcredit\s+T(\d+)\s*:?\s*\$?\s*([\d,]+)", re.I)
+CREDIT = re.compile(r"\bcredit\s+T(\d+)(?:\s*:?\s*\$?\s*([\d,]+))?", re.I)
 CREDITED = re.compile(r"\bcredited\s+T(\d+)\b", re.I)
 DENIED = re.compile(r"\bdenied\s+T(\d+)\b", re.I)
 BALANCE = re.compile(r"\bbalance\s*:?\s*\$?\s*(-?[\d,]+)", re.I)
 STORED = re.compile(r"^\W*stored\s+P(\d+)\s*-\s*(\d+)", re.I)
 TAKE = re.compile(r"^\W*take\s+P(\d+)\s*-\s*(\d+)", re.I)
-DONE_ITEM = re.compile(r"\bdone\s+P(\d+)\s*-\s*(\d+)\s*:?\s*(-?\d+)", re.I)
+DONE_ITEM = re.compile(r"\bdone\s+P(\d+)\s*-\s*(\d+)(?:\s*:?\s*(-?\d+))?", re.I)
+# Lines the delivery service reads rather than delivers. The runner strips
+# them from a message; logs from before it did still carry them.
+CONTROL = re.compile(r"^[\s*#>\-_`]*(to|decision)[\s*_`]*:", re.I)
 
 
 def _int(s):
-    return int(s.replace(",", ""))
+    return int(s.replace(",", "")) if s else None
+
+
+def _body(m):
+    """A delivered message without control lines, as the recipient is meant to read it."""
+    lines = (m.get("body") or "").splitlines()
+    return "\n".join(l for l in lines if not CONTROL.match(l)).strip()
 
 
 # ---------------------------------------------------------------- Philosophers
@@ -66,7 +85,7 @@ def philosophers_agent(messages):
     events, deviations = [], 0
     arb = spec.ARBITRATOR_NODE
     for m in messages:
-        body = m.get("body") or ""
+        body = _body(m)
         if m["from"] == arb and 1 <= m["to"] <= spec.N:
             if EAT.search(body):
                 events.append(("grant", m["to"]))
@@ -75,7 +94,7 @@ def philosophers_agent(messages):
         elif 1 <= m["from"] <= spec.N and m["to"] == arb:
             d = DONE_MEAL.search(body)
             if d:
-                events.append(("done", m["from"], int(d.group(1)), int(d.group(2))))
+                events.append(("done", m["from"], int(d.group(1)), _int(d.group(2))))
             elif "hungry" not in body.lower():
                 deviations += 1
         elif m["from"] != 0:
@@ -138,7 +157,7 @@ def banking_agent(messages):
     decisions, reported, deviations = [], {}, 0
     asked = None
     for m in messages:
-        body = m.get("body") or ""
+        body = _body(m)
         f, t = m["from"], m["to"]
         if f == teller and 1 <= t <= spec.N:
             if "report balance" in body.lower():
@@ -223,7 +242,7 @@ def boundedbuffer_agent(messages):
     prods = range(1, spec.PRODUCERS + 1)
     cons = range(spec.PRODUCERS + 1, spec.PRODUCERS + spec.CONSUMERS + 1)
     for m in messages:
-        body = m.get("body") or ""
+        body = _body(m)
         f, t, low = m["from"], m["to"], body.lower()
         if f == man and t in prods:
             s = STORED.search(body)
@@ -240,7 +259,7 @@ def boundedbuffer_agent(messages):
         elif f in cons and t == man:
             d = DONE_ITEM.search(body)
             if d:
-                events.append(("done", f - spec.PRODUCERS, int(d.group(1)), int(d.group(2)), int(d.group(3))))
+                events.append(("done", f - spec.PRODUCERS, int(d.group(1)), int(d.group(2)), _int(d.group(3))))
             elif "ready" not in low:
                 deviations += 1
         elif f in prods and t == man:
@@ -264,3 +283,94 @@ def boundedbuffer_dsl(log):
             events.append(("done", int(parts[1]), int(parts[2]), int(parts[3]), int(ans.group()) if ans else None))
     return events
 
+
+
+# ------------------------------------------------------------ what went wrong
+# One heading per trial. Success and the four kinds of failure after it are
+# outcomes of the arm and count. The last two are not the arm's doing: such a
+# trial is listed with its evidence and run again.
+CAUSES = ("success", "safety", "noncompletion", "protocol", "runtime", "harness", "provider")
+COUNTED = CAUSES[:5]
+
+
+def cause(score, *, arm, end="", lost=0, deviations=0, silent_secs=None, evidence="", rc=0, stderr=""):
+    """File a scored trial under one of CAUSES.
+
+    success        the run finished and every invariant held
+    safety         an invariant was broken (a fork held by two, an overdraft,
+                   a buffer overflow, an item handed out twice, a wrong ledger)
+    noncompletion  the work was not finished: deadlock, silence between
+                   agents, the delivery cut, or a run ended before its work
+    protocol       agent arm only: the run failed and a message was lost or
+                   unreadable (an address that names no node, two messages in
+                   one reply, a message the protocol has no place for)
+    runtime        the machinery of the arm failed: agents that did not start,
+                   an agent that never answered a delivered request, the
+                   runtime failing to deliver or exiting with an error
+    provider       the model provider was limited, down or signed out
+    harness        the benchmark's own code or machine failed (set by the
+                   sweep and scheduler, never here)
+    """
+    if score.get("success"):
+        return "success"
+    stopped = machine.trouble(end=end, silent_secs=silent_secs, evidence=evidence, rc=rc, stderr=stderr,
+                              stopped=arm == "dsl" and not score.get("completed"))
+    if stopped:
+        return stopped
+    if arm == "agent" and (lost or deviations):
+        return "protocol"
+    if score.get("safety_violations") or score.get("overflows") or score.get("overdrafts") \
+            or score.get("wrongful_denials") or score.get("wrong_transfers") \
+            or score.get("reason") == "wrong final balances":
+        return "safety"
+    return "noncompletion"
+
+
+# ------------------------------------------------------- one trial, one score
+def agent(bench, result, rc=0, stderr=""):
+    """Score an agent-arm trial from the runner's result (None when it gave none)."""
+    if result is None:
+        score = {"success": False, "reason": "no result", "completed": False, "end": "no-result"}
+        score["cause"] = cause(score, arm="agent", end="no-result", rc=rc, stderr=stderr)
+        return score
+    messages = result.get("messages", [])
+    completed = bool(result.get("completed"))
+    if bench in spec.PHILOSOPHER_MEALS:
+        events, dev = philosophers_agent(messages)
+        score = philosophers(events, completed, spec.PHILOSOPHER_MEALS[bench])
+    elif bench == "boundedbuffer":
+        events, dev = boundedbuffer_agent(messages)
+        score = boundedbuffer(events, completed)
+    else:
+        decisions, reported, dev = banking_agent(messages)
+        score = banking(decisions, reported, completed)
+    end, evidence, lost = result.get("end") or "", result.get("evidence") or "", result.get("errors", 0)
+    score.update(deviations=dev, deliveries=result.get("hops"), detail=result.get("reason", ""),
+                 completed=completed, end=end, lost=lost, undelivered=result.get("undelivered", ""),
+                 silent_secs=result.get("silent_secs", ""), evidence=evidence[-300:].replace("\n", " | "))
+    if end == "killed":
+        # The runner stops itself at the time limit; one that had to be killed
+        # is the benchmark's failure, whatever its agents were doing.
+        score["cause"] = "harness"
+    else:
+        score["cause"] = cause(score, arm="agent", end=end, lost=lost, deviations=dev,
+                               silent_secs=result.get("silent_secs"), evidence=evidence)
+    return score
+
+
+def dsl(bench, outputs, completed, rc=0, stderr=""):
+    """Score a dsl-arm trial from the outputs its program printed."""
+    if bench in spec.PHILOSOPHER_MEALS:
+        log = outputs.get("a.log")
+        score = philosophers(philosophers_dsl(log), completed and log is not None,
+                             spec.PHILOSOPHER_MEALS[bench])
+    elif bench == "boundedbuffer":
+        log = outputs.get("m.log")
+        score = boundedbuffer(boundedbuffer_dsl(log), completed and log is not None)
+    else:
+        log = outputs.get("t.log")
+        decisions, reported = banking_dsl(log)
+        score = banking(decisions, reported, completed and log is not None)
+    score.update(completed=completed and log is not None, deviations=0)
+    score["cause"] = cause(score, arm="dsl", rc=rc, stderr=stderr)
+    return score

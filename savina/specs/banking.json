@@ -13,5 +13,8 @@
    6,
    "start: run the transfers"
   ]
+ ],
+ "finishers": [
+  6
  ]
 }

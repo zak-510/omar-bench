@@ -11,6 +11,11 @@ import random
 
 N = 5
 ROUNDS = 30
+# Agent arm: in every benchmark the coordinator is node N + 1, and it is the
+# only agent that may finish the run. The runner enforces this and tells every
+# agent (runner/src/prompts.rs, `action_rules`), along with how a reply is read:
+# one message per reply, and what 'Decision: WAIT' and 'Decision: DONE' do.
+FINISHER = N + 1
 # Agent arm: deliveries allowed before the runner cuts a trial, which the agents
 # are never told: four times the fewest a correct run needs (seeds included).
 FUSE = {"philosophers": 400, "banking": 400, "boundedbuffer": 500, "philosophers-90": 1100}
@@ -57,9 +62,8 @@ def philosopher_agent_prompt(i, count=MEALS):
 Your meals, in order:
 {meals}
 
-Protocol. Forks are handed out by the arbitrator, node {ARBITRATOR_NODE}. Each turn you send at \
-most one message: if a reply has more than one 'To:' line, only one of them is delivered. To ask \
-for your forks, send the message 'hungry' to node {ARBITRATOR_NODE}. If node {ARBITRATOR_NODE} sends \
+Protocol. Forks are handed out by the arbitrator, node {ARBITRATOR_NODE}. To ask for your forks, \
+send the message 'hungry' to node {ARBITRATOR_NODE}. If node {ARBITRATOR_NODE} sends \
 you 'eat', you hold both forks: do your next uneaten meal, then send 'done meal K: ANSWER' to node \
 {ARBITRATOR_NODE} (K is the meal number). That message gives both forks back and, if you have meals \
 left, also asks for your forks again, so do not send 'hungry' with it. If node {ARBITRATOR_NODE} \
@@ -80,9 +84,8 @@ def arbitrator_agent_prompt(count=MEALS):
 {table}
 All forks start free.
 
-Protocol. Each turn you send at most one message: if a reply has more than one 'To:' line, only \
-one of them is delivered. When philosopher i sends 'hungry': if both of its forks are free, they are \
-now held by philosopher i; send 'eat' to node i. Otherwise send 'denied' to node i. When philosopher \
+Protocol. When philosopher i sends 'hungry': if both of its forks are free, they are now held by \
+philosopher i; send 'eat' to node i. Otherwise send 'denied' to node i. When philosopher \
 i sends 'done meal K: ANSWER', both of its forks are free again and its meal K is eaten. If it has \
 meals left, that message also asks for its forks again: answer it as you would 'hungry' from \
 philosopher i. If it has eaten all {count}, send nothing (Decision: WAIT). Never let a fork be held \
@@ -216,9 +219,8 @@ Your items, in order:
 {items}
 
 Protocol. Your items go to the manager, node {MANAGER_NODE}, who keeps them in a buffer that holds \
-at most {BUFFER} items. Each turn you send at most one message: if a reply has more than one 'To:' \
-line, only one of them is delivered. To offer an item, send 'put ITEM: QUESTION' to node \
-{MANAGER_NODE}, with the item's name and question exactly as listed above. If node {MANAGER_NODE} \
+at most {BUFFER} items. To offer an item, send 'put ITEM: QUESTION' to node {MANAGER_NODE}, with the \
+item's name and question exactly as listed above. If node {MANAGER_NODE} \
 replies 'stored ITEM', that item is in the buffer: offer your next item. If node {MANAGER_NODE} \
 replies 'full ITEM', the buffer had no room: offer the same item again. Once node {MANAGER_NODE} has \
 stored item P{p}-{PER_PRODUCER}, you are finished: send nothing more and end every later turn with \
@@ -232,9 +234,8 @@ New message from {{sender}}:
 def consumer_agent_prompt(c):
     return (CONSUMER_JOB.format(c=c, nc=CONSUMERS) + f"""
 
-Protocol. Items come from the manager, node {MANAGER_NODE}. Each turn you send at most one message: \
-if a reply has more than one 'To:' line, only one of them is delivered. To ask for an item, send \
-'ready' to node {MANAGER_NODE}. If node {MANAGER_NODE} sends you 'take ITEM: QUESTION', answer the \
+Protocol. Items come from the manager, node {MANAGER_NODE}. To ask for an item, send 'ready' to \
+node {MANAGER_NODE}. If node {MANAGER_NODE} sends you 'take ITEM: QUESTION', answer the \
 question and send 'done ITEM: ANSWER' to node {MANAGER_NODE}, with the number only as ANSWER. That \
 message also asks for your next item, so do not send 'ready' with it. If node {MANAGER_NODE} \
 replies 'empty', there was no item for you: send 'ready' to node {MANAGER_NODE} again. Only the \
@@ -252,8 +253,7 @@ and {CONSUMERS} consumers (nodes {first} and {last}). The buffer holds at most {
 starts empty. There are {ROUNDS} items in all, {PER_PRODUCER} from each producer, named P1-1 to \
 P{PRODUCERS}-{PER_PRODUCER}.
 
-Protocol. Each turn you send at most one message: if a reply has more than one 'To:' line, only \
-one of them is delivered. Always reply to the node whose message you are answering.
+Protocol. Unless you are finishing the run, reply to the node whose message you are answering.
 - 'put ITEM: QUESTION' from a producer: if the buffer holds fewer than {BUFFER} items, add the item \
 and its question to the buffer and send 'stored ITEM' to that producer. Otherwise send 'full ITEM' \
 to that producer and leave the buffer as it is.

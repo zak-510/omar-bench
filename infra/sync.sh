@@ -11,6 +11,7 @@ case "${1:-}" in
             [ -z "$(git status --porcelain)" ] || echo dirty; } | tr '\n' ' ' > REVISION
           rsync -az -e "$SSH" --delete \
               --exclude .git --exclude results --exclude runner/target --exclude local \
+              --exclude status-checks \
               ./ "ubuntu@$HOST:omar-bench/" ;;
     pull) rsync -az -e "$SSH" "ubuntu@$HOST:omar-bench/results/" results/ ;;
     ssh)  exec $SSH "ubuntu@$HOST" ;;

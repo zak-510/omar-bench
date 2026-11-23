@@ -19,9 +19,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AGENT_SESSION = re.compile(r"omar-agent-\d+-mass[0-9a-f]{4}-|dslprobe-")
 # What a usage limit, an outage or a sign-in failure looks like in an agent's
 # terminal or in an error message.
+# None of these is a phrase an agent would write about its own task: "limit"
+# and "overloaded" alone are not here, since a buffer can be both.
 PROVIDER = re.compile(
-    r"usage limit|rate limit|hit your limit|limit reached|too many requests|overloaded|service unavailable|"
-    r"api error|invalid api key|authentication_error|unauthorized|not logged in|please log in|credit balance",
+    r"usage limit|rate limit|hit your [\w -]{0,12}limit|too many requests|overloaded_error|api error|"
+    r"service unavailable|invalid api key|authentication_error|not logged in|please log in|credit balance",
     re.I)
 # How long an agent has to be silent before the time limit is its doing: three
 # reminders have gone unanswered by then.
@@ -42,8 +44,7 @@ def trouble(*, end="", silent_secs=None, evidence="", rc=0, stderr="", stopped=F
     if not (silent or stopped or end == "no-result" or rc not in (0, None, "0", "")):
         return ""
     return "provider" if PROVIDER.search(f"{evidence}\n{stderr}") else "runtime"
-# An agent process older than this at the start of a trial was not started by
-# it, nor by the scheduler's own short checks of the provider.
+# An agent process older than this at the start of a trial was not started by it.
 STALE_SECS = 300
 
 
@@ -61,11 +62,16 @@ def sessions():
 
 
 def stale_agents():
-    """Agent CLI processes that were running before the coming trial."""
+    """Agents that were running before the coming trial: Claude Code
+    processes, and Codex processes that OMAR started (their command line
+    names OMAR's runtime folder). A bare `codex app-server` is not an agent:
+    it is how Codex's usage is read."""
     count = 0
-    for line in _out(["ps", "-eo", "etimes=,comm="]).splitlines():
-        parts = line.split(None, 1)
-        if len(parts) == 2 and parts[1].strip() in ("claude", "codex") and int(parts[0]) > STALE_SECS:
+    for line in _out(["ps", "-eo", "etimes=,comm=,args="]).splitlines():
+        parts = line.split(None, 2)
+        if len(parts) < 3 or not parts[0].isdigit() or int(parts[0]) <= STALE_SECS:
+            continue
+        if parts[1] == "claude" or (parts[1] == "codex" and "/.omar/" in parts[2]):
             count += 1
     return count
 

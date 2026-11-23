@@ -169,6 +169,28 @@ S.machine.lock = lambda: None
 assert "another scheduler" in str(go()[2]) and not ran
 print("a second scheduler on the machine: refused")
 
+# What counts as an agent left over from an earlier trial, and what does not.
+ps = """   9000 claude          claude --dangerously-skip-permissions --model claude-haiku-5-5
+     40 claude          claude --dangerously-skip-permissions --model claude-haiku-5-5
+     90 claude          claude -p Reply with OK. --output-format json
+   7000 codex           /opt/codex app-server --listen unix:///home/ubuntu/.omar/codex-runtime/263d/app.sock -c x=y
+   7000 codex           /opt/codex --model gpt-6.1-sol --remote unix:///home/ubuntu/.omar/codex-runtime/263d/app.sock
+   7000 codex           /opt/codex app-server
+     12 codex           /opt/codex app-server --listen unix:///home/ubuntu/.omar/codex-runtime/77aa/app.sock
+  99999 python3         python3 /home/ubuntu/redeem.py 97 1
+"""
+real_out, S.machine._out = S.machine._out, lambda cmd, timeout=60: ps
+assert S.machine.stale_agents() == 3   # the old Claude agent and the old Codex agent's two processes
+S.machine._out = real_out
+for text, provider in (("You've hit your 5-hour limit · resets 5:10am (UTC)", True), ("Usage limit reached", True),
+                       ("API Error: 529 overloaded_error", True), ("full P1-3: the buffer limit is reached", False),
+                       ("the buffer is overloaded with items", False), ("", False)):
+    assert bool(S.machine.PROVIDER.search(text)) == provider, text
+assert S.machine.trouble(end="no-reply", evidence="⚠ Usage limit reached · limit resets 5:10am") == "provider"
+assert S.machine.trouble(end="no-reply", evidence="❯ ") == "runtime"
+assert S.machine.trouble(end="deadline", silent_secs=30) == "" and S.machine.trouble(end="done") == ""
+print("leftover agents and provider phrases: told apart")
+
 # The real lock: held by one, refused to the next, free again once released.
 os.environ["HOME"] = tmp
 a = real_lock("test-lock")

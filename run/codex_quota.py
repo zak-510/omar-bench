@@ -10,6 +10,8 @@ costs no model call. Session logs are no use for this: agents started by the
 runtime do not all keep one.
 """
 import json
+import os
+import signal
 import subprocess
 import sys
 import time
@@ -25,8 +27,10 @@ def state(timeout=30):
     """Weekly use and whether Codex is refusing work right now: {"used",
     "resets_at", "limited"}, or None if Codex did not say."""
     try:
+        # In a process group of its own: `codex` is a launcher, and killing it
+        # alone leaves the app server it started running on the machine.
         p = subprocess.Popen(["codex", "app-server"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                             stderr=subprocess.DEVNULL, text=True)
+                             stderr=subprocess.DEVNULL, text=True, start_new_session=True)
     except OSError:
         return None
     try:
@@ -54,7 +58,11 @@ def state(timeout=30):
                 return {"used": primary["usedPercent"], "resets_at": primary.get("resetsAt"), "limited": limited}
         return None
     finally:
-        p.kill()
+        try:
+            os.killpg(p.pid, signal.SIGKILL)
+        except OSError:
+            p.kill()
+        p.wait()
 
 
 def main():

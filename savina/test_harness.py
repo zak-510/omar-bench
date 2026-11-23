@@ -219,7 +219,7 @@ def test_causes():
     # The dsl arm: what the runtime says when it stops.
     silent = "Error: topology failed: \"reaction 'p1.reaction.0' invocation '11': 'p1.agent' did not answer within 7200s\""
     for stderr, want in ((silent, "runtime"), ("failed to deliver ... (os error 11)", "runtime"),
-                         ("hard timeout", "runtime"), ("API Error: 529 overloaded", "provider")):
+                         ("hard timeout", "runtime"), ("API Error: 529 overloaded_error", "provider")):
         got = check.dsl("boundedbuffer", {}, False, rc=1, stderr=stderr)
         assert not got["success"] and got["cause"] == want, (stderr, got["cause"])
     # A dsl run that finishes is scored on its trace like any other.

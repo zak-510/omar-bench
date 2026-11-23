@@ -45,6 +45,9 @@ the original study of July–August 2026, with its results in
   appends every delivery to a journal as it happens, logs deliveries for the
   probes as well as Savina, waits for a whole reply file before reading it,
   and no longer starts a second, idle agent per slot in a `--kind custom` run.
+- **Where agents start (`prereg-v8`):** the agent arm's agents started in the
+  folder the runner was run from, a checkout of this repository, while the DSL
+  arm's start in an empty workdir. `--workdir` now starts both in the same one.
 - **Ring scoring:** see the correction in `PREREGISTRATION.md`.
 - **Layout:** the runner moved to `runner/` and the probes to `probes/`, with
   the installed OMAR tools in `local/`; no code changed in the move.

@@ -276,6 +276,10 @@ struct ModelArgs {
     /// Backend model. Defaults to Haiku 4.5, the validated MASS backbone.
     #[arg(long, default_value = "claude-haiku-4-5-20251001")]
     model: Option<String>,
+    /// The folder agents start in (default: the invoking dir). It must be one
+    /// the backend CLI already trusts.
+    #[arg(long)]
+    workdir: Option<PathBuf>,
 }
 
 impl ModelArgs {
@@ -283,6 +287,7 @@ impl ModelArgs {
         ModelConfig {
             backend: self.backend.clone(),
             model: self.model.clone(),
+            workdir: self.workdir.clone(),
         }
     }
 }
@@ -379,7 +384,11 @@ fn main() -> Result<()> {
                 data,
                 methods,
                 dir,
-                model: ModelConfig { backend, model },
+                model: ModelConfig {
+                    backend,
+                    model,
+                    workdir: None,
+                },
                 timeout: Duration::from_secs(timeout_secs),
             })?;
             Ok(())

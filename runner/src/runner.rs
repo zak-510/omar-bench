@@ -107,6 +107,10 @@ pub struct ModelConfig {
     pub backend: String,
     /// Optional backend model override (spawn_agent `model`).
     pub model: Option<String>,
+    /// The folder agents start in; the invoking dir when unset. The dsl arm's
+    /// agents start in an empty workdir, and the agent arm's should start in
+    /// the same one, not in a checkout of the benchmark.
+    pub workdir: Option<PathBuf>,
 }
 
 impl Default for ModelConfig {
@@ -114,6 +118,7 @@ impl Default for ModelConfig {
         ModelConfig {
             backend: "claude".to_string(),
             model: None,
+            workdir: None,
         }
     }
 }
@@ -419,10 +424,17 @@ impl Runner {
     fn spawn_specs(&mut self, specs: &[SessionSpec]) -> Result<()> {
         // Kill any stale agent reusing one of our deterministic names.
         let existing = self.mcp.list_agents().unwrap_or_default();
-        // Run from the invoking dir: backend CLIs gate unknown folders behind a
-        // trust prompt that would deadlock the spawn (mailbox paths are absolute).
-        let workdir = std::env::current_dir()
-            .unwrap_or_else(|_| PathBuf::from("."))
+        // Agents start in the given workdir, else the invoking dir. Either
+        // must be one the backend CLI already trusts: an unknown folder is
+        // gated behind a prompt that would deadlock the spawn (mailbox paths
+        // are absolute).
+        let workdir = self
+            .opts
+            .model
+            .workdir
+            .clone()
+            .or_else(|| std::env::current_dir().ok())
+            .unwrap_or_else(|| PathBuf::from("."))
             .display()
             .to_string();
         for spec in specs {

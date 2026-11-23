@@ -132,6 +132,8 @@ def agent_trial():
            "--max-messages", str(FUSE), "--backend", BACKEND.lower(), "--model", MODEL,
            # A reply may take as long as the trial, as a dsl-arm agent's reaction may.
            "--timeout-secs", str(TIMEOUT), "--deadline-secs", str(TIMEOUT + GRACE)]
+    if machine.workdir(TIER):
+        cmd += ["--workdir", machine.workdir(TIER)]  # where the dsl arm's agents start too
     if BACKEND == "Mock":
         script = f"{sys.executable} {os.path.join(HERE, 'mock_agents.py')} {BENCH} {os.environ.get('MOCK_FAULT', '')}"
         cmd = [runner, "simulate", "--spec", spec_file, "--max-messages", str(FUSE), "--agents", script]

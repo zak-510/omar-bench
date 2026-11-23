@@ -76,6 +76,9 @@ assert ARM in ("agent", "runtime"), f"--arm must be agent or runtime, got {ARM}"
 
 # Chain/ring resident-agent cap; 0 = spawn all upfront. Infra-only.
 SPAWN_WINDOW = flag("--spawn-window", 0)
+# The folder agents start in: the dsl arm's workdir for this model, so both
+# arms' agents start in the same empty folder.
+WORKDIR = _raw_flag("--workdir", "")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -181,6 +184,8 @@ def _run_once(args, per_wave_timeout, hard_timeout):
     kind = args[args.index("--kind") + 1]
     if SPAWN_WINDOW and kind in ("chain", "ring"):
         cmd += ["--spawn-window", str(SPAWN_WINDOW)]
+    if WORKDIR:
+        cmd += ["--workdir", WORKDIR]
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                          text=True, start_new_session=True)
     try:

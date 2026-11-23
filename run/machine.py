@@ -86,6 +86,17 @@ def clear():
     return len(found), len(sessions())
 
 
+def workdir(tier):
+    """The empty folder OMAR starts a tier's agents in (infra/bootstrap.sh), so
+    that the agent arm's agents start in the same one. None where it is not
+    set up, as on a machine that only runs the tests."""
+    config = os.path.join(os.environ.get("OMAR_LOCAL", os.path.join(ROOT, "local")), f"config-{tier}.toml")
+    if not os.path.exists(config):
+        return None
+    found = re.search(r'default_workdir\s*=\s*"([^"]+)"', open(config).read())
+    return found.group(1) if found and os.path.isdir(found.group(1)) else None
+
+
 def stop_dsl(omar_dsl, config, printed):
     """End the session of a dsl-arm run that failed or was killed, by the name
     OMAR printed when it started it. A run that ends well ends its own."""

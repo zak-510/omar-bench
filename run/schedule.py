@@ -289,6 +289,8 @@ def main():
             if u.argv[0] == plan.PROBE_AGENT:
                 argv = ["python3", u.argv[0], "--spawn-window", "6", "--model", model, "--backend", backend,
                         *u.argv[1:], "--trials", str(k), "--hard-timeout", str(u.timeout)]
+                if machine.workdir(tier):
+                    argv += ["--workdir", machine.workdir(tier)]
             started = time.time()
             print(f"=== {time.strftime('%H:%M:%S')} {u.name} {u.arm} trial {k}", flush=True)
             rc = subprocess.run(argv, cwd=ROOT, env=env).returncode

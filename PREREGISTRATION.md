@@ -600,8 +600,8 @@ its `agent` arm as `claude-haiku-5-5` trials under the audited harness, its
 `dsl` arm as `claude-sonnet-5-5` trials. Neither is pooled with this tag's.
 The Codex rerun under `prereg-v8` is unaffected and continues.
 
-*Validated* at commit `e147d3b`, which this tag differs from in this file and
-the two READMEs only. With no model, on a benchmark machine: the runner's
+*Validated* at commit `e147d3b`, which this tag differs from in documentation
+only (this file, two READMEs and `probes/CHANGES.md`). With no model, on a benchmark machine: the runner's
 118 tests; the scorer, harness, probe-sweep and scheduler tests, which now
 also check that a trial's tokens, cost and model are read back for each
 agent and that a trial run on another model is voided; and the `dsl` arm of

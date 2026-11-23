@@ -30,8 +30,10 @@ later change is a new tag with its reason.
 
 Every trial is filed under one cause, and the causes are reported apart: a
 broken invariant, unfinished work, a lost message, a failure of the machinery
-around the agents. A trial the model provider spoiled, or one the scorer
-itself failed on, is listed with its evidence and run again. The headings are in
+around the agents. A trial the model provider spoiled, one the scorer itself
+failed on, or one whose agents ran on the wrong model is listed with its
+evidence and run again. Each trial also records the tokens its agents used,
+their cost at list price and the model they ran on. The headings are in
 [`savina/`](savina/#scoring), and how an agent's reply is read is in
 [`runner/`](runner/#action-rules).
 
@@ -97,7 +99,7 @@ across two machines; `--dry-run` prints what a run would take.
 #### Step 4: Read the results
 
 ```bash
-python3 run/report.py results/<tag>
+python3 run/report.py results/<tag>     # reliability by cause, then tokens and cost per trial
 ```
 
 ## Known Issues

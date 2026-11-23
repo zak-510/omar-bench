@@ -1,7 +1,7 @@
 # Pre-registration: coordination reliability, summer reproduction and Savina
 
 **Status: frozen** at tag `prereg-v1`, 2026-11-21, and amended at `prereg-v2`
-to `prereg-v8` (see Changes, at the end). No counted run starts before a tag, and
+to `prereg-v9` (see Changes, at the end). No counted run starts before a tag, and
 any later change gets a new tag with the reason stated.
 Pilot runs (kept in `results/pilot/`) never count; the pilots before this tag were
 used only to measure time, memory and usage, and are published with the results.
@@ -40,10 +40,10 @@ The treatment, and nothing else by design:
   it needs with each task. So in the `dsl` arm the rules on routing and state
   hold by construction: its agents can still answer wrongly, or not at all.
 
-The same in both arms: the model and its CLI, the machine, the empty folder
-agents start in, the job text (one source, `savina/spec.py`), the time limit,
-the retry rule, the trial count, and the scoring (one checker, the same
-events, the same causes).
+The same in both arms: the model and its CLI, the machine, an empty folder
+of its own for each agent to start in, the job text (one source,
+`savina/spec.py`), the time limit, the retry rule, the trial count, and the
+scoring (one checker, the same events, the same causes).
 
 Differences that are not the treatment, each stated with its direction:
 
@@ -94,8 +94,13 @@ fact kept 12 alive, and those two measurements were of 12: see Changes.)
 | 2 | `claude-opus-5-5`, agent arm only | Checkable scatter-gather, ring, Philosophers; 30 each |
 
 The model is pinned outside the programs: `CODEX_HOME/config.toml` for Codex,
-the workdir's `.claude/settings.json` for Claude. Effort used is read back from
-the session logs and reported.
+and for Claude the user settings of Claude Code on the machine
+(`infra/claude-model.sh`), which every session reads wherever it starts; the
+`agent` arm also names the model when it starts an agent. On Claude every
+trial reads back the model each of its agents ran on, and a trial with an
+agent on any other model is voided and run again (until `prereg-v9` the pin
+was a setting in one folder, which the `dsl` arm's agents never read: see
+Changes). Effort used is read back from the session logs and reported.
 
 ## Benchmarks
 
@@ -290,8 +295,9 @@ run/schedule.py --dry-run` prints the agent calls this takes).
     agent that stopped answering, or the runtime's error, shows a usage limit,
     an overload or a sign-in failure (the phrases are `PROVIDER` in
     `run/machine.py`).
-  - Harness. The scorer itself failed on the trial's record. The record is
-    kept, so the trial can still be scored once the scorer is fixed.
+  - Harness. The scorer itself failed on the trial's record (the record is
+    kept, so the trial can still be scored once the scorer is fixed), or an
+    agent of the trial ran on another model than its cell's.
   An agent that never answers, agents that do not start, a runtime that fails
   and a run that had to be stopped from outside are none of these: they are
   runtime failures of their arm, and count.
@@ -319,9 +325,13 @@ arm and a one-sided Fisher exact test where a gap is expected; the same test
 leaving runtime failures out is given beside it, so that neither arm's
 failures of machinery are hidden or mistaken for failures of coordination. No
 result is described as "100%". Wall time and weekly Codex use before and after every trial come from the
-scheduler's ledger. Tokens are reported for the agents whose CLI kept a session
-log (Codex does not keep one for every agent the runtime starts), with that
-coverage stated; cost is tokens times list price on the tag date. Raw logs, CSVs and the commands that
+scheduler's ledger. On Claude, every trial records what its agents used as
+Claude Code itself recorded it for each of them: tokens in and out, cached
+tokens read and written, and the cost of those at list price. Both arms are
+metered the same way, and means are over the counted trials whose every
+agent had a record, with that coverage stated. On Codex, tokens are reported
+for the agents whose CLI kept a session log (it does not keep one for every
+agent the runtime starts), with that coverage stated. Raw logs, CSVs and the commands that
 produced them are published with the results.
 
 ## Changes
@@ -544,3 +554,65 @@ machines of the second run, cleared of every earlier agent: Philosophers,
 Banking, BoundedBuffer, scatter-gather and missing workers, both arms, each
 machine taking every third pick of one shuffled schedule, stopping at
 2026-11-25 00:00 UTC.
+
+**`prereg-v9`, 2026-11-23: the same model in both arms on Claude, and what
+each trial used.** Found while looking for token counts: Claude Code keeps,
+for each folder, the model its last session there ran on, and every record of
+a `dsl`-arm agent named `claude-sonnet-5-5`. The model had been pinned by a
+setting in one working folder. The `agent` arm did not depend on it, because
+the runner names the model when it starts an agent; but OMAR starts each
+`dsl`-arm agent in a folder of its own, where that setting is not read, so
+those agents ran on Claude Code's default model. Since `prereg-v3`, then,
+every Claude trial of the `dsl` arm ran on a larger model than the `agent`
+arm's: no comparison of the two arms on Claude made before this tag is a
+comparison at one model, and none is reported as one. The `agent`-arm trials
+are what they say, trials of `claude-haiku-5-5`; the `dsl`-arm trials are
+published as trials of `claude-sonnet-5-5`. Codex is not affected: its model
+is set once for the machine, and both arms' sessions name it.
+
+What changes:
+
+1. *The model.* It is pinned in Claude Code's user settings on the machine,
+   which every session reads wherever it starts (`infra/claude-model.sh`).
+2. *Read back, every trial.* Each trial's row records the model each of its
+   agents ran on, from Claude Code's own record, and a trial with an agent on
+   any other model than its cell's is voided and run again. The pin is no
+   longer taken on trust.
+3. *Tokens and cost.* The same record holds what a session used. So that it
+   exists for every agent, each `agent`-arm agent now starts in an empty
+   folder of its own, as OMAR already starts each `dsl`-arm agent. Each
+   trial's row then carries its agents' tokens (in, out, cached read and
+   written) and their cost at list price, in both arms (Analysis).
+4. *One trial at a time, by hand as well.* A sweep run by hand now takes the
+   machine's lock as a scheduler does. On 2026-11-23 at 20:28 UTC a test of
+   change 1, run by hand on a machine wrongly believed idle, cleared the
+   agents of a Codex `agent`-arm Banking trial of the `prereg-v8` rerun in
+   progress there (shard 1 of 4, trial 5). That trial's runner was stopped
+   and the sweep ran the trial again; the stopped attempt is in its attempts
+   file, with a note beside it, and is not an outcome of either arm.
+
+Nothing else changes: the action rules, prompts, programs, checker and causes
+are those of `prereg-v8`.
+
+*What becomes of the `prereg-v8` Claude run.* It was stopped at 20:37 UTC on
+2026-11-23 with about half its trials done, and is published under its tag:
+its `agent` arm as `claude-haiku-5-5` trials under the audited harness, its
+`dsl` arm as `claude-sonnet-5-5` trials. Neither is pooled with this tag's.
+The Codex rerun under `prereg-v8` is unaffected and continues.
+
+*Validated* at commit `e147d3b`, which this tag differs from in this file and
+the two READMEs only. With no model, on a benchmark machine: the runner's
+118 tests; the scorer, harness, probe-sweep and scheduler tests, which now
+also check that a trial's tokens, cost and model are read back for each
+agent and that a trial run on another model is voided; and the `dsl` arm of
+all four programs on OMAR's stub backend. With `claude-haiku-5-5`, as pilot
+trials through the scheduler on a machine carrying the pin: BoundedBuffer in
+the `dsl` arm and Banking in both arms, all successes, with every agent of
+both arms recorded on `claude-haiku-5-5` and every agent metered (the
+Banking pair: about 89,000 output tokens and $1.00 at list price in the
+`agent` arm, about 10,000 and $0.04 in the `dsl` arm).
+
+*First run under this tag:* `claude-haiku-5-5` on the same three machines,
+cleared: Philosophers, Banking, BoundedBuffer, scatter-gather and missing
+workers, both arms, each machine taking every third pick of one shuffled
+schedule, stopping at 2026-11-25 00:00 UTC.

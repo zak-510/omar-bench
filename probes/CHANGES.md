@@ -45,9 +45,16 @@ the original study of July–August 2026, with its results in
   appends every delivery to a journal as it happens, logs deliveries for the
   probes as well as Savina, waits for a whole reply file before reading it,
   and no longer starts a second, idle agent per slot in a `--kind custom` run.
-- **Where agents start (`prereg-v8`):** the agent arm's agents started in the
-  folder the runner was run from, a checkout of this repository, while the DSL
-  arm's start in an empty workdir. `--workdir` now starts both in the same one.
+- **Where agents start (`prereg-v8`, `prereg-v9`):** the agent arm's agents
+  started in the folder the runner was run from, a checkout of this
+  repository, while OMAR starts each of the DSL arm's in an empty folder of
+  its own. `--agent-dirs` now starts each of the agent arm's in an empty
+  folder of its own too.
+- **Tokens, cost and model (`prereg-v9`):** Claude Code keeps, per folder, what
+  the last session there used and the model it ran on. With every agent of
+  both arms in its own folder, each trial's row records its agents' tokens,
+  their cost at list price and their model, and a trial any of whose agents
+  ran on another model than its cell's is voided.
 - **Ring scoring:** see the correction in `PREREGISTRATION.md`.
 - **Layout:** the runner moved to `runner/` and the probes to `probes/`, with
   the installed OMAR tools in `local/`; no code changed in the move.

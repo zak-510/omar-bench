@@ -32,7 +32,9 @@ the [pre-registration](../PREREGISTRATION.md).
 
 A trial succeeds when its run finishes and every invariant held. A run that
 says it is done is not thereby complete: the events decide. Every trial is
-filed under one cause, and the causes are reported apart.
+filed under one cause, and the causes are reported apart. Each row also
+records what the trial's agents used (tokens, and their cost at list price)
+and the model they ran on, read back from the agent CLI's own record.
 
 | Cause | Meaning | Counts |
 |-------|---------|--------|
@@ -42,7 +44,7 @@ filed under one cause, and the causes are reported apart.
 | `protocol` | Agent arm: a message was lost or unreadable, and the run failed | Yes |
 | `runtime` | Agents did not start or never answered, or the runtime failed | Yes |
 | `provider` | The model provider was limited, down or signed out | No: listed, run again |
-| `harness` | The benchmark's own scorer failed on the trial | No: listed with its record, run again |
+| `harness` | The benchmark's own scorer failed on the trial, or an agent ran on another model than the cell's | No: listed with its record, run again |
 
 ## Usage
 

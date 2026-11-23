@@ -656,7 +656,9 @@ trial's agents used. Neither is in how a trial is run or scored.
 
 With these, `metered` counts a trial's records against the agents it had: six
 in the `agent` arm of a Savina benchmark, five in the `dsl` arm, where the
-coordinator is the runtime.
+coordinator is the runtime. The report takes a trial as fully metered when it
+has a record for each of them, and its line setting the two arms' use side by
+side, which failed on the first table it was given, is fixed.
 
 What the recorded cost is, said more exactly than in v9: Claude Code's own
 figure, each request priced from the price list built into the CLI (2.1.326).

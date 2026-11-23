@@ -103,7 +103,6 @@ python3 run/report.py results/<tag>
 ## Known Issues
 
 - **OMAR 0.4.4 and Codex**: OMAR gives up on a Codex agent's app server that takes more than 3 seconds to answer, so the `dsl` arm can fail to hand tasks to several Codex agents starting at once. Savina trials recover on the pre-registered retry; the probes run on Codex once the fix is released. See [Running](PREREGISTRATION.md#running).
-
 - **Trials before `prereg-v8`**: An audit of the harness found faults in how the agent arm's replies were read and how machines were left between trials. They are fixed at `prereg-v8`. Earlier trials are published under their own tags with the audit's row beside each (`run/audit.py`), and are never pooled with later ones. See [Changes](PREREGISTRATION.md#changes).
 
 ## Repository Layout

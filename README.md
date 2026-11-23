@@ -124,5 +124,6 @@ None of these uses a model.
 (cd runner && cargo test --release --locked && cargo build --release --locked)
 python3 savina/test_check.py      # the scorer
 python3 savina/test_harness.py    # runner and scorer together: scripted agents, and a recorded trial replayed
+python3 probes/test_sweep.py      # what the probe sweep records, keeps and voids
 python3 run/test_schedule.py      # which trials run, count, and are run again
 ```

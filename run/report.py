@@ -16,9 +16,11 @@ are never merged:
   not counted     the provider was limiting use, or the scorer itself failed:
                   listed in exclusions.csv with the reason, and run again
 
-Reliability is ok / counted, where counted is every trial not listed as not
-counted, up to the planned number in start order. Runtime failures count: a
-run that did not finish did not finish, whichever part of the stack stopped it.
+Reliability is ok over counted, with a Wilson 95% interval and no percentage
+of its own (nothing here is to be read as "100%"). Counted is every trial not
+listed as not counted, up to the planned number in start order. Runtime
+failures count: a run that did not finish did not finish, whichever part of
+the stack stopped it.
 """
 import collections
 import csv
@@ -83,7 +85,7 @@ def savina(roots):
         return
     print("SAVINA")
     print(f"{'model':18} {'benchmark':16} {'arm':6} {'plan':>4} {'run':>4} {'not':>4} {'cnt':>4} "
-          + " ".join(f"{h:>10}" for h, _ in HEADINGS) + f"  {'reliability (95% CI)':22} {'mean s':>6}")
+          + " ".join(f"{h:>10}" for h, _ in HEADINGS) + f"  {'ok/counted (95% CI)':22} {'mean s':>6}")
     for model in sorted({k[0] for k in list(cells) + list(void)}):
         for bench in sorted({k[1] for k in list(cells) + list(void) if k[0] == model}):
             fails = {}
@@ -91,6 +93,9 @@ def savina(roots):
                 key = (model, bench, arm)
                 n_plan = planned.get((bench, arm), 0)
                 rows = sorted(cells.get(key, []), key=lambda r: r["started_at"])
+                if not rows and not void.get(key):
+                    fails[arm] = (0, 0, 0)
+                    continue
                 counted = rows[:n_plan] if n_plan else rows
                 by = collections.Counter(r["cause"] for r in counted)
                 ok, n = by["success"], len(counted)
@@ -100,7 +105,7 @@ def savina(roots):
                 print(f"{model:18} {bench:16} {arm:6} {n_plan:>4} {len(rows) + len(void.get(key, [])):>4} "
                       f"{len(void.get(key, [])):>4} {n:>4} "
                       + " ".join(f"{by[c]:>10}" for _, c in HEADINGS)
-                      + (f"  {ok}/{n} = {ok / n:.0%} [{lo:.0%}, {hi:.0%}]".ljust(24) if n else "  -".ljust(24))
+                      + (f"  {ok}/{n} [{lo:.0%}, {hi:.0%}]".ljust(24) if n else "  -".ljust(24))
                       + (f" {sum(secs) / len(secs):>6.0f}" if secs else "")
                       + (f"  (+{len(rows) - n} past plan, not counted)" if len(rows) > n else "")
                       + ("  UNDERPOWERED" if n < n_plan else ""))

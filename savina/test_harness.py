@@ -269,7 +269,7 @@ def test_the_sweep_and_the_report_with_scripted_agents():
         line = next(l for l in report.stdout.splitlines() if l.startswith("mock") and " agent " in l)
         # plan 60, run 5, none voided, 5 counted: 2 ok, 1 safety, 0 incomplete, 1 protocol, 1 runtime.
         assert line.split()[3:12] == ["60", "5", "0", "5", "2", "1", "0", "1", "1"], line
-        assert "2/5 = 40%" in line and "UNDERPOWERED" in line, line
+        assert "2/5 [12%, 77%]" in line and "UNDERPOWERED" in line, line
 
 
 def test_the_dsl_sweep_with_a_stand_in_runtime():

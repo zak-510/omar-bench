@@ -33,7 +33,7 @@ the [pre-registration](../PREREGISTRATION.md).
 A trial succeeds when its run finishes and every invariant held. A run that
 says it is done is not thereby complete: the events decide. Every trial is
 filed under one cause, and the causes are reported apart. Each row also
-records what the trial's agents used (tokens, and their cost at list price)
+records what the trial's agents used (tokens, and the cost the CLI works out for them)
 and the model they ran on, read back from the agent CLI's own record.
 
 | Cause | Meaning | Counts |

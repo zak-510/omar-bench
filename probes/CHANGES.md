@@ -50,11 +50,18 @@ the original study of July–August 2026, with its results in
   repository, while OMAR starts each of the DSL arm's in an empty folder of
   its own. `--agent-dirs` now starts each of the agent arm's in an empty
   folder of its own too.
-- **Tokens, cost and model (`prereg-v9`):** Claude Code keeps, per folder, what
-  the last session there used and the model it ran on. With every agent of
-  both arms in its own folder, each trial's row records its agents' tokens,
-  their cost at list price and their model, and a trial any of whose agents
-  ran on another model than its cell's is voided.
+- **Tokens, cost and model (`prereg-v9`, `prereg-v10`):** Claude Code keeps,
+  per folder, what the last session there used and the model it ran on. With
+  every agent of both arms in its own folder, each trial's row records its
+  agents' tokens, the cost Claude Code works out for them and their model,
+  and a trial any of whose agents ran on another model than its cell's is
+  voided. Only the records of sessions that started during the trial are the
+  trial's, since OMAR uses a session's name again.
+- **Ending agents (`prereg-v10`):** the runner ended a run's agents together.
+  Claude Code writes a session's record as it exits, into a file all sessions
+  share, and sessions that exit together overwrite each other's. The runner
+  now ends its agents one at a time, each gone before the next
+  (`wait_until_gone`).
 - **Ring scoring:** see the correction in `PREREGISTRATION.md`.
 - **Layout:** the runner moved to `runner/` and the probes to `probes/`, with
   the installed OMAR tools in `local/`; no code changed in the move.

@@ -33,9 +33,9 @@ broken invariant, unfinished work, a lost message, a failure of the machinery
 around the agents. A trial the model provider spoiled, one the scorer itself
 failed on, or one whose agents ran on the wrong model is listed with its
 evidence and run again. Each trial also records the tokens its agents used,
-their cost at list price and the model they ran on. The headings are in
-[`savina/`](savina/#scoring), and how an agent's reply is read is in
-[`runner/`](runner/#action-rules).
+the cost Claude Code works out for them and the model they ran on. The
+headings are in [`savina/`](savina/#scoring), and how an agent's reply is read
+is in [`runner/`](runner/#action-rules).
 
 ## Benchmarks
 

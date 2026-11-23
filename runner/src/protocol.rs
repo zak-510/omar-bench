@@ -345,7 +345,9 @@ pub fn parse_node(text: &str) -> NodeOutput {
     }
 }
 
-/// What an agent's reply asks the postal runtime to do next (agent-coordinated mode).
+/// What an agent's reply asks the postal runtime to do next, as the original
+/// study read it. Kept only to replay recorded runs under the rules they ran
+/// with (`Rules::V1`); new runs use `read_action`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
     /// Deliver `body` to node `to`. `done` records a DONE/STOP sign-off in the
@@ -392,6 +394,259 @@ pub fn parse_action(text: &str) -> Action {
     } else {
         Action::Wait
     }
+}
+
+/// One of the three things a reply can do under the action rules that agents
+/// are given (`prompts::action_rules`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Act {
+    /// Deliver `body` to node `to`.
+    Send { to: usize, body: String },
+    /// End the run with `result` as its final output.
+    Finish { result: Option<String> },
+    /// Send nothing this turn.
+    Wait,
+}
+
+/// How a reply was read: what it does, the harmless variations it used
+/// (`notes`), and the mistakes that lost a message (`errors`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Reading {
+    pub act: Act,
+    pub notes: Vec<&'static str>,
+    pub errors: Vec<&'static str>,
+}
+
+/// A line the delivery service reads rather than delivers.
+enum Control<'a> {
+    To(&'a str),
+    Decision(&'a str),
+}
+
+/// `To:` and `Decision:` lines, with or without list, quote or emphasis marks
+/// around the keyword ("**To:** node 3", "- To: node 3", "> Decision: WAIT").
+fn control(line: &str) -> Option<Control<'_>> {
+    let marks = ['*', '#', '>', '-', '_', '`', ' ', '\t'];
+    let t = line.trim().trim_start_matches(marks);
+    for (word, to) in [("to", true), ("decision", false)] {
+        let Some(rest) = strip_prefix_ci(t, word) else {
+            continue;
+        };
+        let rest = rest.trim_start_matches(['*', '_', '`', ' ']);
+        if let Some(rest) = rest.strip_prefix(':') {
+            let rest = rest.trim_matches(marks);
+            return Some(if to {
+                Control::To(rest)
+            } else {
+                Control::Decision(rest)
+            });
+        }
+    }
+    None
+}
+
+/// The node an address names: "node 3" anywhere in it, or a bare number.
+/// None when it names no node or more than one, which is never guessed at.
+fn address(rest: &str) -> Option<usize> {
+    let lower = rest.to_lowercase();
+    let mut named: Vec<usize> = Vec::new();
+    let mut from = 0;
+    while let Some(at) = lower[from..].find("node") {
+        let after = &lower[from + at + 4..];
+        from += at + 4;
+        let digits: String = after
+            .trim_start_matches([' ', '#'])
+            .chars()
+            .take_while(char::is_ascii_digit)
+            .collect();
+        // "nodes 1 and 2" is not an address: the word must be exactly "node".
+        if after.starts_with(|c: char| c.is_alphabetic()) {
+            continue;
+        }
+        if let Ok(k) = digits.parse() {
+            if !named.contains(&k) {
+                named.push(k);
+            }
+        }
+    }
+    match named.len() {
+        1 => Some(named[0]),
+        0 => {
+            let bare = rest.trim_matches(|c: char| !c.is_ascii_alphanumeric());
+            (!bare.is_empty() && bare.chars().all(|c| c.is_ascii_digit()))
+                .then(|| bare.parse().ok())
+                .flatten()
+        }
+        _ => None,
+    }
+}
+
+/// The text with every answer tag on a line of its own, so that a control
+/// line sharing a line with a tag ("</answer>Decision: DONE") is still a line.
+fn tags_on_own_lines(text: &str) -> String {
+    let bytes = text.as_bytes();
+    let mut out = String::with_capacity(text.len() + 16);
+    let mut i = 0;
+    let mut copied = 0;
+    while i < bytes.len() {
+        let tag = ["</answer>", "<answer>"]
+            .into_iter()
+            .find(|t| bytes[i..].len() >= t.len() && bytes[i..i + t.len()].eq_ignore_ascii_case(t.as_bytes()));
+        match tag {
+            // The tags are ASCII, so both cuts fall on character boundaries.
+            Some(t) => {
+                out.push_str(&text[copied..i]);
+                out.push('\n');
+                out.push_str(&text[i..i + t.len()]);
+                out.push('\n');
+                i += t.len();
+                copied = i;
+            }
+            None => i += 1,
+        }
+    }
+    out.push_str(&text[copied..]);
+    out
+}
+
+/// The text with its control lines and any stray answer tag removed: they are
+/// instructions to the delivery service, never part of a message.
+pub fn without_control_lines(text: &str) -> String {
+    tags_on_own_lines(text)
+        .lines()
+        .filter(|line| {
+            let tag = line.trim();
+            control(line).is_none()
+                && !tag.eq_ignore_ascii_case("<answer>")
+                && !tag.eq_ignore_ascii_case("</answer>")
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+        .trim()
+        .to_string()
+}
+
+/// Contents of every non-empty `<answer>...</answer> block, in order.
+fn answer_blocks(text: &str) -> Vec<&str> {
+    let lower = text.to_lowercase();
+    let mut blocks = Vec::new();
+    let mut from = 0;
+    while let Some(open) = lower[from..].find("<answer>") {
+        let start = from + open + "<answer>".len();
+        let Some(close) = lower[start..].find("</answer>") else {
+            break;
+        };
+        if let Some(block) = text.get(start..start + close) {
+            if !block.trim().is_empty() {
+                blocks.push(block);
+            }
+        }
+        from = start + close + "</answer>".len();
+    }
+    blocks
+}
+
+/// Read a reply under the action rules. `may_finish` is whether its author is
+/// allowed to end the run; `nodes` is how many agents there are.
+///
+/// - `Decision: DONE` from an agent that may finish ends the run, whatever
+///   else the reply holds. From any other agent it is ignored.
+/// - Otherwise a `To:` line sends one message: the last `<answer>` block, or
+///   without tags the reply itself, in both cases minus its control lines.
+///   The last `To:` line is the address. A reply that addresses two nodes, or
+///   one node twice with two messages, loses all but the last.
+/// - Otherwise nothing is sent.
+pub fn read_action(text: &str, may_finish: bool, nodes: usize) -> Reading {
+    let mut notes: Vec<&'static str> = Vec::new();
+    let mut errors: Vec<&'static str> = Vec::new();
+    let mut addresses: Vec<Option<usize>> = Vec::new();
+    let mut decision: Option<String> = None;
+    for line in tags_on_own_lines(text).lines() {
+        match control(line) {
+            Some(Control::To(rest)) => addresses.push(address(rest)),
+            Some(Control::Decision(rest)) => {
+                decision = Some(
+                    rest.chars()
+                        .take_while(|c| c.is_alphabetic())
+                        .collect::<String>()
+                        .to_uppercase(),
+                )
+            }
+            None => {}
+        }
+    }
+    let wants_done = match decision.as_deref() {
+        Some("DONE") => true,
+        Some("STOP") => {
+            notes.push("STOP read as DONE");
+            true
+        }
+        Some("WAIT") | None => false,
+        Some(_) => {
+            notes.push("unknown decision ignored");
+            false
+        }
+    };
+    if wants_done && may_finish {
+        if !addresses.is_empty() {
+            notes.push("To line ignored on DONE");
+        }
+        return Reading {
+            act: Act::Finish {
+                result: parse_answer(text),
+            },
+            notes,
+            errors,
+        };
+    }
+    if wants_done {
+        notes.push("DONE ignored: this agent cannot finish the run");
+    }
+    let Some(last) = addresses.last() else {
+        return Reading {
+            act: Act::Wait,
+            notes,
+            errors,
+        };
+    };
+    let blocks = answer_blocks(text);
+    let mut distinct: Vec<Option<usize>> = Vec::new();
+    for a in &addresses {
+        if !distinct.contains(a) {
+            distinct.push(*a);
+        }
+    }
+    if distinct.len() > 1 || (addresses.len() > 1 && blocks.len() > 1) {
+        errors.push("more than one message: only the last was sent");
+    } else if addresses.len() > 1 {
+        notes.push("address repeated");
+    } else if blocks.len() > 1 {
+        notes.push("several answer blocks: the last is the message");
+    }
+    let body = match blocks.last() {
+        Some(block) => without_control_lines(block),
+        None => {
+            notes.push("message not in answer tags");
+            without_control_lines(text)
+        }
+    };
+    let act = match last {
+        Some(to) if (1..=nodes).contains(to) => {
+            if body.is_empty() {
+                notes.push("empty message");
+            }
+            Act::Send { to: *to, body }
+        }
+        Some(_) => {
+            errors.push("message lost: no such node");
+            Act::Wait
+        }
+        None => {
+            errors.push("message lost: address names no single node");
+            Act::Wait
+        }
+    };
+    Reading { act, notes, errors }
 }
 
 /// First unsigned integer in a string ("node 3" -> 3).
@@ -457,6 +712,183 @@ mod tests {
             parse_action("To: 2\nTo: 7\n<answer>x</answer>"),
             Action::Send { to: 7, .. }
         ));
+    }
+
+    fn send(to: usize, body: &str) -> Act {
+        Act::Send {
+            to,
+            body: body.into(),
+        }
+    }
+
+    #[test]
+    fn read_action_send_wait_finish() {
+        // The three actions, written as the rules show them.
+        let r = read_action("To: node 3\n<answer>eat</answer>\nDecision: WAIT", false, 6);
+        assert_eq!(r.act, send(3, "eat"));
+        assert!(r.notes.is_empty() && r.errors.is_empty(), "{r:?}");
+        let r = read_action("Decision: WAIT", false, 6);
+        assert_eq!(r.act, Act::Wait);
+        assert!(r.notes.is_empty() && r.errors.is_empty());
+        let r = read_action("<answer>all done</answer>\nDecision: DONE", true, 6);
+        assert_eq!(
+            r.act,
+            Act::Finish {
+                result: Some("all done".into())
+            }
+        );
+        assert!(r.notes.is_empty() && r.errors.is_empty());
+        // A send needs no decision line, and silence is a wait.
+        assert_eq!(
+            read_action("To: node 1\n<answer>eat</answer>", false, 6).act,
+            send(1, "eat")
+        );
+        assert_eq!(read_action("thinking aloud", false, 6).act, Act::Wait);
+    }
+
+    #[test]
+    fn done_from_the_finisher_ends_the_run_even_with_an_address() {
+        // The reply that ran a finished BoundedBuffer trial to its cut: the
+        // manager reported every answer, said DONE, and kept its habit of
+        // addressing the node it was answering.
+        let reply = "To: node 4\n<answer>\nP1-1: 56\nP3-10: 74\n</answer>\nDecision: DONE";
+        let r = read_action(reply, true, 6);
+        assert_eq!(
+            r.act,
+            Act::Finish {
+                result: Some("P1-1: 56\nP3-10: 74".into())
+            }
+        );
+        assert_eq!(r.notes, vec!["To line ignored on DONE"]);
+        assert!(r.errors.is_empty());
+        // The original rules sent it to node 4 instead.
+        assert!(matches!(
+            parse_action(reply),
+            Action::Send {
+                to: 4,
+                done: true,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn done_from_anyone_else_ends_nothing() {
+        // A worker's sign-off rides on a real message: the message is sent.
+        let r = read_action(
+            "To: node 6\n<answer>done meal 6: 72</answer>\nDecision: DONE",
+            false,
+            6,
+        );
+        assert_eq!(r.act, send(6, "done meal 6: 72"));
+        assert_eq!(
+            r.notes,
+            vec!["DONE ignored: this agent cannot finish the run"]
+        );
+        // With nothing addressed, nothing is sent and the run goes on.
+        let r = read_action("<answer>finished</answer>\nDecision: DONE", false, 6);
+        assert_eq!(r.act, Act::Wait);
+        assert_eq!(r.notes.len(), 1);
+    }
+
+    #[test]
+    fn decision_is_its_first_word_not_a_substring() {
+        // "not done yet" used to end the run.
+        let r = read_action("Decision: WAIT (not done yet)", true, 6);
+        assert_eq!(r.act, Act::Wait);
+        assert!(matches!(
+            parse_action("Decision: WAIT (not done yet)"),
+            Action::Done { .. }
+        ));
+        // The last decision line wins; an unknown word decides nothing.
+        let r = read_action("Decision: DONE\nDecision: WAIT", true, 6);
+        assert_eq!(r.act, Act::Wait);
+        let r = read_action("To: node 2\n<answer>x</answer>\nDecision: SEND", true, 6);
+        assert_eq!(r.act, send(2, "x"));
+        assert_eq!(r.notes, vec!["unknown decision ignored"]);
+        assert!(matches!(
+            read_action("Decision: stop", true, 6).act,
+            Act::Finish { .. }
+        ));
+    }
+
+    #[test]
+    fn formatting_around_control_lines_is_harmless() {
+        for reply in [
+            "**To:** node 3\n<answer>eat</answer>",
+            "**To**: node 3\n<answer>eat</answer>",
+            "- To: node 3\n<answer>eat</answer>",
+            "> to: Node 3\n<ANSWER>eat</ANSWER>",
+            "To: 3\n<answer>eat</answer>",
+            "To: node 3 (philosopher 3)\n<answer>eat</answer>\n**Decision: WAIT**",
+            "To: the philosopher at node 3\n<answer>\neat\n</answer>",
+        ] {
+            let r = read_action(reply, false, 6);
+            assert_eq!(r.act, send(3, "eat"), "{reply}");
+            assert!(r.errors.is_empty(), "{reply}");
+        }
+    }
+
+    #[test]
+    fn control_lines_are_never_part_of_a_message() {
+        // An address repeated inside the tags, as Claude often writes it.
+        let r = read_action(
+            "To: node 6\ncredited T1\n\n<answer>\nTo: node 6\ncredited T1\n</answer>\nDecision: WAIT",
+            false,
+            6,
+        );
+        assert_eq!(r.act, send(6, "credited T1"));
+        assert_eq!(r.notes, vec!["address repeated"]);
+        let r = read_action("<answer>\nTo: node 3\ndenied\n</answer>\nDecision: WAIT", true, 6);
+        assert_eq!(r.act, send(3, "denied"));
+        // The same with the tags on the control lines' own lines.
+        let r = read_action("<answer>To: node 3\ndenied</answer>Decision: WAIT", true, 6);
+        assert_eq!(r.act, send(3, "denied"));
+        let r = read_action("<answer>all fed</answer>Decision: DONE", true, 6);
+        assert!(matches!(r.act, Act::Finish { .. }));
+        // An unclosed tag does not leak into the message, nor break on non-ASCII text.
+        let r = read_action("To: node 3\n<answer>İ eat ε", true, 6);
+        assert_eq!(r.act, send(3, "İ eat ε"));
+        // No tags: the reply is the message, minus its control lines.
+        let r = read_action("Node 1 reported.\nTo: node 2\nreport balance\nDecision: WAIT", true, 6);
+        assert_eq!(r.act, send(2, "Node 1 reported.\nreport balance"));
+        assert_eq!(r.notes, vec!["message not in answer tags"]);
+    }
+
+    #[test]
+    fn a_second_message_in_one_reply_is_lost_and_counted() {
+        // Two messages to one node: the first is lost.
+        let r = read_action(
+            "To: node 6\n<answer>done meal 1: 56</answer>\nTo: node 6\n<answer>hungry</answer>",
+            false,
+            6,
+        );
+        assert_eq!(r.act, send(6, "hungry"));
+        assert_eq!(r.errors, vec!["more than one message: only the last was sent"]);
+        // Two nodes addressed: only the last hears anything.
+        let r = read_action("To: node 1\nTo: node 2\n<answer>eat</answer>", true, 6);
+        assert_eq!(r.act, send(2, "eat"));
+        assert_eq!(r.errors.len(), 1);
+    }
+
+    #[test]
+    fn a_bad_address_loses_the_message_and_is_never_guessed() {
+        for reply in [
+            "To: node 9\n<answer>hungry</answer>",
+            "To: node 0\n<answer>hungry</answer>",
+            "To: the arbitrator\n<answer>hungry</answer>",
+            "To: nodes 1 and 2\n<answer>eat</answer>",
+            "To: node 1, node 2\n<answer>eat</answer>",
+            "To: consumer 1\n<answer>take P1-1</answer>",
+        ] {
+            let r = read_action(reply, false, 6);
+            assert_eq!(r.act, Act::Wait, "{reply}");
+            assert_eq!(r.errors.len(), 1, "{reply}");
+        }
+        // A message with no address at all is a wait: nothing says where it goes.
+        let r = read_action("<answer>denied T6</answer>\nDecision: WAIT", false, 6);
+        assert_eq!(r.act, Act::Wait);
+        assert!(r.errors.is_empty());
     }
 
     #[test]

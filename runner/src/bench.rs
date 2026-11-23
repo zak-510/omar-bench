@@ -318,6 +318,7 @@ pub fn run_bench(args: BenchArgs) -> Result<BenchSummary> {
             reset_each_problem: args.reset_each_problem,
             run_root: None,
             spawn_window: 0,
+            deadline: None,
         })?;
         eprintln!(
             "[mass] run {} ready; results under {}",

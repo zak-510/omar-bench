@@ -122,52 +122,74 @@ pub fn ring_node(idx: usize, n: usize, hop: usize, message: &str) -> String {
     )
 }
 
-/// How agent-coordinated nodes address mail. Appended to every postal prompt.
-const ADDRESS_RULES: &str = "How to act: nobody routes or schedules for you; you decide. To send the message onward, include a line exactly 'To: node K' and put the full message between <answer> and </answer>. To finish the whole run and report the final result, put it in <answer> tags and end with a line exactly 'Decision: DONE'. To wait for more messages, end with 'Decision: WAIT'.";
+/// The original study's addressing rules, which every postal prompt ended with
+/// until the action rules replaced them. They do not say what a reply with
+/// both a `To:` line and `Decision: DONE` does, nor who may finish a run.
+/// Kept to show what recorded runs were told (`postal::Rules::V1`).
+pub const ADDRESS_RULES_V1: &str = "How to act: nobody routes or schedules for you; you decide. To send the message onward, include a line exactly 'To: node K' and put the full message between <answer> and </answer>. To finish the whole run and report the final result, put it in <answer> tags and end with a line exactly 'Decision: DONE'. To wait for more messages, end with 'Decision: WAIT'.";
 
-/// Postal chain node: same relay protocol, but the node itself must route.
+/// The action rules every agent-coordinated prompt ends with: what a reply can
+/// do, and exactly how the delivery loop reads it (`protocol::read_action`).
+/// `may_finish` is whether this agent may end the run; `finishers` names who
+/// may ("node 6"), for an agent that may not.
+pub fn action_rules(may_finish: bool, finishers: &str) -> String {
+    let finish = if may_finish {
+        "3. Finish the whole run: put the final result between <answer> and </answer> and end with the line 'Decision: DONE'. The run stops at once for every agent: the final result goes to the experimenter, nothing is sent to any node even if the reply has a 'To:' line, and messages still on their way are never delivered.".to_string()
+    } else {
+        format!("You cannot finish the run: only {finishers} can. 'Decision: DONE' in your reply ends nothing and is ignored.")
+    };
+    format!(
+        "How to act. Nobody routes or schedules for you. Each reply does exactly one of these.\n\
+         1. Send a message: write a line 'To: node K' and put the message between <answer> and </answer>. It is delivered to node K after the messages already on their way. A reply sends one message to one node: if it has more than one 'To:' line, only the last is used. You may end the reply with 'Decision: WAIT'; it changes nothing.\n\
+         2. Send nothing: write no 'To:' line and end with the line 'Decision: WAIT'. You are called again when the next message reaches you.\n\
+         {finish}\n\
+         Lines that start with 'To:' or 'Decision:' are read by the delivery service and are not part of your message. A message to a node that does not exist is lost."
+    )
+}
+
 /// A spec-defined postal prompt: `{sender}` and `{body}` are filled per
-/// delivery, and the same address rules as every other postal prompt follow.
-pub fn postal_custom(template: &str, from: usize, body: &str) -> String {
+/// delivery, and the rules for acting (`how`) follow.
+pub fn postal_custom(template: &str, from: usize, body: &str, how: &str) -> String {
     let sender = if from == 0 {
         "the experimenter".to_string()
     } else {
         format!("node {from}")
     };
     format!(
-        "{}\n\n{ADDRESS_RULES}",
+        "{}\n\n{how}",
         template.replace("{sender}", &sender).replace("{body}", body)
     )
 }
 
-pub fn postal_chain(idx: usize, n: usize, message: &str) -> String {
+/// Postal chain node: same relay protocol, but the node itself must route.
+pub fn postal_chain(idx: usize, n: usize, message: &str, how: &str) -> String {
     format!(
-        "You are node {idx} of {n} in a relay chain. Chain protocol: append 'node {idx}' to the trail, keep every existing payload field and trail entry intact, and send the full updated message to the next node, node {next}. The last node, node {n}, finishes the run and reports the full final message instead of sending. You received:\n\n{message}\n\n{ADDRESS_RULES}",
+        "You are node {idx} of {n} in a relay chain. Chain protocol: append 'node {idx}' to the trail, keep every existing payload field and trail entry intact, and send the full updated message to the next node, node {next}. The last node, node {n}, finishes the run and reports the full final message instead of sending. You received:\n\n{message}\n\n{how}",
         next = idx + 1,
     )
 }
 
 /// Postal ring node: same ring protocol, but the node itself must route.
-pub fn postal_ring(idx: usize, n: usize, message: &str) -> String {
+pub fn postal_ring(idx: usize, n: usize, message: &str, how: &str) -> String {
     format!(
-        "You are node {idx} of {n} in a message-passing ring. Ring protocol: append 'node {idx}' to the trail, then send the full updated message to your successor, node {next}. The task inside the message says how long the ring should keep circulating; you decide whether to keep passing or to finish. You received:\n\n{message}\n\n{ADDRESS_RULES}",
+        "You are node {idx} of {n} in a message-passing ring. Ring protocol: append 'node {idx}' to the trail, then send the full updated message to your successor, node {next}. The task inside the message says how long the ring should keep circulating; you decide whether to keep passing or to finish. You received:\n\n{message}\n\n{how}",
         next = idx % n + 1,
     )
 }
 
 /// Postal worker: answer the task, then report to the aggregator unprompted.
-pub fn postal_worker(idx: usize, n: usize, question: &str) -> String {
+pub fn postal_worker(idx: usize, n: usize, question: &str, how: &str) -> String {
     format!(
-        "You are worker {idx} of {n} answering a shared task independently. Worker protocol: work out your answer, then send it to the aggregator, node {agg}. Only the aggregator finishes the run and reports the final result; your part ends once your answer is sent. Task:\n\n{question}\n\n{ADDRESS_RULES}",
+        "You are worker {idx} of {n} answering a shared task independently. Worker protocol: work out your answer, then send it to the aggregator, node {agg}. Only the aggregator finishes the run and reports the final result; your part ends once your answer is sent. Task:\n\n{question}\n\n{how}",
         agg = n + 1,
     )
 }
 
 /// Postal aggregator: one worker report per message; it decides when enough
 /// have arrived, with no barrier and no end-of-input signal.
-pub fn postal_aggregator(n: usize, gather_q: &str, from: usize, body: &str) -> String {
+pub fn postal_aggregator(n: usize, gather_q: &str, from: usize, body: &str, how: &str) -> String {
     format!(
-        "You are the aggregator, node {agg}, for {n} workers (nodes 1..{n}). Workers send you their answers as separate messages; nobody will tell you when reports stop coming. Question to answer: {gather_q}\n\nNew message from node {from}:\n\n{body}\n\nConsidering every message you have received so far in this session, either finish the run with your final answer or wait for more reports.\n\n{ADDRESS_RULES}",
+        "You are the aggregator, node {agg}, for {n} workers (nodes 1..{n}). Workers send you their answers as separate messages; nobody will tell you when reports stop coming. Question to answer: {gather_q}\n\nNew message from node {from}:\n\n{body}\n\nConsidering every message you have received so far in this session, either finish the run with your final answer or wait for more reports.\n\n{how}",
         agg = n + 1,
     )
 }
@@ -353,29 +375,67 @@ mod tests {
 
     #[test]
     fn postal_prompts_route_by_agent_not_runtime() {
-        let custom = postal_custom("From {sender}: {body}", 0, "start");
+        let (may, cannot) = (action_rules(true, ""), action_rules(false, "node 5"));
+        let custom = postal_custom("From {sender}: {body}", 0, "start", &may);
         assert!(custom.starts_with("From the experimenter: start"));
-        assert!(postal_custom("{sender}", 3, "").starts_with("node 3"));
-        assert!(custom.contains(ADDRESS_RULES));
-        // Every postal prompt carries the addressing rules and no runtime routing.
-        let c = postal_chain(2, 5, "payload");
+        assert!(postal_custom("{sender}", 3, "", &may).starts_with("node 3"));
+        assert!(custom.ends_with(&may));
+        // Every postal prompt carries the action rules and no runtime routing.
+        let c = postal_chain(2, 5, "payload", &cannot);
         assert!(c.contains("node 2 of 5"));
         assert!(c.contains("node 3")); // successor named, agent must address it
         assert!(c.contains("To: node K"));
-        assert!(c.contains("nobody routes"));
+        assert!(c.contains("Nobody routes"));
+        assert!(c.contains("only node 5 can"));
         // Ring successor wraps.
-        let r = postal_ring(4, 4, "trail");
+        let r = postal_ring(4, 4, "trail", &may);
         assert!(r.contains("your successor, node 1"));
         assert!(r.contains("Decision: DONE"));
         // Worker knows the aggregator's address; blind question flows through.
-        let w = postal_worker(1, 3, "the code is 7731");
+        let w = postal_worker(1, 3, "the code is 7731", &cannot);
         assert!(w.contains("node 4"));
         assert!(w.contains("7731"));
         // Aggregator gets no barrier and no end-of-input promise.
-        let a = postal_aggregator(3, "report the code", 2, "7731");
+        let a = postal_aggregator(3, "report the code", 2, "7731", &may);
         assert!(a.contains("node 4"));
         assert!(a.contains("nobody will tell you when reports stop"));
         assert!(a.contains("from node 2"));
+    }
+
+    #[test]
+    fn the_action_rules_say_what_the_reader_does() {
+        use crate::protocol::{read_action, Act};
+        let may = action_rules(true, "");
+        let cannot = action_rules(false, "node 6");
+        // Who may finish is the only difference between the two.
+        assert!(may.contains("3. Finish the whole run") && !may.contains("You cannot finish"));
+        assert!(cannot.contains("only node 6 can") && !cannot.contains("3. Finish"));
+        for rules in [&may, &cannot] {
+            for clause in [
+                "Each reply does exactly one of these",
+                "only the last is used",
+                "it changes nothing",
+                "are not part of your message",
+                "A message to a node that does not exist is lost",
+            ] {
+                assert!(rules.contains(clause), "{clause}");
+            }
+        }
+        // Each clause, checked against the reader.
+        let send = |to, body: &str| Act::Send {
+            to,
+            body: body.into(),
+        };
+        let wait = "To: node 2\n<answer>hi</answer>\nDecision: WAIT";
+        assert_eq!(read_action(wait, true, 3).act, send(2, "hi")); // "it changes nothing"
+        let two = "To: node 1\nTo: node 2\n<answer>hi</answer>";
+        assert_eq!(read_action(two, true, 3).act, send(2, "hi")); // "only the last is used"
+        assert_eq!(read_action("Decision: WAIT", true, 3).act, Act::Wait);
+        let done = "To: node 2\n<answer>result</answer>\nDecision: DONE";
+        assert!(matches!(read_action(done, true, 3).act, Act::Finish { .. })); // "even if the reply has a 'To:' line"
+        assert_eq!(read_action(done, false, 3).act, send(2, "result")); // "ends nothing and is ignored"
+        assert_eq!(read_action("To: node 9\n<answer>hi</answer>", true, 3).act, Act::Wait); // "is lost"
+        assert_eq!(read_action("<answer>To: node 2\nhi</answer>", true, 3).act, send(2, "hi")); // "not part of your message"
     }
 
     #[test]

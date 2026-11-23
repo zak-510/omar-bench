@@ -1,19 +1,23 @@
 //! The MASS composer/runner: spawns one persistent OMAR agent per (role, slot),
 //! routes block waves through the mailbox, parses <answer>, tears agents down.
+//! Agent-coordinated runs are driven by `postal::run`; this file is their
+//! transport to live agents.
 
 use crate::blocks::{self, CallSpec};
 use crate::graph::{self, Topology};
 use crate::mailbox::{self, RunDir, WaitOutcome};
 use crate::math;
 use crate::omar::OmarClient;
+use crate::postal::{self, Delivery, Post, Request, Rules, Silence};
 use crate::prompts;
 use crate::protocol::{self, Envelope, Reply, Role};
 use crate::topology::{AggregatorMode, SessionSpec, TopologyConfig};
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use std::io::Write;
 use std::path::PathBuf;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /// Budget per readiness attempt: cloud agents ready in seconds; a local model
 /// server cold-starts far slower (~100-120s), so it gets a much larger budget.
@@ -80,24 +84,19 @@ pub struct CustomSpec {
     pub prompts: Vec<String>,
     /// (to, body) pairs delivered from the experimenter (node 0) at the start.
     pub seeds: Vec<(usize, String)>,
-}
-
-/// One delivered message and the reply it got, in delivery order.
-#[derive(Debug, Clone, Serialize)]
-pub struct Delivery {
-    pub from: usize,
-    pub to: usize,
-    pub body: String,
-    pub reply: Option<String>,
+    /// The agents that may finish the run with `Decision: DONE`. Empty means
+    /// any agent may.
+    #[serde(default)]
+    pub finishers: Vec<usize>,
 }
 
 impl GraphOpts {
-    fn corrupt(&self) -> &str {
+    pub(crate) fn corrupt(&self) -> &str {
         self.corrupt_answer.as_deref().unwrap_or(CORRUPT_ANSWER)
     }
 
     /// What the gather node is asked; falls back to the workers' question.
-    fn gather<'a>(&'a self, task_question: &'a str) -> &'a str {
+    pub(crate) fn gather<'a>(&'a self, task_question: &'a str) -> &'a str {
         self.gather_question.as_deref().unwrap_or(task_question)
     }
 }
@@ -156,6 +155,10 @@ pub struct RunnerOptions {
     /// Pure infrastructure: agents never observe it; mail to a non-resident
     /// slot spawns it, so mis-routing stays deliverable and observable.
     pub spawn_window: usize,
+    /// When the whole run must stop waiting for replies. A run still going
+    /// then ends as it stands and tears its agents down, so its record and
+    /// the machine are both left clean.
+    pub deadline: Option<Instant>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -188,9 +191,79 @@ pub struct GraphResult {
     pub reason: String,
     pub output: Option<String>,
     pub records: Vec<CallRecord>,
-    /// Custom topology only: every delivery with its full reply.
+    /// Agent-coordinated runs: every delivery with its full reply and how the
+    /// reply was read.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub messages: Vec<Delivery>,
+    /// Agent-coordinated runs: how the run ended, the agent that ended it or
+    /// went silent, the mail never delivered, the replies that lost a message
+    /// and, for a silent agent, how long it was silent and what its terminal
+    /// showed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end: Option<postal::End>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_node: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub undelivered: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub errors: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub silent_secs: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub evidence: Option<String>,
+}
+
+impl GraphResult {
+    /// A runtime-coordinated result: the fields only postal runs have stay empty.
+    fn runtime(
+        topology: &str,
+        hops: usize,
+        completed: bool,
+        reason: String,
+        output: Option<String>,
+        records: Vec<CallRecord>,
+    ) -> GraphResult {
+        GraphResult {
+            topology: topology.to_string(),
+            hops,
+            completed,
+            reason,
+            output,
+            records,
+            messages: Vec::new(),
+            end: None,
+            end_node: None,
+            undelivered: None,
+            errors: None,
+            silent_secs: None,
+            evidence: None,
+        }
+    }
+
+    /// The result of an agent-coordinated run.
+    pub fn postal(topology: Topology, out: postal::Outcome, records: Vec<CallRecord>) -> GraphResult {
+        GraphResult {
+            topology: match topology {
+                Topology::Chain { .. } => "chain",
+                Topology::Ring { .. } => "ring",
+                Topology::ScatterGather { .. } => "scatter-gather",
+                Topology::Custom { .. } => "custom",
+            }
+            .to_string(),
+            hops: out.hops,
+            completed: out.end == postal::End::Done,
+            reason: out.reason,
+            output: out.output,
+            records,
+            messages: out.messages,
+            end: Some(out.end),
+            end_node: out.end_node,
+            undelivered: Some(out.undelivered),
+            errors: Some(out.errors),
+            silent_secs: out.silent_secs,
+            evidence: out.evidence,
+        }
+    }
 }
 
 pub struct Runner {
@@ -463,11 +536,10 @@ impl Runner {
     /// the window) if needed. `wait` blocks until the agent is ready; pass
     /// false to prefetch a likely-next slot so it boots while another agent
     /// is thinking. No-op when spawn_window is 0 (everyone is resident).
-    fn ensure_resident(&mut self, slot: usize, wait: bool) -> Result<()> {
-        let spec = SessionSpec {
-            role: Role::Node,
-            slot,
-        };
+    fn ensure_resident(&mut self, role: Role, slot: usize, wait: bool) -> Result<()> {
+        // The role is part of an agent's name: asking for a `Node` where the
+        // topology spawned `Actor`s would start a second, idle agent per slot.
+        let spec = SessionSpec { role, slot };
         if let Some(pos) = self.resident.iter().position(|s| *s == spec) {
             // LRU bump; a prefetched agent may still be booting, so the
             // blocking path always confirms readiness.
@@ -585,10 +657,11 @@ impl Runner {
             .filter(|(_, ok)| **ok)
             .map(|(i, _)| i)
             .collect();
+        let timeout = self.reply_timeout();
         let mcp = &mut self.mcp;
         let outcomes = mailbox::wait_for_files(
             &waited,
-            self.opts.timeout,
+            timeout,
             POLL_INTERVAL,
             DISPATCH_NUDGE_AFTER,
             DISPATCH_NUDGE_EVERY,
@@ -615,6 +688,55 @@ impl Runner {
             });
         }
         results
+    }
+
+    /// Where an agent-coordinated run appends each delivery as it happens.
+    /// Beside the run dirs, not inside one: agents are pointed at their run
+    /// dir, and the journal is the experimenter's record, not theirs.
+    pub fn journal(&self) -> PathBuf {
+        let runs = self.run_dir.root.parent().unwrap_or(&self.run_dir.root);
+        runs.parent()
+            .unwrap_or(runs)
+            .join("journals")
+            .join(format!("{}.jsonl", self.run_id))
+    }
+
+    /// How long to wait for a reply: the per-wave timeout, cut short by the
+    /// run's deadline.
+    fn reply_timeout(&self) -> Duration {
+        match self.opts.deadline {
+            Some(deadline) => self
+                .opts
+                .timeout
+                .min(deadline.saturating_duration_since(Instant::now())),
+            None => self.opts.timeout,
+        }
+    }
+
+    fn past_deadline(&self) -> bool {
+        self.opts.deadline.is_some_and(|d| Instant::now() >= d)
+    }
+
+    /// The last lines an agent's terminal shows, to tell why it is silent
+    /// (a usage limit, an error, a prompt it is stuck on). Best effort.
+    fn terminal_tail(&self, agent: &str) -> Option<String> {
+        let tmux = |args: &[&str]| -> Option<String> {
+            let mut cmd = std::process::Command::new("tmux");
+            if let Some(server) = std::env::var_os("OMAR_TMUX_SERVER") {
+                cmd.arg("-L").arg(server);
+            }
+            let out = cmd.args(args).output().ok()?;
+            out.status
+                .success()
+                .then(|| String::from_utf8_lossy(&out.stdout).into_owned())
+        };
+        let sessions = tmux(&["list-sessions", "-F", "#{session_name}"])?;
+        let session = sessions.lines().find(|s| s.ends_with(&format!("-{agent}")))?;
+        let pane = tmux(&["capture-pane", "-p", "-t", session, "-S", "-80"])?;
+        let lines: Vec<&str> = pane.lines().filter(|l| !l.trim().is_empty()).collect();
+        let tail = lines[lines.len().saturating_sub(30)..].join("\n");
+        let cut = tail.len().saturating_sub(3000);
+        Some(tail.get(cut..).unwrap_or(&tail).to_string())
     }
 
     /// Reset the pool so the next problem is independent (reused agents would
@@ -787,7 +909,24 @@ impl Runner {
         opts: &GraphOpts,
     ) -> Result<GraphResult> {
         let result = if opts.coordination == Coordination::Agent {
-            self.run_postal(task, topology, opts)?
+            if let Topology::ScatterGather { relaxed: true, .. } = topology {
+                bail!("--relaxed is a runtime-arm barrier policy; in agent mode the aggregator decides");
+            }
+            let role = topology.session_specs()[0].role;
+            let journal = self.journal();
+            if let Some(dir) = journal.parent() {
+                let _ = std::fs::create_dir_all(dir);
+            }
+            let mut post = Live {
+                runner: self,
+                task_id: task.id.clone(),
+                role,
+                records: Vec::new(),
+                journal,
+                waited: Duration::ZERO,
+            };
+            let out = postal::run(Rules::V2, topology, opts, &task.question, &mut post)?;
+            GraphResult::postal(topology, out, post.records)
         } else {
             match topology {
                 Topology::Chain { n } => self.run_chain(task, n)?,
@@ -811,9 +950,9 @@ impl Runner {
         let mut message = task.question.clone();
         let mut hops = 0;
         for idx in 1..=n {
-            self.ensure_resident(idx, true)?;
+            self.ensure_resident(Role::Node, idx, true)?;
             if idx < n {
-                self.ensure_resident(idx + 1, false)?; // boots during idx's turn
+                self.ensure_resident(Role::Node, idx + 1, false)?; // boots during idx's turn
             }
             let call = CallSpec {
                 role: Role::Node,
@@ -839,15 +978,14 @@ impl Runner {
         } else {
             format!("stalled at node {}", hops + 1)
         };
-        Ok(GraphResult {
-            topology: "chain".to_string(),
+        Ok(GraphResult::runtime(
+            "chain",
             hops,
             completed,
             reason,
-            output: completed.then_some(message),
+            completed.then_some(message),
             records,
-            messages: Vec::new(),
-        })
+        ))
     }
 
     /// Pass the message around the ring until a node stops it or the hop budget
@@ -860,9 +998,9 @@ impl Runner {
         let mut stalled = false;
         while hops < max_hops {
             let idx = (hops % n) + 1;
-            self.ensure_resident(idx, true)?;
+            self.ensure_resident(Role::Node, idx, true)?;
             if hops + 1 < max_hops {
-                self.ensure_resident((idx % n) + 1, false)?;
+                self.ensure_resident(Role::Node, (idx % n) + 1, false)?;
             }
             let call = CallSpec {
                 role: Role::Node,
@@ -899,15 +1037,14 @@ impl Runner {
         } else {
             "budget exhausted".to_string()
         };
-        Ok(GraphResult {
-            topology: "ring".to_string(),
+        Ok(GraphResult::runtime(
+            "ring",
             hops,
-            completed: stopped,
+            stopped,
             reason,
-            output: Some(message),
+            Some(message),
             records,
-            messages: Vec::new(),
-        })
+        ))
     }
 
     /// Fan the task out to n workers, then gather. Strict fires only once ALL
@@ -968,187 +1105,14 @@ impl Runner {
         } else {
             None
         };
-        Ok(GraphResult {
-            topology: "scatter-gather".to_string(),
-            hops: arrived + fired as usize,
-            completed: fired,
+        Ok(GraphResult::runtime(
+            "scatter-gather",
+            arrived + fired as usize,
+            fired,
             reason,
             output,
             records,
-            messages: Vec::new(),
-        })
-    }
-
-    /// Agent-coordinated (before-DSL) arm: the runner is a postal service that
-    /// delivers addressed mail and records; agents own routing and termination.
-    fn run_postal(
-        &mut self,
-        task: &TaskInstance,
-        topology: Topology,
-        opts: &GraphOpts,
-    ) -> Result<GraphResult> {
-        let count = topology.session_specs().len();
-        let fuse = if opts.max_messages == 0 {
-            3 * count + 10
-        } else {
-            opts.max_messages
-        };
-        let gather_q = opts.gather(&task.question).to_string();
-        let mut records = Vec::new();
-        // Queue entries are (from, to, body); the runner never picks recipients.
-        let mut queue: VecDeque<(usize, usize, String)> = VecDeque::new();
-        let mut delivered = 0usize;
-        let mut dead_letters = 0usize;
-        let mut done: Option<Option<String>> = None;
-        let mut last_responder = 0usize;
-        let mut stalled_at: Option<usize> = None;
-        let mut messages: Vec<Delivery> = Vec::new();
-
-        // Seed: hand out the task (experimenter's job, not coordination).
-        // Chain and ring seed node 1; scatter-gather seeds all live workers in
-        // one wave, since the task handout is not part of the protocol.
-        match topology {
-            Topology::Chain { .. } | Topology::Ring { .. } => {
-                queue.push_back((0, 1, task.question.clone()));
-            }
-            Topology::Custom { .. } => {
-                let spec = opts.custom.as_ref().context("custom topology without a spec")?;
-                for (to, body) in &spec.seeds {
-                    queue.push_back((0, *to, body.clone()));
-                }
-            }
-            Topology::ScatterGather {
-                n,
-                fail_count,
-                relaxed,
-                ..
-            } => {
-                if relaxed {
-                    bail!("--relaxed is a runtime-arm barrier policy; in agent mode the aggregator decides");
-                }
-                let live: Vec<usize> = (1..=n).filter(|slot| *slot > fail_count).collect();
-                let wave: Vec<CallSpec> = live
-                    .iter()
-                    .map(|&slot| CallSpec {
-                        role: Role::Node,
-                        slot,
-                        round: 0,
-                        payload: prompts::postal_worker(slot, n, &task.question),
-                    })
-                    .collect();
-                let replies = self.dispatch(&task.id, &wave, &mut records)?;
-                for (reply, &slot) in replies.into_iter().zip(&live) {
-                    if let Some(content) = reply {
-                        delivered += 1;
-                        last_responder = slot;
-                        enqueue_action(&content, slot, topology, opts, &mut queue, &mut done);
-                    }
-                }
-            }
-        }
-
-        let mut fuse_hit = false;
-        let mut per_slot = vec![0usize; count + 1];
-        while done.is_none() {
-            let Some((from, to, body)) = queue.pop_front() else {
-                break;
-            };
-            if delivered >= fuse {
-                fuse_hit = true;
-                break;
-            }
-            if to < 1 || to > count {
-                dead_letters += 1;
-                continue;
-            }
-            // Any addressable slot is deliverable: a non-resident recipient is
-            // spawned on demand, so agent-chosen routing (including mistakes)
-            // stays observable under a spawn window.
-            self.ensure_resident(to, true)?;
-            if let Some(next) = next_slot_hint(topology, to) {
-                self.ensure_resident(next, false)?;
-            }
-            let payload = match topology {
-                Topology::Chain { n } => prompts::postal_chain(to, n, &body),
-                Topology::Ring { n, .. } => prompts::postal_ring(to, n, &body),
-                Topology::ScatterGather { n, .. } => {
-                    if to == n + 1 {
-                        prompts::postal_aggregator(n, &gather_q, from, &body)
-                    } else {
-                        prompts::postal_worker(to, n, &body)
-                    }
-                }
-                Topology::Custom { .. } => {
-                    let spec = opts.custom.as_ref().context("custom topology without a spec")?;
-                    prompts::postal_custom(&spec.prompts[to - 1], from, &body)
-                }
-            };
-            // A custom agent sees its own requests numbered 1, 2, 3...: a
-            // run-wide count leaves gaps an agent can read as lost memory.
-            let round = if matches!(topology, Topology::Custom { .. }) {
-                per_slot[to] += 1;
-                per_slot[to]
-            } else {
-                delivered
-            };
-            let call = CallSpec {
-                role: if matches!(topology, Topology::Custom { .. }) {
-                    Role::Actor
-                } else {
-                    Role::Node
-                },
-                slot: to,
-                round,
-                payload,
-            };
-            let reply = self.dispatch(&task.id, &[call], &mut records)?.pop().flatten();
-            if matches!(topology, Topology::Custom { .. }) {
-                messages.push(Delivery {
-                    from,
-                    to,
-                    body: body.clone(),
-                    reply: reply.clone(),
-                });
-            }
-            match reply {
-                Some(content) => {
-                    delivered += 1;
-                    last_responder = to;
-                    enqueue_action(&content, to, topology, opts, &mut queue, &mut done);
-                }
-                None => {
-                    stalled_at = Some(to);
-                    break;
-                }
-            }
-        }
-
-        let reason = if done.is_some() {
-            format!("done by node {last_responder}, {delivered} deliveries")
-        } else if let Some(slot) = stalled_at {
-            format!("stalled at node {slot} after {delivered} deliveries")
-        } else if fuse_hit {
-            format!("fuse: {fuse} message cap hit")
-        } else if dead_letters > 0 {
-            format!("went quiet after {delivered} deliveries, {dead_letters} undeliverable")
-        } else {
-            format!("went quiet after {delivered} deliveries")
-        };
-        Ok(GraphResult {
-            topology: match topology {
-                Topology::Chain { .. } => "chain",
-                Topology::Ring { .. } => "ring",
-                Topology::ScatterGather { .. } => "scatter-gather",
-                Topology::Custom { .. } => "custom",
-            }
-            .to_string(),
-            hops: delivered,
-            completed: done.is_some(),
-            reason,
-            output: done.flatten(),
-            records,
-            messages,
-        })
+        ))
     }
 
     /// LLM-judge grade: score a predicted answer against the gold solution.
@@ -1229,62 +1193,75 @@ impl Drop for Runner {
     }
 }
 
-/// Transit fault: mail from a corrupt scatter-gather worker is garbled in
-/// flight. Same injection point in both arms, so faults stay arm-independent.
-/// Parse one reply and apply it: record a DONE, or enqueue its send with
-/// transit corruption applied (corrupt workers' mail is garbled in flight).
-/// A send addressed back to its own author with a DONE sign-off ends the run:
-/// tails echo the incoming `To:` line, and delivering it would self-loop the
-/// same reply until the fuse.
-fn enqueue_action(
-    content: &str,
-    from: usize,
-    topology: Topology,
-    opts: &GraphOpts,
-    queue: &mut VecDeque<(usize, usize, String)>,
-    done: &mut Option<Option<String>>,
-) {
-    match protocol::parse_action(content) {
-        // Corruption also hits a DONE body, else a corrupt worker ending
-        // the run hands over its answer with the fault never firing.
-        protocol::Action::Done { body } => {
-            *done = Some(body.map(|b| transit_body(topology, from, opts, b)))
-        }
-        protocol::Action::Wait => {}
-        protocol::Action::Send {
-            to,
-            body,
-            done: signed_off,
-        } => {
-            if signed_off && to == from {
-                *done = Some(Some(transit_body(topology, from, opts, body)));
-            } else {
-                queue.push_back((from, to, transit_body(topology, from, opts, body)));
-            }
+/// The transport from the delivery loop to live agents: each request goes
+/// through the file mailbox, and every delivery is appended to the run's
+/// journal as it happens, so a run that is killed still leaves its record.
+struct Live<'a> {
+    runner: &'a mut Runner,
+    task_id: String,
+    role: Role,
+    records: Vec<CallRecord>,
+    journal: PathBuf,
+    /// How long the last delivery waited for its reply.
+    waited: Duration,
+}
+
+impl Live<'_> {
+    fn call(&self, r: &Request) -> CallSpec {
+        CallSpec {
+            role: self.role,
+            slot: r.to,
+            round: r.round,
+            payload: r.payload.clone(),
         }
     }
 }
 
-/// Likely-next recipient for spawn prefetch, from the topology's nominal
-/// direction. A heuristic only: a wrong guess wastes one spawn, never mail.
-fn next_slot_hint(topology: Topology, to: usize) -> Option<usize> {
-    match topology {
-        Topology::Chain { n } => (to < n).then_some(to + 1),
-        Topology::Ring { n, .. } => Some((to % n) + 1),
-        Topology::ScatterGather { .. } | Topology::Custom { .. } => None,
+impl Post for Live<'_> {
+    fn prepare(&mut self, to: usize, next: Option<usize>) -> Result<()> {
+        self.runner.ensure_resident(self.role, to, true)?;
+        if let Some(next) = next {
+            self.runner.ensure_resident(self.role, next, false)?;
+        }
+        Ok(())
     }
-}
 
-fn transit_body(topology: Topology, from: usize, opts: &GraphOpts, body: String) -> String {
-    if let Topology::ScatterGather {
-        n, corrupt_count, ..
-    } = topology
-    {
-        if corrupt_count > 0 && from > n - corrupt_count && from <= n {
-            return opts.corrupt().to_string();
+    fn deliver(&mut self, request: &Request) -> Result<Option<String>> {
+        let call = self.call(request);
+        let sent = Instant::now();
+        let reply = self
+            .runner
+            .dispatch(&self.task_id, &[call], &mut self.records)?
+            .pop()
+            .flatten();
+        self.waited = sent.elapsed();
+        Ok(reply)
+    }
+
+    fn wave(&mut self, requests: &[Request]) -> Result<Vec<Option<String>>> {
+        let calls: Vec<CallSpec> = requests.iter().map(|r| self.call(r)).collect();
+        self.runner.dispatch(&self.task_id, &calls, &mut self.records)
+    }
+
+    fn silence(&mut self, to: usize) -> Silence {
+        let agent = self.runner.agent_name(self.role, to);
+        Silence {
+            deadline: self.runner.past_deadline(),
+            waited_secs: self.waited.as_secs(),
+            evidence: self.runner.terminal_tail(&agent),
         }
     }
-    body
+
+    fn record(&mut self, delivery: &Delivery) {
+        let line = serde_json::to_string(delivery).unwrap_or_default();
+        if let Ok(mut f) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&self.journal)
+        {
+            let _ = writeln!(f, "{line}");
+        }
+    }
 }
 
 /// The spawn-time charter for one agent: its role plus the mailbox protocol.
@@ -1314,40 +1291,6 @@ fn charter(name: &str, spec: &SessionSpec, run_dir: &RunDir) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn self_send_with_done_ends_run_instead_of_looping() {
-        let opts = GraphOpts::default();
-        let content = "To: node 20\n<answer>trail complete</answer>\nDecision: DONE";
-
-        // Tail echoes its own address with DONE: run ends, nothing delivered.
-        let mut queue = VecDeque::new();
-        let mut done = None;
-        enqueue_action(
-            content,
-            20,
-            Topology::Chain { n: 20 },
-            &opts,
-            &mut queue,
-            &mut done,
-        );
-        assert!(queue.is_empty());
-        assert_eq!(done, Some(Some("trail complete".into())));
-
-        // Same reply from node 19 is a real forward; the sign-off rides along.
-        let mut queue = VecDeque::new();
-        let mut done = None;
-        enqueue_action(
-            content,
-            19,
-            Topology::Chain { n: 20 },
-            &opts,
-            &mut queue,
-            &mut done,
-        );
-        assert_eq!(queue.len(), 1);
-        assert!(done.is_none());
-    }
 
     #[test]
     fn cap_sessions_limits_physical_pool() {
@@ -1383,30 +1326,12 @@ mod tests {
     fn graph_opts_default_to_stock_behavior() {
         let stock = GraphOpts::default();
         assert_eq!(stock.corrupt(), CORRUPT_ANSWER);
+        assert_eq!(postal::transit_body(Topology::Chain { n: 2 }, 1, &stock, "x".into()), "x");
         // Unset gather question means the aggregator sees the workers' task.
         assert_eq!(stock.gather("what is 12x12?"), "what is 12x12?");
         // Default arm is the existing runtime-coordinated behavior.
         assert_eq!(stock.coordination, Coordination::Runtime);
         assert_eq!(stock.max_messages, 0);
-    }
-
-    #[test]
-    fn transit_corruption_hits_only_corrupt_workers() {
-        let sg = Topology::ScatterGather {
-            n: 5,
-            fail_count: 0,
-            corrupt_count: 2,
-            relaxed: false,
-        };
-        let opts = GraphOpts::default();
-        // Slots 4 and 5 are corrupt; honest workers and the aggregator are not.
-        assert_eq!(transit_body(sg, 4, &opts, "144".into()), "999");
-        assert_eq!(transit_body(sg, 5, &opts, "144".into()), "999");
-        assert_eq!(transit_body(sg, 3, &opts, "144".into()), "144");
-        assert_eq!(transit_body(sg, 6, &opts, "final".into()), "final");
-        // Chain mail is never touched.
-        let chain = Topology::Chain { n: 5 };
-        assert_eq!(transit_body(chain, 4, &opts, "x".into()), "x");
     }
 
     #[test]
@@ -1476,25 +1401,6 @@ mod tests {
     }
 
     #[test]
-    fn next_slot_hint_follows_topology_direction() {
-        // Chain: successor, and no hint past the tail.
-        assert_eq!(next_slot_hint(Topology::Chain { n: 5 }, 3), Some(4));
-        assert_eq!(next_slot_hint(Topology::Chain { n: 5 }, 5), None);
-        // Ring: wraps the last slot back to 1.
-        let ring = Topology::Ring { n: 4, max_hops: 8 };
-        assert_eq!(next_slot_hint(ring, 2), Some(3));
-        assert_eq!(next_slot_hint(ring, 4), Some(1));
-        // Scatter-gather has no sequential direction to prefetch.
-        let sg = Topology::ScatterGather {
-            n: 5,
-            fail_count: 0,
-            corrupt_count: 0,
-            relaxed: false,
-        };
-        assert_eq!(next_slot_hint(sg, 2), None);
-    }
-
-    #[test]
     fn spawn_window_rejects_scatter_gather_and_degenerate_width() {
         let sg = Topology::ScatterGather {
             n: 5,
@@ -1513,6 +1419,7 @@ mod tests {
             reset_each_problem: true,
             run_root: None,
             spawn_window: w,
+            deadline: None,
         };
         let err = Runner::setup_graph(opts(8), sg)
             .err()

@@ -9,6 +9,7 @@ mod graph;
 mod mailbox;
 mod math;
 mod omar;
+mod postal;
 mod prompts;
 mod protocol;
 mod runner;
@@ -19,7 +20,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use graph::Topology;
 use runner::{ModelConfig, Runner, RunnerOptions, TaskInstance};
 use std::path::PathBuf;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use topology::{AggregatorMode, TopologyConfig};
 
 #[derive(Parser)]
@@ -221,6 +222,33 @@ enum Command {
         /// Per-wave reply timeout in seconds.
         #[arg(long, default_value_t = 300)]
         timeout_secs: u64,
+        /// Agent mode only: stop the run this many seconds after it starts,
+        /// keeping its record and tearing its agents down (0 = no limit).
+        #[arg(long, default_value_t = 0)]
+        deadline_secs: u64,
+    },
+    /// Run a spec-defined agent-coordinated topology with no live agents:
+    /// replies come from a recorded run or from scripted agents. Prints the
+    /// same result as `graph --kind custom`.
+    Simulate {
+        /// JSON file with `name`, `prompts`, `seeds` and `finishers`.
+        #[arg(long)]
+        spec: PathBuf,
+        /// A recorded run: a JSON object with `messages`, each a delivery
+        /// with its `from`, `to`, `body` and `reply`.
+        #[arg(long, conflicts_with = "agents")]
+        replay: Option<PathBuf>,
+        /// A shell command running scripted agents: it reads one JSON line
+        /// per delivery and writes one JSON line `{"reply": ...}` back.
+        #[arg(long)]
+        agents: Option<String>,
+        /// How replies are read: v2 (what agents are told now) or v1 (the
+        /// original study's, to retrace a recorded run as it ran).
+        #[arg(long, value_enum, default_value_t = postal::Rules::V2)]
+        rules: postal::Rules,
+        /// Total delivery cap (0 = auto, 3*nodes + 10).
+        #[arg(long, default_value_t = 0)]
+        max_messages: usize,
     },
     /// Exercise one building block end-to-end on a built-in tiny instance.
     DemoBlock {
@@ -373,7 +401,11 @@ fn main() -> Result<()> {
             spawn_window,
             model,
             timeout_secs,
+            deadline_secs,
         } => {
+            // Counted from here, so starting the agents is inside the limit.
+            let deadline = (deadline_secs > 0)
+                .then(|| Instant::now() + Duration::from_secs(deadline_secs));
             check_graph_concurrency(max_concurrent)?;
             // Fail before spawning agents, not after.
             if matches!(coordination, CoordMode::Agent) && relaxed {
@@ -393,12 +425,7 @@ fn main() -> Result<()> {
                 GraphKind::Custom => Topology::Custom { n: 0 },
             };
             let custom: Option<runner::CustomSpec> = match kind {
-                GraphKind::Custom => {
-                    let path = spec.context("--kind custom needs --spec")?;
-                    let text = std::fs::read_to_string(&path)
-                        .with_context(|| format!("reading {}", path.display()))?;
-                    Some(serde_json::from_str(&text)?)
-                }
+                GraphKind::Custom => Some(read_spec(&spec.context("--kind custom needs --spec")?)?),
                 _ => None,
             };
             let topology = match &custom {
@@ -414,12 +441,13 @@ fn main() -> Result<()> {
                 context: None,
                 tests: None,
             };
-            let result = run_graph_once(
+            run_graph_once(
                 topology,
                 model.to_config(),
                 Duration::from_secs(timeout_secs),
                 max_concurrent,
                 spawn_window,
+                deadline,
                 &task,
                 &runner::GraphOpts {
                     gather_question,
@@ -428,10 +456,15 @@ fn main() -> Result<()> {
                     max_messages,
                     custom,
                 },
-            )?;
-            println!("{}", serde_json::to_string_pretty(&result)?);
-            Ok(())
+            )
         }
+        Command::Simulate {
+            spec,
+            replay,
+            agents,
+            rules,
+            max_messages,
+        } => simulate(&spec, replay.as_deref(), agents.as_deref(), rules, max_messages),
         Command::DemoBlock {
             block,
             model,
@@ -471,6 +504,7 @@ fn run_once(
         reset_each_problem: true,
         run_root: None,
         spawn_window: 0,
+        deadline: None,
     })?;
     eprintln!(
         "[mass] run {} ready; results under {}",
@@ -498,15 +532,88 @@ fn check_graph_concurrency(max_concurrent: usize) -> Result<()> {
     Ok(())
 }
 
+/// How long ending a run's agents may take before the runner exits anyway.
+const TEARDOWN_LIMIT: Duration = Duration::from_secs(180);
+
+fn read_spec(path: &std::path::Path) -> Result<runner::CustomSpec> {
+    let text =
+        std::fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
+    let spec: runner::CustomSpec = serde_json::from_str(&text)?;
+    let n = spec.prompts.len();
+    if let Some(bad) = spec.finishers.iter().find(|&&f| f < 1 || f > n) {
+        anyhow::bail!("spec names finisher {bad}, but has agents 1 to {n}");
+    }
+    Ok(spec)
+}
+
+/// Run a spec-defined topology against a recorded run or scripted agents.
+fn simulate(
+    spec: &std::path::Path,
+    replay: Option<&std::path::Path>,
+    agents: Option<&str>,
+    rules: postal::Rules,
+    max_messages: usize,
+) -> Result<()> {
+    let spec = read_spec(spec)?;
+    let topology = Topology::Custom {
+        n: spec.prompts.len(),
+    };
+    topology.validate()?;
+    let opts = runner::GraphOpts {
+        coordination: runner::Coordination::Agent,
+        max_messages,
+        custom: Some(spec),
+        ..Default::default()
+    };
+    let mut value = match (replay, agents) {
+        (Some(path), _) => {
+            #[derive(serde::Deserialize)]
+            struct Record {
+                messages: Vec<postal::Delivery>,
+            }
+            let text = std::fs::read_to_string(path)
+                .with_context(|| format!("reading {}", path.display()))?;
+            let record: Record = serde_json::from_str(&text)?;
+            let recorded = record.messages.len();
+            let mut post = postal::sim::Replay::new(record.messages);
+            let out = postal::run(rules, topology, &opts, "", &mut post)?;
+            let mut value =
+                serde_json::to_value(runner::GraphResult::postal(topology, out, Vec::new()))?;
+            // How this run compares with the record it replayed.
+            value["replay"] = serde_json::json!({
+                "recorded": recorded,
+                "unused": post.unused(),
+                "ran_out": post.exhausted,
+                "reworded": post.reworded,
+                "diverged": post.diverged.as_ref().map(|(at, was, now)| {
+                    serde_json::json!({"delivery": at, "recorded": was, "replayed": now})
+                }),
+            });
+            value
+        }
+        (None, Some(command)) => {
+            let mut post = postal::sim::Script::start(command)?;
+            let out = postal::run(rules, topology, &opts, "", &mut post)?;
+            serde_json::to_value(runner::GraphResult::postal(topology, out, Vec::new()))?
+        }
+        (None, None) => anyhow::bail!("simulate needs --replay FILE or --agents COMMAND"),
+    };
+    value["rules"] = serde_json::json!(format!("{rules:?}").to_lowercase());
+    println!("{}", serde_json::to_string_pretty(&value)?);
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
 fn run_graph_once(
     topology: Topology,
     model: ModelConfig,
     timeout: Duration,
     max_concurrent: usize,
     spawn_window: usize,
+    deadline: Option<Instant>,
     task: &TaskInstance,
     graph_opts: &runner::GraphOpts,
-) -> Result<runner::GraphResult> {
+) -> Result<()> {
     let mut runner = Runner::setup_graph(
         RunnerOptions {
             topology: TopologyConfig::default(),
@@ -518,20 +625,38 @@ fn run_graph_once(
             reset_each_problem: true,
             run_root: None,
             spawn_window,
+            deadline,
         },
         topology,
     )?;
     eprintln!(
-        "[mass] graph run {} ready; results under {}",
+        "[mass] graph run {} ready; results under {}; journal {}",
         runner.run_id,
-        runner.run_dir.root.display()
+        runner.run_dir.root.display(),
+        runner.journal().display()
     );
     let result = runner.run_graph(task, topology, graph_opts);
-    // Report teardown residue but never let it discard a completed run.
+    // The result is printed before the agents are ended, so that ending them
+    // can neither discard a finished run nor hold it up: a teardown that has
+    // not finished in three minutes is abandoned, and whoever started the run
+    // clears what is left.
+    let code = match &result {
+        Ok(r) => {
+            println!("{}", serde_json::to_string_pretty(r)?);
+            std::io::Write::flush(&mut std::io::stdout())?;
+            0
+        }
+        Err(_) => 1,
+    };
+    std::thread::spawn(move || {
+        std::thread::sleep(TEARDOWN_LIMIT);
+        eprintln!("[mass] the agents did not stop within {TEARDOWN_LIMIT:?}; leaving them");
+        std::process::exit(code);
+    });
     if let Err(err) = runner.teardown() {
         eprintln!("[mass] {err}");
     }
-    result
+    result.map(|_| ())
 }
 
 /// Built-in tiny instances that exercise each block's path end-to-end.

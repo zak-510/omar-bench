@@ -18,7 +18,7 @@ The same code as the original study; every change is listed in
 
 | Path | Purpose |
 |------|---------|
-| `sweep.py` | Agent-arm sweep, through the [runner](../runner/) |
+| `sweep.py` | Agent-arm sweep, through the [runner](../runner/) and its [action rules](../runner/README.md#action-rules) |
 | `dsl/dsl_sweep.py` | DSL-arm sweep of chain and scatter-gather |
 | `dsl/dsl41_sweep.py` | DSL-arm sweep of rings and missing workers |
 | `dsl/gen.py`, `dsl/sg_gen.py` | Generators for every `.omar` program |

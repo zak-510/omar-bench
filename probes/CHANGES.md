@@ -32,6 +32,19 @@ the original study of July–August 2026, with its results in
   charter that keeps earlier messages as memory instead of treating each one
   alone; each agent's requests are numbered from 1 in the order they reach it.
   Chain, ring and scatter-gather are unchanged.
+- **Action rules (`prereg-v8`):** the original addressing rules did not say
+  what a reply with both a `To:` line and `Decision: DONE` does, nor who may
+  finish a run: the runner sent such a reply on as a message, and let any
+  agent's `DONE` end the run. Every agent-arm prompt now ends with rules that
+  say both, and the runner reads replies by exactly those rules
+  ([runner README](../runner/README.md)). The original reading is kept as
+  `simulate --rules v1`, to replay recorded runs as they ran.
+- **Time limit and records (`prereg-v8`):** the runner stops itself at the
+  run's time limit, keeps its record and ends its agents; a runner killed from
+  outside used to lose its delivery log and leave its agents running. It
+  appends every delivery to a journal as it happens, logs deliveries for the
+  probes as well as Savina, waits for a whole reply file before reading it,
+  and no longer starts a second, idle agent per slot in a `--kind custom` run.
 - **Ring scoring:** see the correction in `PREREGISTRATION.md`.
 - **Layout:** the runner moved to `runner/` and the probes to `probes/`, with
   the installed OMAR tools in `local/`; no code changed in the move.

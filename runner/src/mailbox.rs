@@ -66,8 +66,12 @@ pub enum WaitOutcome {
     TimedOut,
 }
 
-/// Wait until every path exists and is non-empty, or timeout elapses. on_nudge
-/// fires per pending path (after nudge_after, then every nudge_every) to re-send.
+/// Wait until every path holds a whole reply, or timeout elapses. A reply is
+/// whole once it parses as JSON, or reads the same on two polls in a row: an
+/// agent that writes the file in place instead of renaming it into place can
+/// be caught mid-write, and half a reply must not be taken for the reply.
+/// on_nudge fires per pending path (after nudge_after, then every nudge_every)
+/// to re-send.
 pub fn wait_for_files(
     paths: &[PathBuf],
     timeout: Duration,
@@ -78,6 +82,7 @@ pub fn wait_for_files(
 ) -> Vec<WaitOutcome> {
     let start = Instant::now();
     let mut outcomes: Vec<Option<String>> = vec![None; paths.len()];
+    let mut seen: Vec<Option<String>> = vec![None; paths.len()];
     let mut last_nudge: Option<Instant> = None;
     loop {
         let mut pending = false;
@@ -86,7 +91,16 @@ pub fn wait_for_files(
                 continue;
             }
             match std::fs::read_to_string(path) {
-                Ok(content) if !content.trim().is_empty() => outcomes[i] = Some(content),
+                Ok(content) if !content.trim().is_empty() => {
+                    let whole = serde_json::from_str::<serde_json::Value>(&content).is_ok()
+                        || seen[i].as_deref() == Some(content.as_str());
+                    if whole {
+                        outcomes[i] = Some(content);
+                    } else {
+                        seen[i] = Some(content);
+                        pending = true;
+                    }
+                }
                 _ => pending = true,
             }
         }
@@ -173,6 +187,45 @@ mod tests {
         assert!(matches!(outcomes[0], WaitOutcome::TimedOut));
         // First nudge ~20ms, then every ~50ms until timeout: several, not one.
         assert!(nudges >= 2, "expected repeated nudges, got {nudges}");
+    }
+
+    #[test]
+    fn half_a_reply_is_not_taken_for_the_reply() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("slow.json");
+        // The agent writes in place: the opening half first, the rest later.
+        std::fs::write(&path, "{\"content\": \"To: node 6\\n<answer>hun").unwrap();
+        let writer_path = path.clone();
+        let handle = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(25));
+            std::fs::write(writer_path, "{\"content\": \"To: node 6\\n<answer>hungry</answer>\"}").unwrap();
+        });
+        let outcomes = wait_for_files(
+            &[path],
+            Duration::from_secs(5),
+            Duration::from_millis(60),
+            Duration::from_secs(9),
+            Duration::from_secs(9),
+            |_| {},
+        );
+        handle.join().unwrap();
+        assert!(matches!(&outcomes[0], WaitOutcome::Ready(c) if c.ends_with("hungry</answer>\"}")));
+    }
+
+    #[test]
+    fn a_reply_that_is_not_json_is_taken_once_it_stops_changing() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("bare.json");
+        std::fs::write(&path, "To: node 6\n<answer>hungry</answer>").unwrap();
+        let outcomes = wait_for_files(
+            &[path],
+            Duration::from_secs(5),
+            Duration::from_millis(10),
+            Duration::from_secs(9),
+            Duration::from_secs(9),
+            |_| {},
+        );
+        assert!(matches!(&outcomes[0], WaitOutcome::Ready(c) if c.contains("hungry")));
     }
 
     #[test]

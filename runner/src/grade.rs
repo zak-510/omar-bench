@@ -170,6 +170,7 @@ pub fn run_grade(args: GradeArgs) -> Result<GradeReport> {
             reset_each_problem: false,
             run_root: None,
             spawn_window: 0,
+            deadline: None,
         })?;
 
         for task in &todo {

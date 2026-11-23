@@ -284,7 +284,7 @@ def test_the_dsl_sweep_with_a_stand_in_runtime():
         with open(stand_in, "w") as f:
             f.write(f"""#!/bin/sh
 # What the next run does is the first line of {tmp}/script; each run uses one line up.
-[ "$3" = down ] && {{ echo "$5" >> {tmp}/stopped; exit 0; }}
+[ "$1" = down ] && {{ echo "$3" >> {tmp}/stopped; exit 0; }}
 mode=$(head -1 {tmp}/script); sed -i.bak 1d {tmp}/script
 echo "Started session calm-otter; omar down -s calm-otter stops it" >&2
 case "$mode" in

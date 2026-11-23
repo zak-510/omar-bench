@@ -11,6 +11,7 @@ that infra/bootstrap.sh configures).
 import fcntl
 import os
 import re
+import signal
 import subprocess
 import time
 
@@ -97,11 +98,23 @@ def workdir(tier):
     return found.group(1) if found and os.path.isdir(found.group(1)) else None
 
 
-def stop_dsl(omar_dsl, config, printed):
+def stop_dsl(omar_dsl, printed):
     """End the session of a dsl-arm run that failed or was killed, by the name
-    OMAR printed when it started it. A run that ends well ends its own."""
+    OMAR printed when it started it. A run that ends well ends its own; one
+    that fails leaves its session's daemon running, with or without agents."""
     for name in re.findall(r"Started session (\S+?);", printed):
-        _out([omar_dsl, "-c", config, "down", "-s", name])
+        _out([omar_dsl, "down", "-s", name], timeout=20)
+        # `down` can hang on a session that is half gone, and its daemon can
+        # ignore a polite signal: end the daemon directly, then for certain.
+        for sig in (signal.SIGTERM, signal.SIGKILL):
+            for line in _out(["pgrep", "-af", "omar session-daemon"]).splitlines():
+                pid, *args = line.split()
+                if args and args[-1].rstrip("/").endswith(f"/sessions/{name}"):
+                    try:
+                        os.kill(int(pid), sig)
+                    except (OSError, ValueError):
+                        pass
+            time.sleep(1)
 
 
 def snapshot():

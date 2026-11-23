@@ -168,7 +168,7 @@ def dsl_trial():
     for attempt in range(1, RETRIES + 1):
         rc, out, err, t0, killed = run(cmd, TIMEOUT + GRACE, env)
         if killed or rc != 0:
-            machine.stop_dsl(cmd[0], cmd[2], out + err)
+            machine.stop_dsl(cmd[0], out + err)
         if killed:
             err = (err + "\nhard timeout").strip()
         outputs = dict(re.findall(r'Output (\S+) = "(.*)"', out))

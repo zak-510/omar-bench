@@ -112,9 +112,9 @@ def _run_omar(program, inputs):
     except subprocess.TimeoutExpired as e:
         text = lambda x: x.decode(errors="replace") if isinstance(x, bytes) else (x or "")
         rc, out, err = -9, text(e.stdout), "hard timeout"
-        machine.stop_dsl(cmd[0], CFG, out + text(e.stderr))
+        machine.stop_dsl(cmd[0], out + text(e.stderr))
     if rc not in (0, -9):  # a run that ends well ends its own session
-        machine.stop_dsl(cmd[0], CFG, out + err)
+        machine.stop_dsl(cmd[0], out + err)
     outputs = dict(re.findall(r'Output (\S+) = "(.*)"', out))
     RUN_T["secs"] = RUN_T.get("secs", 0) + round(time.time() - t0)
     return {"rc": rc, "outputs": outputs, "stdout": out,

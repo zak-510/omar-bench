@@ -937,6 +937,74 @@ mod tests {
     }
 
     #[test]
+    fn a_chain_is_relayed_to_its_tail_which_alone_may_finish() {
+        let chain = Topology::Chain { n: 4 };
+        let opts = GraphOpts::default();
+        let relay = |to: usize, body: &str| format!("{body} > node {to}");
+        // Node 2 signs off with DONE as it forwards; only the tail's DONE counts.
+        let mut agents = Agents(|_from, to, body: &str| {
+            Some(match to {
+                4 => format!("To: node 4\n<answer>{}</answer>\nDecision: DONE", relay(4, body)),
+                2 => format!("To: node 3\n<answer>{}</answer>\nDecision: DONE", relay(2, body)),
+                k => format!("To: node {}\n<answer>{}</answer>", k + 1, relay(k, body)),
+            })
+        });
+        let out = run(Rules::V2, chain, &opts, "seed", &mut agents).unwrap();
+        assert_eq!((out.end, out.end_node, out.hops), (End::Done, Some(4), 4));
+        assert_eq!(out.output.as_deref(), Some("seed > node 1 > node 2 > node 3 > node 4"));
+        assert!(out.messages[1].notes[0].starts_with("DONE ignored"));
+        // A middle node that says DONE and sends nothing ends nothing: the chain breaks there.
+        let mut agents = Agents(|_from, to, _body: &str| {
+            Some(match to {
+                2 => "<answer>finished</answer>\nDecision: DONE".to_string(),
+                k => format!("To: node {}\n<answer>x</answer>", k + 1),
+            })
+        });
+        let out = run(Rules::V2, chain, &opts, "seed", &mut agents).unwrap();
+        assert_eq!((out.end, out.hops, out.output), (End::Quiet, 2, None));
+        // The tail finishing with a 'To:' line that names no node: under the
+        // original rules the result was mailed nowhere and the run never ended.
+        let tail = |_from, to, _body: &str| {
+            Some(match to {
+                4 => "To: node 5\n<answer>all four</answer>\nDecision: DONE".to_string(),
+                k => format!("To: node {}\n<answer>x</answer>", k + 1),
+            })
+        };
+        let v2 = run(Rules::V2, chain, &opts, "seed", &mut Agents(tail)).unwrap();
+        assert_eq!((v2.end, v2.output.as_deref()), (End::Done, Some("all four")));
+        let v1 = run(Rules::V1, chain, &opts, "seed", &mut Agents(tail)).unwrap();
+        assert_eq!(v1.end, End::Quiet);
+        assert_eq!(v1.reason, "went quiet after 4 deliveries, 1 undeliverable");
+    }
+
+    #[test]
+    fn any_node_of_a_ring_may_stop_it_and_the_cap_bounds_one_that_never_stops() {
+        let ring = Topology::Ring { n: 3, max_hops: 6 };
+        let opts = GraphOpts {
+            max_messages: 6,
+            ..Default::default()
+        };
+        // Passed on forever: cut at two laps.
+        let mut agents = Agents(|_from, to, _body: &str| {
+            Some(format!("To: node {}\n<answer>token</answer>\nDecision: WAIT", to % 3 + 1))
+        });
+        let out = run(Rules::V2, ring, &opts, "token", &mut agents).unwrap();
+        assert_eq!((out.end, out.hops), (End::Fuse, 6));
+        // Node 2 stops it on the second lap.
+        let mut seen = 0;
+        let mut agents = Agents(|_from, to, _body: &str| {
+            seen += 1;
+            Some(if to == 2 && seen > 3 {
+                "<answer>stopped</answer>\nDecision: DONE".to_string()
+            } else {
+                format!("To: node {}\n<answer>token</answer>", to % 3 + 1)
+            })
+        });
+        let out = run(Rules::V2, ring, &opts, "token", &mut agents).unwrap();
+        assert_eq!((out.end, out.end_node, out.hops), (End::Done, Some(2), 5));
+    }
+
+    #[test]
     fn a_replay_retraces_a_recorded_run_and_reports_where_rules_part_ways() {
         let finish = |heard| match heard {
             1 => "Decision: WAIT".to_string(),

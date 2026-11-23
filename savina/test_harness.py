@@ -327,6 +327,68 @@ esac
         assert open(os.path.join(tmp, "stopped")).read().split() == ["calm-otter"] * 6
 
 
+def test_the_agent_sweep_when_the_runner_fails_to_start_or_has_to_be_killed():
+    """The agent arm's retries and its last resort, with a script standing in
+    for the runner on a live tier: it fails to start, runs, or hangs."""
+    import csv
+    with tempfile.TemporaryDirectory() as tmp:
+        stand_in = os.path.join(tmp, "omar-mass")
+        with open(stand_in, "w") as f:
+            f.write(f"""#!{sys.executable}
+import json, os, sys, time
+if sys.argv[1] == "teardown":
+    sys.exit(0)
+lines = open("{tmp}/script").read().split()
+open("{tmp}/script", "w").write(" ".join(lines[1:]))
+spec = sys.argv[sys.argv.index("--spec") + 1]
+if lines[0] == "no-start":
+    sys.exit("Error: Agents never became ready after 4 attempts: mass12ab-actor-3")
+if lines[0] == "hang":
+    journal = "{tmp}/ab12.jsonl"
+    with open(journal, "w") as j:
+        j.write(json.dumps({{"from": 0, "to": 6, "body": "start: run the transfers", "reply": "To: node 3\\n<answer>transfer T1: pay $700 to account 2</answer>"}}) + "\\n")
+        j.write(json.dumps({{"from": 6, "to": 3, "body": "transfer T1: pay $700 to account 2", "reply": None}}) + "\\n")
+    print(f"[mass] graph run ab12 ready; results under {tmp}/runs/ab12; journal {{journal}}", file=sys.stderr, flush=True)
+    time.sleep(120)
+os.execv("{BIN}", ["{BIN}", "simulate", "--spec", spec, "--max-messages", "400", "--agents",
+                   "{sys.executable} {os.path.join(HERE, 'mock_agents.py')} banking"])
+""")
+        os.chmod(stand_in, 0o755)
+        # The sweep itself, with its waits shortened: a 1 s trial, stopped 1 s past its limit, killed 1 s later.
+        fast = open(os.path.join(HERE, "sweep.py")).read()
+        for old, new in (("GRACE = 120\nKILL_AFTER = 300", "GRACE = 1\nKILL_AFTER = 1"), ("time.sleep(30)", "time.sleep(0)"),
+                         ("HERE = os.path.dirname(os.path.abspath(__file__))", f"HERE = {HERE!r}")):
+            assert old in fast, old
+            fast = fast.replace(old, new)
+        open(os.path.join(tmp, "sweep.py"), "w").write(fast)
+
+        def sweep(trials, *script):
+            open(os.path.join(tmp, "script"), "w").write(" ".join(script))
+            env = dict(os.environ, RESULTS_DIR=tmp, OMAR_MASS_BIN=stand_in, VOID_FILE=os.path.join(tmp, "void"))
+            out = subprocess.run([sys.executable, os.path.join(tmp, "sweep.py"), "--bench", "banking", "--arm", "agent",
+                                  "--tier", "haiku55", "--trials", str(trials), "--timeout", "1"],
+                                 env=env, capture_output=True, text=True)
+            assert out.returncode == 0, out.stderr[-400:]
+            return list(csv.DictReader(open(os.path.join(tmp, "savina-banking-claude-haiku-5-5-agent.csv"))))[-1]
+
+        # Agents that do not start: the run is tried again, and the failed attempt is logged.
+        row = sweep(1, "no-start", "ok")
+        assert (row["success"], row["cause"], row["attempts"], row["deliveries"]) == ("True", "success", "2", "95"), row
+        attempts = list(csv.DictReader(open(os.path.join(tmp, "savina-banking-claude-haiku-5-5-agent-attempts.csv"))))
+        assert len(attempts) == 1 and "never became ready" in attempts[0]["stderr"], attempts
+        # Three times running: that is the trial's outcome, a runtime failure, which counts.
+        row = sweep(2, "no-start", "no-start", "no-start")
+        assert (row["success"], row["cause"], row["reason"], row["attempts"]) == ("False", "runtime", "no result", "3"), row
+        # A runner that does not stop at the time limit is killed; its journal is its record.
+        row = sweep(3, "hang", "ok")
+        assert (row["success"], row["cause"], row["end"], row["deliveries"], row["attempts"]) == \
+            ("False", "runtime", "killed", "1", "1"), row
+        log = [json.loads(l) for l in open(os.path.join(tmp, "savina-banking-claude-haiku-5-5-agent.jsonl"))][-1]
+        assert len(log["messages"]) == 2 and log["messages"][1]["reply"] is None, log
+        # None of the three is voided: each is an outcome of the arm.
+        assert not os.path.exists(os.path.join(tmp, "void"))
+
+
 def test_a_trial_the_scorer_cannot_read_is_kept_and_voided_not_lost():
     import csv
     with tempfile.TemporaryDirectory() as tmp:

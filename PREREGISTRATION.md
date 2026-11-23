@@ -717,11 +717,14 @@ Before the run, at the tagged commit: the no-model tests on one of the four
 machines (the runner's 119 tests, the scorer, harness, probe-sweep and
 scheduler tests, and the `dsl` arm on OMAR's stub backend); pilot trials of
 Banking, Philosophers and BoundedBuffer in both arms through the scheduler,
-CODEX_PILOTS; and a run whose sweep and runner were killed mid-trial, whose
-six agents, each found running in its own folder, the clearing of the
+all six successes; and a run whose sweep and runner were killed mid-trial,
+whose six agents, each found running in its own folder, the clearing of the
 machine ended one at a time.
 
 The run: Philosophers, Banking, BoundedBuffer and Philosophers-90, both
 arms, each machine taking every fourth pick of one shuffled schedule,
 stopping at 2026-11-25 00:00 UTC or at 98% of the week's Codex use,
-whichever comes first. CODEX_WEEK
+whichever comes first. That use stood at 7% when the run started, at 22:40
+UTC. By what the `prereg-v8` trials used, the rest of the week does not
+cover every planned trial: each cell is reported at the n it reaches, and
+one short of its planned n is called underpowered.

@@ -699,3 +699,29 @@ voided for their model each show their own five or six agents, all on
 cleared: Philosophers, Banking, BoundedBuffer, scatter-gather and missing
 workers, both arms, each machine taking every third pick of one shuffled
 schedule, stopping at 2026-11-25 00:00 UTC.
+
+*Second run under this tag* (added 2026-11-23, before it started):
+`gpt-6.1-sol` on the four machines that had been running it under
+`prereg-v8`. That run was stopped by hand at 22:12 UTC on 2026-11-23, six
+hours in, so that Codex is measured under the same tag as Claude. Its 122
+trials, all of them successes in both arms, are published under `prereg-v8`
+and are not pooled with this tag's.
+
+For Codex this tag differs from `prereg-v8` in two things: each `agent`-arm
+agent starts in an empty folder of its own, as each `dsl`-arm agent always
+did, and a run's agents are ended one at a time. Codex keeps no record of
+use that the harness reads, so the token and cost columns of its trials are
+empty (Analysis says what is reported for Codex).
+
+Before the run, at the tagged commit: the no-model tests on one of the four
+machines (the runner's 119 tests, the scorer, harness, probe-sweep and
+scheduler tests, and the `dsl` arm on OMAR's stub backend); pilot trials of
+Banking, Philosophers and BoundedBuffer in both arms through the scheduler,
+CODEX_PILOTS; and a run whose sweep and runner were killed mid-trial, whose
+six agents, each found running in its own folder, the clearing of the
+machine ended one at a time.
+
+The run: Philosophers, Banking, BoundedBuffer and Philosophers-90, both
+arms, each machine taking every fourth pick of one shuffled schedule,
+stopping at 2026-11-25 00:00 UTC or at 98% of the week's Codex use,
+whichever comes first. CODEX_WEEK

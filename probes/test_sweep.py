@@ -42,7 +42,8 @@ else:
     folders = [f"/somewhere/empty/agents/mass12ab-node-{{k}}" for k in (5, 6)]
     model = "claude-haiku-5-5" if fail == 1 else "claude-sonnet-5-5"
     use = {{"inputTokens": 3, "outputTokens": 40, "cacheReadInputTokens": 700, "cacheCreationInputTokens": 20, "costUSD": 0.004}}
-    json.dump({{"projects": {{f: {{"lastModelUsage": {{model: use}}}} for f in folders}}}}, open(os.environ["HOME"] + "/.claude.json", "w"))
+    json.dump({{"projects": {{f: {{"lastModelUsage": {{model: use}}, "lastStartTime": int(time.time() * 1000)}} for f in folders}}}},
+              open(os.environ["HOME"] + "/.claude.json", "w"))
     out = dict(base, hops=6, completed=True, end="done", end_node=6, reason="done by node 6, 6 deliveries", output="144",
                folders=folders)
 print(json.dumps(out))

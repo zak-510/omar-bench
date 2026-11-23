@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import schedule as S  # noqa: E402
@@ -191,25 +192,36 @@ assert S.machine.trouble(end="no-reply", evidence="❯ ") == "runtime"
 assert S.machine.trouble(end="deadline", silent_secs=30) == "" and S.machine.trouble(end="done") == ""
 print("leftover agents and provider phrases: told apart")
 
-# What a trial's agents used, read from the agent CLI's own per-folder record.
+# What a trial's agents used, read from the agent CLI's own per-folder record:
+# only the records of sessions that started during the trial are the trial's.
 os.environ["HOME"] = tmp
+began = time.time() - 60
 use = lambda out: {"inputTokens": 5, "outputTokens": out, "cacheReadInputTokens": 900, "cacheCreationInputTokens": 40, "costUSD": 0.02}
+record = lambda model, out, started: {"lastModelUsage": {model: use(out)}, "lastStartTime": int(started * 1000), "lastSessionId": "id"}
+session = tmp + "/.omar/sessions/calm-otter/workspace-history/"
 json.dump({"projects": {
-    "/wd/agents/mass12ab-actor-1": {"lastModelUsage": {"claude-haiku-5-5": use(100)}},
-    "/wd/agents/mass12ab-actor-2": {"lastModelUsage": {"claude-haiku-5-5": use(300)}},
-    "/wd/agents/mass12ab-actor-3": {"lastCost": 0},                      # never called the model
-    "/wd/agents/massffff-actor-1": {"lastModelUsage": {"claude-haiku-5-5": use(999)}},   # another trial's
-    tmp + "/.omar/sessions/calm-otter/workspace-history/1/repository.git": {"lastModelUsage": {"claude-sonnet-5-5": use(7)}},
+    "/wd/agents/mass12ab-actor-1": record("claude-haiku-5-5", 100, began + 5),
+    "/wd/agents/mass12ab-actor-2": record("claude-haiku-5-5", 300, began + 6),
+    "/wd/agents/mass12ab-actor-3": {"lastGracefulShutdown": False},                # ended before it wrote its record
+    "/wd/agents/massffff-actor-1": record("claude-haiku-5-5", 999, began + 7),      # another trial's folder
+    session + "new/repository.git": record("claude-haiku-5-5", 7, began + 5),
+    session + "old/repository.git": record("claude-sonnet-5-5", 5000, began - 3600),  # an earlier run, same session name
 }}, open(os.path.join(tmp, ".claude.json"), "w"))
 folders = [f"/wd/agents/mass12ab-actor-{i}" for i in (1, 2, 3)]
-used, agents = S.machine.usage(folders, settle=2)
+used, detail = S.machine.usage(folders, since=began, settle=2)
 assert used == {"tokens_in": 10, "tokens_out": 400, "tokens_cache_read": 1800, "tokens_cache_write": 80,
                 "cost_usd": 0.04, "models": "claude-haiku-5-5", "metered": "2/3"}, used
-assert len(agents) == 3
-used, _ = S.machine.usage(sessions=["calm-otter"], settle=2)
-assert (used["models"], used["tokens_out"], used["metered"]) == ("claude-sonnet-5-5", 7, "1/1"), used
-assert S.machine.usage(["/nowhere"], settle=1)[0] == {k: "" for k in S.machine.USAGE}
-print("token use: read per agent, per trial, with the model it ran on")
+assert [a["folder"][-7:] for a in detail["agents"]] == ["actor-1", "actor-2"] and detail["without_record"] == 1, detail
+# OMAR used this session name before: the earlier run's agents are not this trial's.
+used, detail = S.machine.usage(sessions=["calm-otter"], since=began, expect=1, settle=2)
+assert (used["models"], used["tokens_out"], used["metered"]) == ("claude-haiku-5-5", 7, "1/1"), used
+assert detail["earlier_records"] == 1 and len(detail["agents"]) == 1, detail
+# One agent short of the five a dsl program has.
+assert S.machine.usage(sessions=["calm-otter"], since=began, expect=5, settle=1)[0]["metered"] == "1/5"
+# A trial that started after every record: none of them is its own.
+used, detail = S.machine.usage(folders, since=began + 3600, settle=1)
+assert used == {**{k: "" for k in S.machine.USAGE}, "metered": "0/3"} and detail["earlier_records"] == 2, (used, detail)
+print("token use: read per agent, per trial, with the model it ran on; earlier runs' records left out")
 
 # The real lock: held by one, refused to the next, free again once released.
 a = real_lock("test-lock")

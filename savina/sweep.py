@@ -19,8 +19,8 @@ the scorer failed on, is named in $VOID_FILE, for the scheduler to list and
 run again.
 
 Each row also carries what the trial's agents used, as their CLI recorded it
-(run/machine.py, `usage`): tokens, their cost at list price, and the models
-they ran on. A trial any of whose agents ran on another model than the tier's
+(run/machine.py, `usage`): tokens, the cost the CLI worked out for them, and
+the models they ran on. A trial any of whose agents ran on another model than the tier's
 is voided the same way: it is not a trial of this study.
 
 Run by hand, a sweep takes the machine's lock like a scheduler, since it
@@ -42,6 +42,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "run"))
 import check  # noqa: E402
 import machine  # noqa: E402
+import spec  # noqa: E402
 import spec  # noqa: E402
 
 
@@ -226,9 +227,10 @@ def main():
                 raw, folders = {"outputs": outputs}, []
         finally:
             machine.clear()
-        # Only Claude Code keeps the record this reads.
-        used, raw["usage"] = (machine.usage(folders, sessions) if BACKEND == "Claude" and (folders or sessions)
-                              else ({}, []))
+        # Only Claude Code keeps the record this reads. The dsl arm's programs
+        # have one agent for each of spec.N workers: the coordinator is the runtime.
+        used, raw["usage"] = (machine.usage(folders, sessions, since=t0, expect=0 if ARM == "agent" else spec.N)
+                              if BACKEND == "Claude" and (folders or sessions) else ({}, {}))
         # The record is kept before it is scored, so that a trial the scorer
         # cannot read is still there to be read.
         with open(RAW, "a") as f:

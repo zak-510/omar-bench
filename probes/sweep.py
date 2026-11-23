@@ -173,6 +173,7 @@ def run_once(args, per_wave_timeout, hard_timeout):
     """One invocation. Always returns rc + stderr so a failure stays diagnosable."""
     t0 = time.time()
     d = _run_once(args, per_wave_timeout, hard_timeout)
+    d["t0"] = t0
     d["started_at"] = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(t0))
     d["secs"] = round(time.time() - t0)
     return d
@@ -240,7 +241,8 @@ def log(family, n, param, trial, d, metric):
         end="deadline" if end == "killed" else end, silent_secs=d.get("silent_secs"), evidence=evidence,
         rc=0 if d.get("rc") in (0, "timeout") else d.get("rc"), stderr=d.get("stderr", ""))
     # What the run's agents used, and on which model (only Claude Code keeps the record).
-    used, agents = (machine.usage(d.get("folders") or []) if BACKEND == "claude" and d.get("folders") else ({}, []))
+    used, agents = (machine.usage(d.get("folders") or [], since=d.get("t0", 0))
+                    if BACKEND == "claude" and d.get("folders") else ({}, {}))
     if used.get("models") and used["models"] != MODEL:
         trouble, evidence = "harness", f"agents ran on {used['models']}, not {MODEL}"
     row = {"model": MODEL, "arm": ARM, "family": family, "n": n, "param": param, "trial": trial,

@@ -287,13 +287,18 @@ def test_the_dsl_sweep_with_a_stand_in_runtime():
 [ "$1" = down ] && {{ echo "$3" >> {tmp}/stopped; exit 0; }}
 mode=$(head -1 {tmp}/script); sed -i.bak 1d {tmp}/script
 echo "Started session calm-otter; omar down -s calm-otter stops it" >&2
-# Claude Code's own record of what each of the run's five agents used, when a test names their model.
+# Claude Code's own record of what each of the run's five agents used, when a test names their model:
+# beside the records an earlier run left under the same session name, on another model.
 [ -f {tmp}/ran-on ] && {sys.executable} -c "
-import json, os
-home = os.environ['HOME']
+import json, os, time
+root = os.environ['HOME'] + '/.omar/sessions/calm-otter/workspace-history/'
 use = {{'inputTokens': 10, 'outputTokens': 100, 'cacheReadInputTokens': 1000, 'cacheCreationInputTokens': 50, 'costUSD': 0.01}}
-json.dump({{'projects': {{f'{{home}}/.omar/sessions/calm-otter/workspace-history/{{i}}/repository.git':
-          {{'lastModelUsage': {{open('{tmp}/ran-on').read().strip(): use}}}} for i in range(5)}}}}, open(f'{{home}}/.claude.json', 'w'))"
+now = int(time.time() * 1000)
+records = {{f'{{root}}{{i}}/repository.git': {{'lastModelUsage': {{open('{tmp}/ran-on').read().strip(): use}}, 'lastStartTime': now}}
+           for i in range(5)}}
+records.update({{f'{{root}}earlier-{{i}}/repository.git': {{'lastModelUsage': {{'claude-opus-5-5': use}}, 'lastStartTime': now - 3600000}}
+                for i in range(5)}})
+json.dump({{'projects': records}}, open(os.environ['HOME'] + '/.claude.json', 'w'))"
 case "$mode" in
   ok) echo 'Output m.log = "{trace}"'; echo "Run completed"; exit 0 ;;
   undelivered) echo "Error: failed to deliver the task to p1.agent: Resource temporarily unavailable (os error 11)" >&2; exit 1 ;;
@@ -340,6 +345,11 @@ esac
             ("True", "success", "claude-haiku-5-5", "5/5"), row
         assert (row["tokens_in"], row["tokens_out"], row["tokens_cache_read"], row["tokens_cache_write"],
                 row["cost_usd"]) == ("50", "500", "5000", "250", "0.05"), row
+        # OMAR had used that session name before: the earlier run's five agents, on another model, are in the
+        # same file under the same name. They are not this trial's, and it is not voided for them.
+        kept = json.loads(open(os.path.join(tmp, "savina-boundedbuffer-claude-haiku-5-5-dsl.jsonl")).readlines()[-1])["usage"]
+        assert len(kept["agents"]) == 5 and kept["earlier_records"] == 5, kept
+        assert not any("harness" in line for line in open(os.path.join(tmp, "void"))), "voided"
         # A trial whose agents ran on another model is not this model's trial, whatever it scored:
         # it is voided and run again. (This is how the dsl arm once ran on a larger model unnoticed.)
         os.remove(os.path.join(tmp, "void"))

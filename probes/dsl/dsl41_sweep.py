@@ -64,8 +64,8 @@ def log(family, n, param, trial, row):
     trouble = machine.trouble(rc=row.get("rc"), stderr=row.get("stderr", ""))
     why = "provider: " + row.get("stderr", "")[-200:]
     # What the run's agents used, and on which model (only Claude Code keeps the record).
-    sessions = RUN_T.pop("sessions", [])
-    used, _ = machine.usage(sessions=sessions) if BACKEND == "Claude" and sessions else ({}, [])
+    sessions, since = RUN_T.pop("sessions", []), RUN_T.pop("t0", 0)
+    used, _ = machine.usage(sessions=sessions, since=since) if BACKEND == "Claude" and sessions else ({}, {})
     if used.get("models") and used["models"] != MODEL:
         trouble, why = "harness", f"harness: agents ran on {used['models']}, not {MODEL}"
     row = {**row, **used}
@@ -110,6 +110,7 @@ def _run_omar(program, inputs):
         cmd += ["--input", f"{k}={v}"]
     env = dict(os.environ, OMARC_BIN=os.path.join(LOCAL, "bin", "omarc"))
     t0 = time.time()
+    RUN_T.setdefault("t0", t0)
     RUN_T.setdefault("started_at", time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(t0)))
     try:
         p = subprocess.run(cmd, capture_output=True, text=True,

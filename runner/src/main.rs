@@ -772,6 +772,12 @@ fn teardown(run: Option<String>) -> Result<()> {
             Ok(()) => println!("killed {name}"),
             Err(err) => println!("failed to kill {name}: {err}"),
         }
+        // One at a time, each gone before the next is ended: an agent with a
+        // folder of its own runs in one named after it.
+        runner::wait_until_gone(
+            |cwd| cwd.file_name().is_some_and(|folder| folder == name.as_str()),
+            runner::EXIT_LIMIT,
+        );
     }
     for (id, name) in mcp.list_projects()? {
         if project_prefixes.iter().any(|p| name.starts_with(p)) && mcp.complete_project(id).is_ok()

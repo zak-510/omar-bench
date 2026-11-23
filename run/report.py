@@ -123,15 +123,20 @@ def savina(roots):
     tokens(cells, planned)
 
 
+def every_agent_metered(row):
+    have, _, of = (row.get("metered") or "").partition("/")
+    return have.isdigit() and of.isdigit() and int(have) >= int(of) > 0
+
+
 def tokens(cells, planned):
     """What a trial's agents used, as their CLI recorded it, over the counted
     trials whose every agent had a record. Cached input is most of what an
-    agent reads, so it is shown apart; cost is at list price."""
+    agent reads, so it is shown apart; cost is the CLI's own figure."""
     rows = []
     for (model, bench, arm), trials in sorted(cells.items()):
         n_plan = planned.get((bench, arm), 0)
         counted = sorted(trials, key=lambda r: r["started_at"])[:n_plan or None]
-        metered = [r for r in counted if r.get("metered") and r["metered"].split("/")[0] == r["metered"].split("/")[1]]
+        metered = [r for r in counted if every_agent_metered(r)]
         if not metered:
             continue
         mean = lambda key: sum(float(r[key] or 0) for r in metered) / len(metered)
@@ -140,7 +145,7 @@ def tokens(cells, planned):
                      " ".join(sorted({r["models"] for r in metered}))))
     if not rows:
         return
-    print("\nTOKENS AND COST per trial (mean over the counted trials whose every agent was metered; cost at list price)")
+    print("\nTOKENS AND COST per trial (mean over the counted trials whose every agent was metered; cost as the CLI records it)")
     print(f"{'model':18} {'benchmark':16} {'arm':6} {'metered':>9} {'output':>9} {'input':>8} {'cache write':>12} "
           f"{'cache read':>12} {'cost $':>8}  ran on")
     for model, bench, arm, n, of, out, inp, cw, cr, cost, models in rows:

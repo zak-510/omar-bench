@@ -16,7 +16,7 @@ use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 /// Budget per readiness attempt: cloud agents ready in seconds; a local model
@@ -1215,6 +1215,11 @@ impl Runner {
             if let Err(err) = self.mcp.kill_agent(&name) {
                 errors.push(format!("{name}: {err}"));
             }
+            // One at a time, each gone before the next is ended (wait_until_gone).
+            if let Some(folder) = self.agent_folder(&name) {
+                let folder = folder.canonicalize().unwrap_or(folder);
+                wait_until_gone(|cwd| cwd == folder, EXIT_LIMIT);
+            }
         }
         if let Err(err) = self.mcp.complete_project(self.project_id) {
             errors.push(format!("complete_project: {err}"));
@@ -1234,6 +1239,42 @@ impl Drop for Runner {
             let _ = self.teardown();
         }
     }
+}
+
+/// How long an ended agent's processes get to exit before the next is ended.
+pub const EXIT_LIMIT: Duration = Duration::from_secs(10);
+
+/// Wait until no process is left running in a folder that `mine` picks out,
+/// and say whether that came before `limit`.
+///
+/// Agents are ended one at a time, each gone before the next is ended. An
+/// agent's CLI writes what its session used as it exits, into one file that
+/// every session on the machine shares, and sessions that exit together
+/// overwrite each other's records: of six ended at once, one record was left.
+/// Each agent has a folder of its own to run in (`--agent-dirs`), so what is
+/// still running there is that agent. Where there is no /proc to look in,
+/// nothing is waited for.
+pub fn wait_until_gone(mine: impl Fn(&Path) -> bool, limit: Duration) -> bool {
+    let running = || {
+        std::fs::read_dir("/proc")
+            .map(|entries| {
+                entries.flatten().any(|entry| {
+                    entry.file_name().to_string_lossy().bytes().all(|b| b.is_ascii_digit())
+                        && std::fs::read_link(entry.path().join("cwd"))
+                            .map(|cwd| mine(&cwd))
+                            .unwrap_or(false)
+                })
+            })
+            .unwrap_or(false)
+    };
+    let start = Instant::now();
+    while running() {
+        if start.elapsed() >= limit {
+            return false;
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    true
 }
 
 /// The transport from the delivery loop to live agents: each request goes
@@ -1334,6 +1375,31 @@ fn charter(name: &str, spec: &SessionSpec, run_dir: &RunDir) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// An agent is waited for until what runs in its folder has exited, and
+    /// no longer than the limit.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn waits_for_what_runs_in_a_folder_to_exit() {
+        let dir = std::env::temp_dir().join(format!("omar-mass-gone-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let folder = dir.canonicalize().unwrap();
+        let empty = Instant::now();
+        assert!(wait_until_gone(|cwd| cwd == folder, Duration::from_secs(5)));
+        assert!(empty.elapsed() < Duration::from_secs(1));
+        let mut child = std::process::Command::new("sleep")
+            .arg("2")
+            .current_dir(&folder)
+            .spawn()
+            .unwrap();
+        let start = Instant::now();
+        assert!(!wait_until_gone(|cwd| cwd == folder, Duration::from_millis(300)));
+        assert!(wait_until_gone(|cwd| cwd == folder, Duration::from_secs(10)));
+        assert!(start.elapsed() >= Duration::from_millis(1500));
+        assert!(start.elapsed() < Duration::from_secs(8));
+        let _ = child.wait();
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn cap_sessions_limits_physical_pool() {

@@ -78,20 +78,43 @@ def stale_agents():
 
 
 def clear():
-    """End every agent an earlier trial left behind. Returns how many agent
-    sessions were found and how many are left."""
+    """End every agent an earlier trial left behind, one at a time. Returns
+    how many agent sessions were found and how many are left."""
     found = sessions()
     if found:
         runner = os.environ.get("OMAR_MASS_BIN", os.path.join(ROOT, "runner", "target", "release", "omar-mass"))
         if os.path.exists(runner):
             _out([runner, "teardown"], timeout=180)  # through OMAR, so its own records stay right
         for name in sessions():
-            _out(["tmux", "kill-session", "-t", name])
+            _end(name)
         for _ in range(10):
             if not sessions():
                 break
             time.sleep(1)
     return len(found), len(sessions())
+
+
+def _end(session, limit=10):
+    """End one agent's tmux session and wait for its processes to exit, so
+    that agents are ended one at a time. An agent's CLI writes what its
+    session used as it exits, into one file that every session on the machine
+    shares, and sessions that exit together overwrite each other's records
+    (`usage`, below)."""
+    table = lambda columns: [line.split() for line in _out(["ps", "-axo", columns]).splitlines()]
+    family = set(_out(["tmux", "list-panes", "-s", "-t", session, "-F", "#{pane_pid}"]).split())
+    parents = dict(row for row in table("pid=,ppid=") if len(row) == 2)
+    while True:  # the session's processes, and all they started
+        more = {pid for pid, parent in parents.items() if parent in family} - family
+        if not more:
+            break
+        family |= more
+    _out(["tmux", "kill-session", "-t", session])
+    until = time.time() + limit
+    while time.time() < until:
+        # A process that has exited and not yet been collected is gone, for this.
+        if not any(row[0] in family and not row[1].startswith("Z") for row in table("pid=,stat=") if len(row) == 2):
+            break
+        time.sleep(0.1)
 
 
 def workdir(tier):
@@ -108,35 +131,49 @@ def workdir(tier):
 USAGE = ("tokens_in", "tokens_out", "tokens_cache_read", "tokens_cache_write", "cost_usd", "models", "metered")
 
 
-def usage(folders=(), sessions=(), settle=12):
+def usage(folders=(), sessions=(), since=0.0, expect=0, settle=6):
     """What the agents of one trial used, as their CLI recorded it: tokens in
-    and out, cached tokens read and written, the cost of those at list price,
-    and the models they ran on. Claude Code keeps these per folder for the last
-    session run there, so they can be read for agents that each had a folder
-    of their own: the agent arm's (`folders`, from the runner) and the dsl
-    arm's (`sessions`, the names OMAR printed, whose agents it starts under
-    ~/.omar/sessions/NAME/). `metered` is how many agents had a record, of
-    how many there were. Codex keeps no such record here: its columns stay empty."""
-    path = os.path.join(os.path.expanduser("~"), ".claude.json")
-    roots = [os.path.join(os.path.expanduser("~"), ".omar", "sessions", name) + os.sep for name in sessions]
-    found, last = {}, None
-    for _ in range(settle):  # the records are written as the agents exit: read once they stop changing
+    and out, cached tokens read and written, the cost the CLI worked out for
+    them, and the models they ran on.
+
+    Claude Code keeps these per folder, for the last session run there, and
+    writes them as that session exits. So they can be read for agents that
+    each had a folder of their own: the agent arm's (`folders`, from the
+    runner) and the dsl arm's (`sessions`, the names OMAR printed, whose
+    agents it starts under ~/.omar/sessions/NAME/). OMAR uses a session name
+    again in time, and the records of earlier runs stay in the file: a record
+    is this trial's only if its session started at or after `since`, the
+    trial's start.
+
+    `metered` is how many agents had such a record, of how many there were
+    (`expect`, or the agents' folders, or else as many as were found). Codex
+    keeps no such record here: its columns stay empty.
+
+    Returns the row's columns, and the records themselves for the raw log."""
+    home = os.path.expanduser("~")
+    roots = tuple(os.path.join(home, ".omar", "sessions", name) + os.sep for name in sessions)
+    want = expect or len(folders)
+    mine, earlier, unwritten, last = {}, 0, 0, None
+    for _ in range(settle):
         try:
-            projects = json.load(open(path)).get("projects", {})
-        except (OSError, ValueError):
+            projects = json.load(open(os.path.join(home, ".claude.json"))).get("projects", {})
+        except (OSError, ValueError):  # being rewritten as it is read
             projects = {}
-        found = {k: v for k, v in projects.items() if k in folders or k.startswith(tuple(roots) or ("\0",))}
-        state = json.dumps(found, sort_keys=True)
-        if found and state == last:
+        found = {k: v for k, v in projects.items() if k in folders or (roots and k.startswith(roots))}
+        started = lambda record: record.get("lastStartTime", 0) / 1000
+        mine = {k: v for k, v in found.items() if started(v) and started(v) >= since}
+        earlier = sum(1 for v in found.values() if started(v) and started(v) < since)
+        unwritten = sum(1 for v in found.values() if not started(v))
+        # Every agent has exited by now. Read again only if a record is missing
+        # or, where the number of agents is not known, until two readings agree.
+        if mine and (len(mine) >= want if want else sorted(mine) == last):
             break
-        last = state
+        last = sorted(mine)
         time.sleep(1)
     total = {"tokens_in": 0, "tokens_out": 0, "tokens_cache_read": 0, "tokens_cache_write": 0, "cost_usd": 0.0}
-    models, metered, agents = set(), 0, []
-    for folder, record in sorted(found.items()):
+    models, agents = set(), []
+    for folder, record in sorted(mine.items()):
         by_model = record.get("lastModelUsage") or {}
-        if by_model:
-            metered += 1
         for model, u in by_model.items():
             models.add(model)
             total["tokens_in"] += u.get("inputTokens", 0)
@@ -144,12 +181,14 @@ def usage(folders=(), sessions=(), settle=12):
             total["tokens_cache_read"] += u.get("cacheReadInputTokens", 0)
             total["tokens_cache_write"] += u.get("cacheCreationInputTokens", 0)
             total["cost_usd"] += u.get("costUSD", 0.0)
-        agents.append({"folder": folder, "usage": by_model})
-    if not metered:
-        return {key: "" for key in USAGE}, agents
+        agents.append({"folder": folder, "session": record.get("lastSessionId", ""),
+                       "started": record.get("lastStartTime"), "usage": by_model})
+    count = want or len(mine) + unwritten
+    detail = {"agents": agents, "earlier_records": earlier, "without_record": unwritten}
+    if not mine:
+        return {**{key: "" for key in USAGE}, "metered": f"0/{count}" if count else ""}, detail
     total["cost_usd"] = round(total["cost_usd"], 6)
-    count = len(folders) if folders else len(found)
-    return {**total, "models": " ".join(sorted(models)), "metered": f"{metered}/{count}"}, agents
+    return {**total, "models": " ".join(sorted(models)), "metered": f"{len(mine)}/{count}"}, detail
 
 
 def stop_dsl(omar_dsl, printed):

@@ -355,6 +355,16 @@ esac
         assert report.returncode == 0, report.stderr[-400:]
         line = next(l for l in report.stdout.split("TOKENS AND COST")[1].splitlines() if l.startswith("claude-haiku-5-5"))
         assert line.split()[3:9] == ["1/1", "500", "50", "250", "5,000", "0.050"], line
+        # With both arms metered, it also says how many times the dsl arm's the agent arm used.
+        with open(os.path.join(tmp, "savina-boundedbuffer-claude-haiku-5-5-agent.csv"), "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(row))
+            w.writeheader()
+            w.writerow({**row, "arm": "agent", "trial": "1", "success": "True", "cause": "success", "reason": "",
+                        "models": "claude-haiku-5-5", "tokens_out": "4000", "cost_usd": "1.25"})
+        report = subprocess.run([sys.executable, os.path.join(os.path.dirname(HERE), "run", "report.py"), tmp],
+                                capture_output=True, text=True)
+        assert report.returncode == 0, report.stderr[-400:]
+        assert "agent arm over dsl arm: 8.0x the output tokens, 25.0x the cost" in report.stdout, report.stdout[-600:]
 
 
 def test_the_agent_sweep_when_the_runner_fails_to_start_or_has_to_be_killed():

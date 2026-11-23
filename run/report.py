@@ -146,12 +146,12 @@ def tokens(cells, planned):
     for model, bench, arm, n, of, out, inp, cw, cr, cost, models in rows:
         print(f"{model:18} {bench:16} {arm:6} {f'{n}/{of}':>9} {out:>9,.0f} {inp:>8,.0f} {cw:>12,.0f} {cr:>12,.0f} "
               f"{cost:>8.3f}  {models}")
-    by = {(m, b, a): r for m, b, a, *r in rows}
-    for (model, bench, arm), r in sorted(by.items()):
-        other = by.get((model, bench, "dsl"))
-        if arm == "agent" and other and other[7]:
-            print(f"{'':18} {bench:16} agent arm over dsl arm: {r[2] / other[2]:.1f}x the output tokens, "
-                  f"{r[7] / other[7]:.1f}x the cost")
+    by = {(model, bench, arm): (out, cost) for model, bench, arm, _, _, out, _, _, _, cost, _ in rows}
+    for (model, bench, arm), (out, cost) in sorted(by.items()):
+        dsl_out, dsl_cost = by.get((model, bench, "dsl"), (0, 0))
+        if arm == "agent" and dsl_out and dsl_cost:
+            print(f"{'':18} {bench:16} agent arm over dsl arm: {out / dsl_out:.1f}x the output tokens, "
+                  f"{cost / dsl_cost:.1f}x the cost")
 
 
 EXPECT = {("all", f): "no" for f in "123"}

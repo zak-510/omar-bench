@@ -191,8 +191,27 @@ assert S.machine.trouble(end="no-reply", evidence="❯ ") == "runtime"
 assert S.machine.trouble(end="deadline", silent_secs=30) == "" and S.machine.trouble(end="done") == ""
 print("leftover agents and provider phrases: told apart")
 
-# The real lock: held by one, refused to the next, free again once released.
+# What a trial's agents used, read from the agent CLI's own per-folder record.
 os.environ["HOME"] = tmp
+use = lambda out: {"inputTokens": 5, "outputTokens": out, "cacheReadInputTokens": 900, "cacheCreationInputTokens": 40, "costUSD": 0.02}
+json.dump({"projects": {
+    "/wd/agents/mass12ab-actor-1": {"lastModelUsage": {"claude-haiku-5-5": use(100)}},
+    "/wd/agents/mass12ab-actor-2": {"lastModelUsage": {"claude-haiku-5-5": use(300)}},
+    "/wd/agents/mass12ab-actor-3": {"lastCost": 0},                      # never called the model
+    "/wd/agents/massffff-actor-1": {"lastModelUsage": {"claude-haiku-5-5": use(999)}},   # another trial's
+    tmp + "/.omar/sessions/calm-otter/workspace-history/1/repository.git": {"lastModelUsage": {"claude-sonnet-5-5": use(7)}},
+}}, open(os.path.join(tmp, ".claude.json"), "w"))
+folders = [f"/wd/agents/mass12ab-actor-{i}" for i in (1, 2, 3)]
+used, agents = S.machine.usage(folders, settle=2)
+assert used == {"tokens_in": 10, "tokens_out": 400, "tokens_cache_read": 1800, "tokens_cache_write": 80,
+                "cost_usd": 0.04, "models": "claude-haiku-5-5", "metered": "2/3"}, used
+assert len(agents) == 3
+used, _ = S.machine.usage(sessions=["calm-otter"], settle=2)
+assert (used["models"], used["tokens_out"], used["metered"]) == ("claude-sonnet-5-5", 7, "1/1"), used
+assert S.machine.usage(["/nowhere"], settle=1)[0] == {k: "" for k in S.machine.USAGE}
+print("token use: read per agent, per trial, with the model it ran on")
+
+# The real lock: held by one, refused to the next, free again once released.
 a = real_lock("test-lock")
 assert a and real_lock("test-lock") is None
 a.close()

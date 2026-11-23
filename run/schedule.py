@@ -194,7 +194,7 @@ def main():
         sys.exit(f"{ledger_path} was written by another version; give this run its own folder (--name)")
     manifest(results, tier)
     void_path = os.path.join(results, "void.jsonl")
-    env = dict(os.environ, RESULTS_DIR=results, VOID_FILE=void_path)
+    env = dict(os.environ, RESULTS_DIR=results, VOID_FILE=void_path, OMAR_BENCH_SCHEDULER="1")
     mem = subprocess.Popen(["sh", os.path.join(ROOT, "infra", "memlog.sh"), os.path.join(results, "mem.csv")])
     quota = float(flag("--quota", "98"))
     # Also stop mid-trial if the limit is reached; the interrupted trial is rerun next time.
@@ -290,7 +290,7 @@ def main():
                 argv = ["python3", u.argv[0], "--spawn-window", "6", "--model", model, "--backend", backend,
                         *u.argv[1:], "--trials", str(k), "--hard-timeout", str(u.timeout)]
                 if machine.workdir(tier):
-                    argv += ["--workdir", machine.workdir(tier)]
+                    argv += ["--agent-dirs", os.path.join(machine.workdir(tier), "agents")]
             started = time.time()
             print(f"=== {time.strftime('%H:%M:%S')} {u.name} {u.arm} trial {k}", flush=True)
             rc = subprocess.run(argv, cwd=ROOT, env=env).returncode

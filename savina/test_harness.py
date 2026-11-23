@@ -287,6 +287,13 @@ def test_the_dsl_sweep_with_a_stand_in_runtime():
 [ "$1" = down ] && {{ echo "$3" >> {tmp}/stopped; exit 0; }}
 mode=$(head -1 {tmp}/script); sed -i.bak 1d {tmp}/script
 echo "Started session calm-otter; omar down -s calm-otter stops it" >&2
+# Claude Code's own record of what each of the run's five agents used, when a test names their model.
+[ -f {tmp}/ran-on ] && {sys.executable} -c "
+import json, os
+home = os.environ['HOME']
+use = {{'inputTokens': 10, 'outputTokens': 100, 'cacheReadInputTokens': 1000, 'cacheCreationInputTokens': 50, 'costUSD': 0.01}}
+json.dump({{'projects': {{f'{{home}}/.omar/sessions/calm-otter/workspace-history/{{i}}/repository.git':
+          {{'lastModelUsage': {{open('{tmp}/ran-on').read().strip(): use}}}} for i in range(5)}}}}, open(f'{{home}}/.claude.json', 'w'))"
 case "$mode" in
   ok) echo 'Output m.log = "{trace}"'; echo "Run completed"; exit 0 ;;
   undelivered) echo "Error: failed to deliver the task to p1.agent: Resource temporarily unavailable (os error 11)" >&2; exit 1 ;;
@@ -296,13 +303,13 @@ esac
 """)
         os.chmod(stand_in, 0o755)
 
-        def sweep(trials, *script):
+        def sweep(trials, *script, tier="stub", model="stub"):
             open(os.path.join(tmp, "script"), "w").write("\n".join(script) + "\n")
-            env = dict(os.environ, RESULTS_DIR=tmp, OMAR_LOCAL=tmp, VOID_FILE=os.path.join(tmp, "void"))
+            env = dict(os.environ, RESULTS_DIR=tmp, OMAR_LOCAL=tmp, VOID_FILE=os.path.join(tmp, "void"), HOME=tmp)
             out = subprocess.run([sys.executable, os.path.join(HERE, "sweep.py"), "--bench", "boundedbuffer", "--arm",
-                                  "dsl", "--tier", "stub", "--trials", str(trials)], env=env, capture_output=True, text=True)
+                                  "dsl", "--tier", tier, "--trials", str(trials)], env=env, capture_output=True, text=True)
             assert out.returncode == 0, out.stderr[-400:]
-            return list(csv.DictReader(open(os.path.join(tmp, "savina-boundedbuffer-stub-dsl.csv"))))[-1]
+            return list(csv.DictReader(open(os.path.join(tmp, f"savina-boundedbuffer-{model}-dsl.csv"))))[-1]
 
         row = sweep(1, "ok")
         assert (row["success"], row["cause"], row["attempts"], row["items_done"]) == ("True", "success", "1", "30"), row
@@ -325,6 +332,29 @@ esac
         assert len(void) == 1 and void[0]["trial"] == 5 and void[0]["reason"].startswith("provider:"), void
         # Every run that failed had its session ended by name; the two that finished ended their own.
         assert open(os.path.join(tmp, "stopped")).read().split() == ["calm-otter"] * 6
+        # What the trial's agents used is read back from the agent CLI's own record, with the model they ran on.
+        haiku = dict(tier="haiku55", model="claude-haiku-5-5")
+        open(os.path.join(tmp, "ran-on"), "w").write("claude-haiku-5-5")
+        row = sweep(1, "ok", **haiku)
+        assert (row["success"], row["cause"], row["models"], row["metered"]) == \
+            ("True", "success", "claude-haiku-5-5", "5/5"), row
+        assert (row["tokens_in"], row["tokens_out"], row["tokens_cache_read"], row["tokens_cache_write"],
+                row["cost_usd"]) == ("50", "500", "5000", "250", "0.05"), row
+        # A trial whose agents ran on another model is not this model's trial, whatever it scored:
+        # it is voided and run again. (This is how the dsl arm once ran on a larger model unnoticed.)
+        os.remove(os.path.join(tmp, "void"))
+        open(os.path.join(tmp, "ran-on"), "w").write("claude-sonnet-5-5")
+        row = sweep(2, "ok", **haiku)
+        assert (row["success"], row["cause"]) == ("False", "harness"), row
+        assert row["reason"] == "agents ran on claude-sonnet-5-5, not claude-haiku-5-5", row
+        void = [json.loads(l) for l in open(os.path.join(tmp, "void"))]
+        assert len(void) == 1 and void[0]["reason"].startswith("harness: agents ran on claude-sonnet-5-5"), void
+        # The report gives tokens and cost for the trials that count.
+        report = subprocess.run([sys.executable, os.path.join(os.path.dirname(HERE), "run", "report.py"), tmp],
+                                capture_output=True, text=True)
+        assert report.returncode == 0, report.stderr[-400:]
+        line = next(l for l in report.stdout.split("TOKENS AND COST")[1].splitlines() if l.startswith("claude-haiku-5-5"))
+        assert line.split()[3:9] == ["1/1", "500", "50", "250", "5,000", "0.050"], line
 
 
 def test_the_agent_sweep_when_the_runner_fails_to_start_or_has_to_be_killed():

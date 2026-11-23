@@ -15,11 +15,11 @@ with tempfile.TemporaryDirectory() as tmp:
     stand_in = os.path.join(tmp, "omar-mass")
     with open(stand_in, "w") as f:
         f.write(f"""#!{sys.executable}
-import json, sys, time
+import json, os, sys, time
 if sys.argv[1] == "teardown":
     sys.exit(0)
 arg = lambda name: sys.argv[sys.argv.index(name) + 1]
-assert "--deadline-secs" in sys.argv and arg("--workdir") == "/somewhere/empty"
+assert "--deadline-secs" in sys.argv and arg("--agent-dirs") == "/somewhere/empty/agents"
 fail = int(arg("--fail-count"))
 policy = arg("--gather-question") if "--gather-question" in sys.argv else ""
 mail = [{{"from": 0, "to": w, "body": "q", "reply": "To: node 6\\n<answer>144</answer>", "action": "send 6"}} for w in range(fail + 1, 6)]
@@ -37,14 +37,22 @@ elif "at least 3" in policy and fail == 2:
 elif policy and "all 5" in policy:
     out = dict(base, hops=8, completed=False, end="quiet", reason="went quiet after 8 deliveries", output=None)
 else:
-    out = dict(base, hops=6, completed=True, end="done", end_node=6, reason="done by node 6, 6 deliveries", output="144")
+    # A finished run, with each agent's folder and Claude Code's record of what it used there:
+    # on the tier's model with one worker missing, on another model with three missing.
+    folders = [f"/somewhere/empty/agents/mass12ab-node-{{k}}" for k in (5, 6)]
+    model = "claude-haiku-5-5" if fail == 1 else "claude-sonnet-5-5"
+    use = {{"inputTokens": 3, "outputTokens": 40, "cacheReadInputTokens": 700, "cacheCreationInputTokens": 20, "costUSD": 0.004}}
+    json.dump({{"projects": {{f: {{"lastModelUsage": {{model: use}}}} for f in folders}}}}, open(os.environ["HOME"] + "/.claude.json", "w"))
+    out = dict(base, hops=6, completed=True, end="done", end_node=6, reason="done by node 6, 6 deliveries", output="144",
+               folders=folders)
 print(json.dumps(out))
 """)
     os.chmod(stand_in, 0o755)
-    env = dict(os.environ, RESULTS_DIR=tmp, OMAR_MASS_BIN=stand_in, VOID_FILE=os.path.join(tmp, "void"))
+    env = dict(os.environ, RESULTS_DIR=tmp, OMAR_MASS_BIN=stand_in, VOID_FILE=os.path.join(tmp, "void"), HOME=tmp)
     out = subprocess.run([sys.executable, os.path.join(HERE, "sweep.py"), "--only", "sg-missing", "--trials", "1",
                           "--model", "claude-haiku-5-5", "--backend", "claude", "--hard-timeout", "900",
-                          "--retry-backoff", "0", "--workdir", "/somewhere/empty"], env=env, capture_output=True, text=True)
+                          "--retry-backoff", "0", "--agent-dirs", "/somewhere/empty/agents"],
+                         env=env, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr[-600:]
     rows = {r["param"]: r for r in csv.DictReader(open(os.path.join(tmp, "sweep-claude-haiku-5-5-agent.csv")))}
     assert len(rows) == 7, list(rows)
@@ -64,9 +72,16 @@ print(json.dumps(out))
     assert (unborn["end"], unborn["trouble"], unborn["rc"]) == ("no-result", "runtime", "1"), unborn
     attempts = list(csv.DictReader(open(os.path.join(tmp, "sweep-claude-haiku-5-5-agent-attempts.csv"))))
     assert len(attempts) == 3 and all("never became ready" in a["stderr"] for a in attempts), attempts
-    # Only the provider's failure is named for the scheduler to run its trial again.
+    # What a run's agents used is read back, with the model they ran on.
+    assert (answered["models"], answered["metered"], answered["tokens_out"], answered["cost_usd"]) == \
+        ("claude-haiku-5-5", "2/2", "80", "0.008"), answered
+    # A run whose agents ran on another model is not this model's run.
+    other = rows["policy=none fail=3"]
+    assert other["trouble"] == "harness" and "ran on claude-sonnet-5-5" in other["evidence"], other
+    # Only those two, the provider's failure and the wrong model, are named for the scheduler to run again.
     void = [json.loads(l) for l in open(os.path.join(tmp, "void"))]
-    assert len(void) == 1 and void[0]["trial"] == 1 and void[0]["reason"].startswith("provider:"), void
+    assert sorted(v["reason"].split(":")[0] for v in void) == ["harness", "provider"], void
+    assert all(v["trial"] == 1 for v in void)
     # Every delivery and reply of every run is kept.
     logs = [json.loads(l) for l in open(os.path.join(tmp, "sweep-claude-haiku-5-5-agent.jsonl"))]
     assert len(logs) == 7 and len(logs[0]["messages"]) == 4 and logs[0]["messages"][0]["reply"].startswith("To: node 6")

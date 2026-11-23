@@ -54,7 +54,7 @@ SLUG = "".join(c if c.isalnum() or c in "-_" else "-" for c in MODEL)
 OUT = os.path.join(os.environ.get("RESULTS_DIR", os.path.join(ROOT, "results")),
                    f"sweep-{SLUG}-dsl{'-stub' if STUB else ''}.csv")
 FIELDS = ["model", "arm", "family", "n", "param", "trial", "hops", "completed",
-          "reason", "metric", "rc", "stderr", "output", "started_at", "secs", "trouble"]
+          "reason", "metric", "rc", "stderr", "output", "started_at", "secs", "trouble", *machine.USAGE]
 
 def load_done():
     if not os.path.exists(OUT):
@@ -71,10 +71,16 @@ def log(family, n, param, trial, row):
     # (run/machine.py). A run the provider spoiled is named for the scheduler,
     # which lists its trial and runs it again.
     trouble = machine.trouble(rc=row.get("rc"), stderr=row.get("stderr", ""))
-    if trouble == "provider" and os.environ.get("VOID_FILE"):
+    why = "provider: " + row.get("stderr", "")[-200:]
+    # What the run's agents used, and on which model (only Claude Code keeps the record).
+    sessions = RUN_T.pop("sessions", [])
+    used, _ = machine.usage(sessions=sessions) if BACKEND == "Claude" and sessions else ({}, [])
+    if used.get("models") and used["models"] != MODEL:
+        trouble, why = "harness", f"harness: agents ran on {used['models']}, not {MODEL}"
+    row = {**row, **used}
+    if trouble in ("provider", "harness") and os.environ.get("VOID_FILE"):
         with open(os.environ["VOID_FILE"], "a") as f:
-            f.write(json.dumps({"unit": family, "arm": "dsl", "trial": trial,
-                                "reason": "provider: " + row.get("stderr", "")[-200:]}) + "\n")
+            f.write(json.dumps({"unit": family, "arm": "dsl", "trial": trial, "reason": why}) + "\n")
     new = not os.path.exists(OUT)
     with open(OUT, "a", newline="") as f:
         w = csv.DictWriter(f, fieldnames=FIELDS, extrasaction="ignore", restval="")
@@ -125,6 +131,7 @@ def _run_omar(program, inputs):
     if rc not in (0, -9):  # a run that ends well ends its own session
         machine.stop_dsl(cmd[0], out + err)
     outputs = dict(re.findall(r'Output (\S+) = "(.*)"', out))
+    RUN_T.setdefault("sessions", []).extend(re.findall(r"Started session (\S+?);", out + (err or "")))
     RUN_T["secs"] = RUN_T.get("secs", 0) + round(time.time() - t0)
     return {"rc": rc, "outputs": outputs, "stdout": out,
             "stderr": (err or "")[-300:],

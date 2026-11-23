@@ -75,9 +75,10 @@ assert ARM in ("agent", "runtime"), f"--arm must be agent or runtime, got {ARM}"
 
 # Chain/ring resident-agent cap; 0 = spawn all upfront. Infra-only.
 SPAWN_WINDOW = flag("--spawn-window", 0)
-# The folder agents start in: the dsl arm's workdir for this model, so both
-# arms' agents start in the same empty folder.
-WORKDIR = _raw_flag("--workdir", "")
+# Each agent starts in a folder of its own under this one (the dsl arm's
+# workdir for this model, plus agents/), as OMAR starts the dsl arm's agents,
+# so that the token use the agent CLI records per folder is per agent.
+AGENT_DIRS = _raw_flag("--agent-dirs", "")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -119,7 +120,7 @@ SG_WIDE_LEVELS = list(range(SG_WIDE_N))  # 0..8, one honest worker always left
 
 FIELDS = ["model", "arm", "family", "n", "param", "trial", "hops", "completed",
           "reason", "metric", "rc", "stderr", "output", "started_at", "secs",
-          "end", "lost", "silent_secs", "evidence", "trouble"]
+          "end", "lost", "silent_secs", "evidence", "trouble", *machine.USAGE]
 
 def cell_key(family, n, param, trial):
     return (str(family), str(n), str(param), str(trial))
@@ -183,8 +184,8 @@ def _run_once(args, per_wave_timeout, hard_timeout):
     kind = args[args.index("--kind") + 1]
     if SPAWN_WINDOW and kind in ("chain", "ring"):
         cmd += ["--spawn-window", str(SPAWN_WINDOW)]
-    if WORKDIR:
-        cmd += ["--workdir", WORKDIR]
+    if AGENT_DIRS:
+        cmd += ["--agent-dirs", AGENT_DIRS]
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                          text=True, start_new_session=True)
     try:
@@ -238,6 +239,10 @@ def log(family, n, param, trial, d, metric):
     trouble = machine.trouble(
         end="deadline" if end == "killed" else end, silent_secs=d.get("silent_secs"), evidence=evidence,
         rc=0 if d.get("rc") in (0, "timeout") else d.get("rc"), stderr=d.get("stderr", ""))
+    # What the run's agents used, and on which model (only Claude Code keeps the record).
+    used, agents = (machine.usage(d.get("folders") or []) if BACKEND == "claude" and d.get("folders") else ({}, []))
+    if used.get("models") and used["models"] != MODEL:
+        trouble, evidence = "harness", f"agents ran on {used['models']}, not {MODEL}"
     row = {"model": MODEL, "arm": ARM, "family": family, "n": n, "param": param, "trial": trial,
            "hops": d.get("hops"), "completed": d.get("completed"),
            "reason": d.get("reason", d.get("error", "")), "metric": metric,
@@ -245,11 +250,11 @@ def log(family, n, param, trial, d, metric):
            "output": (d.get("output") or "")[:60],
            "started_at": d.get("started_at", ""), "secs": d.get("secs", ""),
            "end": end, "lost": d.get("errors", ""), "silent_secs": d.get("silent_secs", ""),
-           "evidence": evidence[-300:].replace("\n", " | "), "trouble": trouble}
+           "evidence": evidence[-300:].replace("\n", " | "), "trouble": trouble, **used}
     with open(RAW, "a") as f:
-        f.write(json.dumps({"family": family, "n": n, "param": param, "trial": trial,
+        f.write(json.dumps({"family": family, "n": n, "param": param, "trial": trial, "usage": agents,
                             **{k: d.get(k) for k in ("messages", "output", "end", "end_node", "evidence")}}) + "\n")
-    if trouble == "provider" and os.environ.get("VOID_FILE"):
+    if trouble in ("provider", "harness") and os.environ.get("VOID_FILE"):
         with open(os.environ["VOID_FILE"], "a") as f:
             f.write(json.dumps({"unit": family, "arm": ARM, "trial": trial,
                                 "reason": f"{trouble}: {evidence[-200:] or row['reason']}"}) + "\n")

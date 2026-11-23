@@ -13,8 +13,9 @@ are never merged:
   protocol        agent arm: a message was lost or unreadable, and the run failed
   runtime         the machinery of the arm failed (agents that did not start
                   or never answered, the runtime failing)
-  not counted     the provider was limiting use, or the scorer itself failed:
-                  listed in exclusions.csv with the reason, and run again
+  not counted     the provider was limiting use, the scorer itself failed, or
+                  an agent ran on another model than the tier's: listed in
+                  exclusions.csv with the reason, and run again
 
 Reliability is ok over counted, with a Wilson 95% interval and no percentage
 of its own (nothing here is to be read as "100%"). Counted is every trial not
@@ -119,6 +120,38 @@ def savina(roots):
         print("\nnot counted, and run again:")
         for (model, bench, arm, kind), n in sorted(reasons.items()):
             print(f"  {model} {bench} {arm}: {n} ({kind})")
+    tokens(cells, planned)
+
+
+def tokens(cells, planned):
+    """What a trial's agents used, as their CLI recorded it, over the counted
+    trials whose every agent had a record. Cached input is most of what an
+    agent reads, so it is shown apart; cost is at list price."""
+    rows = []
+    for (model, bench, arm), trials in sorted(cells.items()):
+        n_plan = planned.get((bench, arm), 0)
+        counted = sorted(trials, key=lambda r: r["started_at"])[:n_plan or None]
+        metered = [r for r in counted if r.get("metered") and r["metered"].split("/")[0] == r["metered"].split("/")[1]]
+        if not metered:
+            continue
+        mean = lambda key: sum(float(r[key] or 0) for r in metered) / len(metered)
+        rows.append((model, bench, arm, len(metered), len(counted), mean("tokens_out"), mean("tokens_in"),
+                     mean("tokens_cache_write"), mean("tokens_cache_read"), mean("cost_usd"),
+                     " ".join(sorted({r["models"] for r in metered}))))
+    if not rows:
+        return
+    print("\nTOKENS AND COST per trial (mean over the counted trials whose every agent was metered; cost at list price)")
+    print(f"{'model':18} {'benchmark':16} {'arm':6} {'metered':>9} {'output':>9} {'input':>8} {'cache write':>12} "
+          f"{'cache read':>12} {'cost $':>8}  ran on")
+    for model, bench, arm, n, of, out, inp, cw, cr, cost, models in rows:
+        print(f"{model:18} {bench:16} {arm:6} {f'{n}/{of}':>9} {out:>9,.0f} {inp:>8,.0f} {cw:>12,.0f} {cr:>12,.0f} "
+              f"{cost:>8.3f}  {models}")
+    by = {(m, b, a): r for m, b, a, *r in rows}
+    for (model, bench, arm), r in sorted(by.items()):
+        other = by.get((model, bench, "dsl"))
+        if arm == "agent" and other and other[7]:
+            print(f"{'':18} {bench:16} agent arm over dsl arm: {r[2] / other[2]:.1f}x the output tokens, "
+                  f"{r[7] / other[7]:.1f}x the cost")
 
 
 EXPECT = {("all", f): "no" for f in "123"}

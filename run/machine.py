@@ -9,6 +9,7 @@ Only agents this benchmark started are touched: the runner's (OMAR agents named
 that infra/bootstrap.sh configures).
 """
 import fcntl
+import json
 import os
 import re
 import signal
@@ -102,6 +103,53 @@ def workdir(tier):
         return None
     found = re.search(r'default_workdir\s*=\s*"([^"]+)"', open(config).read())
     return found.group(1) if found and os.path.isdir(found.group(1)) else None
+
+
+USAGE = ("tokens_in", "tokens_out", "tokens_cache_read", "tokens_cache_write", "cost_usd", "models", "metered")
+
+
+def usage(folders=(), sessions=(), settle=12):
+    """What the agents of one trial used, as their CLI recorded it: tokens in
+    and out, cached tokens read and written, the cost of those at list price,
+    and the models they ran on. Claude Code keeps these per folder for the last
+    session run there, so they can be read for agents that each had a folder
+    of their own: the agent arm's (`folders`, from the runner) and the dsl
+    arm's (`sessions`, the names OMAR printed, whose agents it starts under
+    ~/.omar/sessions/NAME/). `metered` is how many agents had a record, of
+    how many there were. Codex keeps no such record here: its columns stay empty."""
+    path = os.path.join(os.path.expanduser("~"), ".claude.json")
+    roots = [os.path.join(os.path.expanduser("~"), ".omar", "sessions", name) + os.sep for name in sessions]
+    found, last = {}, None
+    for _ in range(settle):  # the records are written as the agents exit: read once they stop changing
+        try:
+            projects = json.load(open(path)).get("projects", {})
+        except (OSError, ValueError):
+            projects = {}
+        found = {k: v for k, v in projects.items() if k in folders or k.startswith(tuple(roots) or ("\0",))}
+        state = json.dumps(found, sort_keys=True)
+        if found and state == last:
+            break
+        last = state
+        time.sleep(1)
+    total = {"tokens_in": 0, "tokens_out": 0, "tokens_cache_read": 0, "tokens_cache_write": 0, "cost_usd": 0.0}
+    models, metered, agents = set(), 0, []
+    for folder, record in sorted(found.items()):
+        by_model = record.get("lastModelUsage") or {}
+        if by_model:
+            metered += 1
+        for model, u in by_model.items():
+            models.add(model)
+            total["tokens_in"] += u.get("inputTokens", 0)
+            total["tokens_out"] += u.get("outputTokens", 0)
+            total["tokens_cache_read"] += u.get("cacheReadInputTokens", 0)
+            total["tokens_cache_write"] += u.get("cacheCreationInputTokens", 0)
+            total["cost_usd"] += u.get("costUSD", 0.0)
+        agents.append({"folder": folder, "usage": by_model})
+    if not metered:
+        return {key: "" for key in USAGE}, agents
+    total["cost_usd"] = round(total["cost_usd"], 6)
+    count = len(folders) if folders else len(found)
+    return {**total, "models": " ".join(sorted(models)), "metered": f"{metered}/{count}"}, agents
 
 
 def stop_dsl(omar_dsl, printed):

@@ -111,6 +111,11 @@ pub struct ModelConfig {
     /// agents start in an empty workdir, and the agent arm's should start in
     /// the same one, not in a checkout of the benchmark.
     pub workdir: Option<PathBuf>,
+    /// Start each agent in a folder of its own under this one, named after
+    /// the agent, instead of all in `workdir`. The agent CLIs keep a session's
+    /// token use per folder, so this is what lets each agent's be read back,
+    /// as it can be for the dsl arm's agents, which OMAR already starts so.
+    pub agent_dirs: Option<PathBuf>,
 }
 
 impl Default for ModelConfig {
@@ -119,6 +124,7 @@ impl Default for ModelConfig {
             backend: "claude".to_string(),
             model: None,
             workdir: None,
+            agent_dirs: None,
         }
     }
 }
@@ -216,6 +222,9 @@ pub struct GraphResult {
     pub silent_secs: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub evidence: Option<String>,
+    /// The folder each agent started in, by slot, when agents have their own.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub folders: Vec<String>,
 }
 
 impl GraphResult {
@@ -242,6 +251,7 @@ impl GraphResult {
             errors: None,
             silent_secs: None,
             evidence: None,
+            folders: Vec::new(),
         }
     }
 
@@ -267,6 +277,7 @@ impl GraphResult {
             errors: Some(out.errors),
             silent_secs: out.silent_secs,
             evidence: out.evidence,
+            folders: Vec::new(),
         }
     }
 }
@@ -427,18 +438,26 @@ impl Runner {
         // Agents start in the given workdir, else the invoking dir. Either
         // must be one the backend CLI already trusts: an unknown folder is
         // gated behind a prompt that would deadlock the spawn (mailbox paths
-        // are absolute).
-        let workdir = self
+        // are absolute). A folder under a trusted one is trusted.
+        let shared = self
             .opts
             .model
             .workdir
             .clone()
             .or_else(|| std::env::current_dir().ok())
-            .unwrap_or_else(|| PathBuf::from("."))
-            .display()
-            .to_string();
+            .unwrap_or_else(|| PathBuf::from("."));
         for spec in specs {
             let name = spec.short_name(&self.run_id);
+            let workdir = match self.agent_folder(&name) {
+                Some(own) => {
+                    std::fs::create_dir_all(&own)
+                        .with_context(|| format!("Failed to create {}", own.display()))?;
+                    own
+                }
+                None => shared.clone(),
+            }
+            .display()
+            .to_string();
             if existing.iter().any(|a| a == &name) {
                 let _ = self.mcp.kill_agent(&name);
             }
@@ -702,6 +721,11 @@ impl Runner {
         results
     }
 
+    /// The folder of its own that an agent starts in, when agents have them.
+    fn agent_folder(&self, name: &str) -> Option<PathBuf> {
+        self.opts.model.agent_dirs.as_ref().map(|base| base.join(name))
+    }
+
     /// Where an agent-coordinated run appends each delivery as it happens.
     /// Beside the run dirs, not inside one: agents are pointed at their run
     /// dir, and the journal is the experimenter's record, not theirs.
@@ -938,7 +962,14 @@ impl Runner {
                 waited: Duration::ZERO,
             };
             let out = postal::run(Rules::V2, topology, opts, &task.question, &mut post)?;
-            GraphResult::postal(topology, out, post.records)
+            let mut result = GraphResult::postal(topology, out, post.records);
+            result.folders = topology
+                .session_specs()
+                .iter()
+                .filter_map(|spec| self.agent_folder(&spec.short_name(&self.run_id)))
+                .map(|folder| folder.display().to_string())
+                .collect();
+            result
         } else {
             match topology {
                 Topology::Chain { n } => self.run_chain(task, n)?,

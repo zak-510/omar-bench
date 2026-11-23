@@ -50,10 +50,14 @@ rustup toolchain install "$RUST_VERSION" --profile minimal
 rustup default "$RUST_VERSION"   # OMAR builds code reactions with plain `cargo`
 (cd runner && cargo "+$RUST_VERSION" build --release --locked)
 
-# Codex reads its model from CODEX_HOME, Claude Code from the workdir's
-# settings; nothing else on the machine sets one.
+# Codex reads its model from CODEX_HOME. Claude Code reads one from the
+# folder it starts in, but OMAR starts each dsl-arm agent in a folder of its
+# own, where the workdir's setting is not seen: so the model is also pinned
+# for every Claude Code session on the machine. Every trial reads back the
+# model its agents ran on, and is voided if it was another.
 cp infra/codex-config.toml "$HOME/codex-home/config.toml"
 printf '{"model": "%s"}\n' "$CLAUDE_MODEL" > "$HOME/wd/haiku55/.claude/settings.json"
+sh infra/claude-model.sh
 for tier in sol stub haiku55; do
     printf '[dashboard]\nsession_prefix = "dslprobe-"\n\n[agent]\ndefault_workdir = "%s"\n' \
         "$HOME/wd/$tier" > "$LOCAL/config-$tier.toml"

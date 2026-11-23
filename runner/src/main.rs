@@ -280,6 +280,11 @@ struct ModelArgs {
     /// the backend CLI already trusts.
     #[arg(long)]
     workdir: Option<PathBuf>,
+    /// Start each agent in a folder of its own under this one instead, so
+    /// that the token use the agent CLI records per folder is per agent. It
+    /// must be under a folder the backend CLI already trusts.
+    #[arg(long)]
+    agent_dirs: Option<PathBuf>,
 }
 
 impl ModelArgs {
@@ -288,6 +293,7 @@ impl ModelArgs {
             backend: self.backend.clone(),
             model: self.model.clone(),
             workdir: self.workdir.clone(),
+            agent_dirs: self.agent_dirs.clone(),
         }
     }
 }
@@ -388,6 +394,7 @@ fn main() -> Result<()> {
                     backend,
                     model,
                     workdir: None,
+                    agent_dirs: None,
                 },
                 timeout: Duration::from_secs(timeout_secs),
             })?;

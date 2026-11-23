@@ -1,7 +1,7 @@
 # Pre-registration: coordination reliability, summer reproduction and Savina
 
 **Status: frozen** at tag `prereg-v1`, 2026-11-21, and amended at `prereg-v2`
-to `prereg-v7` (see Changes, at the end). No counted run starts before a tag, and
+to `prereg-v8` (see Changes, at the end). No counted run starts before a tag, and
 any later change gets a new tag with the reason stated.
 Pilot runs (kept in `results/pilot/`) never count; the pilots before this tag were
 used only to measure time, memory and usage, and are published with the results.
@@ -23,8 +23,47 @@ later post.
 | `dsl` | The OMAR program | `.omar` programs from `probes/dsl/build_programs.sh` and `savina/build.py` |
 
 Both arms run on OMAR 0.4.4. Agent prompts are the summer's, identical across
-arms except for the coordination clauses (routing instructions and address
+arms except for the coordination clauses (routing instructions and action
 rules); the diff is published with the results.
+
+### What differs between the arms
+
+The treatment, and nothing else by design:
+
+- **Who decides what is sent to whom, and when the run is over.** In the
+  `agent` arm, agents do, by the messages they address and by one of them
+  finishing the run. In the `dsl` arm, the program does.
+- **Who keeps the state coordination needs.** In the `agent` arm it lives in
+  the agents' memory of the run: the coordinator's (forks held, transfers
+  done, the buffer) and each worker's own (its next meal or item, its
+  balance). In the `dsl` arm it is the program's, and an agent is handed what
+  it needs with each task. So in the `dsl` arm the rules on routing and state
+  hold by construction: its agents can still answer wrongly, or not at all.
+
+The same in both arms: the model and its CLI, the machine, the empty folder
+agents start in, the job text (one source, `savina/spec.py`), the time limit,
+the retry rule, the trial count, and the scoring (one checker, the same
+events, the same causes).
+
+Differences that are not the treatment, each stated with its direction:
+
+- The `agent` arm delivers one message at a time and waits for the reply, so
+  its agents never meet two messages at once or out of order. This favours
+  the `agent` arm's reliability and costs it wall time: time is reported, but
+  the like-for-like measure of cost is the agent turns each arm's protocol
+  takes (deliveries in the `agent` arm, tasks in the `dsl` arm).
+- OMAR 0.4.4 reminds an agent started with `spawn_agent` of its unfinished
+  task each time the agent ends a turn, and the agent answers the reminder.
+  Every delivery therefore costs the `agent` arm a second, short model turn
+  and some context that the `dsl` arm's agents never spend. This counts
+  against the `agent` arm's time and cost, and is not counted as a turn.
+- A silent `agent`-arm agent is reminded after 180 s and every 60 s; the
+  `dsl` runtime does not remind. This favours the `agent` arm.
+- Agents share the machine's file system, the runner's mail folder included,
+  so an `agent`-arm agent could read mail not addressed to it. No prompt
+  suggests it. It could only help the `agent` arm.
+- Only the `agent` arm has a delivery cut (four times the fewest deliveries a
+  correct run needs). It can only count against the `agent` arm.
 
 ## Machine and versions
 
@@ -43,7 +82,8 @@ of 40 keeps 40 agents alive at once (the DSL chain of 100 runs as two halves of
 50), and an 8 GiB machine ran out of memory at about 30. The `agent` arm keeps
 at most 6 alive; six starting together peaked at 7.6 GiB in a Banking pilot and
 ran an 8 GiB machine without swap out of memory in a Philosophers pilot, which
-is why both machines have swap.
+is why both machines have swap. (Until `prereg-v8` a Savina `agent`-arm run in
+fact kept 12 alive, and those two measurements were of 12: see Changes.)
 
 ## Models
 
@@ -59,7 +99,9 @@ the session logs and reported.
 
 ## Benchmarks
 
-1. **Summer probes, unchanged:** chain (n = 20, 50, 100), scatter-gather with a
+1. **Summer probes** (their sizes, tasks and prompts unchanged; from
+   `prereg-v8` their `agent`-arm prompts end with the action rules in place of
+   the summer's addressing rules, see Changes): chain (n = 20, 50, 100), scatter-gather with a
    checkable answer (n = 5 and 9, every corruption level), scatter-gather with a
    blind answer (n = 9, the control), ring (n = 10, 25, 40, horizon 2 laps),
    missing workers (n = 5, 7 policy and failure settings).
@@ -111,6 +153,10 @@ the session logs and reported.
      sends one message. Followed exactly, the protocols finish well under the
      cut: 120 deliveries for Philosophers and 160 for BoundedBuffer
      (`savina/test_check.py`).
+   - Only the coordinator may finish a run. Every agent is told so, and told
+     exactly how its reply is read: the action rules in `runner/README.md`,
+     which every `agent`-arm prompt ends with (the probes' too, where the last
+     node of a chain, any node of a ring and the aggregator may finish).
 
 ## Outcomes (same definition in both arms)
 
@@ -129,6 +175,25 @@ the session logs and reported.
 
 Wrong answers to meals and items are content errors, not coordination:
 reported per arm, not part of success.
+
+A run that says it is done is not thereby a success: the events decide. Every
+trial is filed under one cause, by code (`savina/check.py`, `cause`), and the
+causes are reported apart and never merged:
+
+| Cause | What it is | Counts as an outcome |
+|---|---|---|
+| success | The run finished and every rule above held | Yes |
+| safety | A rule was broken: a fork held by two, an overdraft, a covered transfer refused, a wrong ledger, a buffer overflow, an item handed out twice | Yes |
+| noncompletion | The work was not finished: deadlock, silence between agents, the delivery cut, or a run ended before its work was done | Yes |
+| protocol | `agent` arm: the run failed and a message was lost or unreadable (an address that names no node, two messages in one reply, a message the protocol has no place for) | Yes |
+| runtime | The machinery of the arm failed: agents that did not start, an agent that never answered a delivered request, the runtime failing to deliver or exiting with an error | Yes |
+| provider | The model provider was limiting use, down or signed out | No: listed, run again |
+| harness | The benchmark's own code failed to score the trial | No: listed with its full record, run again |
+
+A failed `agent`-arm trial in which any message was lost or unreadable is
+filed under protocol even if a rule was also broken, so that a safety
+violation is never reported from a record the checker could not fully read;
+the count of broken rules is still given.
 
 **Correction to the summer analysis.** The summer write-up counted an
 agent-arm ring that kept passing until the 2n message cap as a failure, and a
@@ -202,7 +267,10 @@ run/schedule.py --dry-run` prints the agent calls this takes).
   chain 20 and ring 10; 1,800 s for chain 50 and ring 25; 2,400 s for chain
   100; 3,600 s for ring 40; 7,200 s for a Savina trial (14,400 s for Philosophers-90,
   three times as long). These are the summer's
-  longest (the set it used for Opus), so a slower model is not cut short.
+  longest (the set it used for Opus), so a slower model is not cut short. A
+  trial still running two minutes past its limit is stopped, in both arms. The
+  `agent` arm's runner stops itself then, keeps its record and ends its
+  agents; the `dsl` arm's sweep stops the runtime.
 - An agent may take as long as its trial to answer, in both arms: the `dsl`
   arm's runtime waits for a reaction until the run's timeout, and the `agent`
   arm's runner waits as long for a reply (reminding a silent agent after
@@ -211,11 +279,30 @@ run/schedule.py --dry-run` prints the agent calls this takes).
   task (its process fails to start, or the runtime fails to deliver the task to
   it), at most 3, every attempt logged in `*-attempts.csv` and counted per arm
   in the results. A stall or timeout is an outcome of its arm.
-- Exclusions: only a trial whose logs show a provider outage or usage limit.
-  The analysis lists each one with the log line, and the trial is run again.
-  On Claude, the scheduler checks for a usage limit before every trial and
-  every 5 minutes during it (`claude-limit.csv`), waits one out before
-  starting, and lists a trial that overlapped one in `exclusions.csv`.
+- Exclusions: a trial is listed in `exclusions.csv` with its reason, is not an
+  outcome of either arm, and is run again, in these cases only, each decided
+  by code and none by reading the trial's result:
+  - Provider. On Claude, the scheduler checks for a usage limit before every
+    trial and every 5 minutes during it (`claude-limit.csv`), waits one out
+    before starting, and lists a trial that overlapped one. On Codex, it asks
+    Codex before and after every trial whether it is refusing work, and does
+    the same. In either arm, a trial is also listed when the terminal of an
+    agent that stopped answering, or the runtime's error, shows a usage limit,
+    an overload or a sign-in failure (the phrases are `PROVIDER` in
+    `run/machine.py`).
+  - Harness. The scorer itself failed on the trial's record. The record is
+    kept, so the trial can still be scored once the scorer is fixed.
+  An agent that never answers, agents that do not start, a runtime that fails
+  and a run that had to be stopped from outside are none of these: they are
+  runtime failures of their arm, and count.
+- The machine: one scheduler per machine, and one trial at a time. Before
+  every trial the scheduler ends any agent an earlier trial left running and
+  records what it found, with the machine's free memory and load, in the
+  ledger. A trial due on a machine whose leftover agents will not stop is not
+  started.
+- Results of each tag are written under `results/<tag>/`, so trials run under
+  one frozen version never share a folder with another's, and are never
+  pooled with them in the analysis.
 - Counted trials: the first 60 per arm and cell, in start order. A trial past
   that count is reported and not counted.
 - Stopping: the run stops when every trial is done, when weekly Codex use
@@ -226,9 +313,12 @@ run/schedule.py --dry-run` prints the agent calls this takes).
 
 ## Analysis
 
-Every cell is reported: failure rate with a Wilson 95% interval per arm, and a
-one-sided Fisher exact test where a gap is expected. No result is described as
-"100%". Wall time and weekly Codex use before and after every trial come from the
+Every cell is reported, by cause (`run/report.py`): reliability is successes
+over counted trials, runtime failures included, with a Wilson 95% interval per
+arm and a one-sided Fisher exact test where a gap is expected; the same test
+leaving runtime failures out is given beside it, so that neither arm's
+failures of machinery are hidden or mistaken for failures of coordination. No
+result is described as "100%". Wall time and weekly Codex use before and after every trial come from the
 scheduler's ledger. Tokens are reported for the agents whose CLI kept a session
 log (Codex does not keep one for every agent the runtime starts), with that
 coverage stated; cost is tokens times list price on the tag date. Raw logs, CSVs and the commands that
@@ -351,3 +441,106 @@ byte-for-byte unchanged. The runs already going keep the code they started
 with, since adding a cell to the plan reorders the shuffled schedule of any
 run started after it.
 
+
+**`prereg-v8`, 2026-11-23: the harness, audited.** A counted Claude
+BoundedBuffer trial was scored a failure at the 500-delivery cut although
+every item had been finished, with no rule broken, by delivery 160. The manager
+had said `Decision: DONE` in a reply that also had a `To:` line. Its prompt
+told it to "always reply to the node whose message you are answering" and to
+finish with `Decision: DONE`; nothing said which won, and the runner read the
+reply as a message and delivered the final report to a consumer. That is a
+fault in our harness, not a coordination failure. We then audited everything
+between a prompt and a score, and this tag fixes what the audit confirmed.
+
+1. *How a reply is read.* The summer's addressing rules did not say what a
+   reply with both a `To:` line and `Decision: DONE` does, who may finish a
+   run, or what becomes of mail still waiting; the runner sent such a reply on
+   as a message, let any agent's `DONE` end the run, and took any decision
+   line containing "done" for one. Every `agent`-arm prompt now ends with
+   action rules that say all of it (`runner/README.md`), the runner reads
+   replies by exactly those rules, and a test holds the two together. The
+   Savina prompts lose the one-message sentence the rules now carry, and the
+   manager's "always reply" becomes "unless you are finishing the run". No
+   `dsl` program changes: all are byte-for-byte the same.
+2. *Twelve agents, not six.* For every Savina `agent`-arm run the runner
+   started a second, idle agent beside each real one. They took no part in
+   any run, but they doubled the arm's memory and added about two minutes of
+   start-up to each trial. Fixed.
+3. *Runs stopped from outside.* A run still going at its time limit was killed
+   by the sweep: its delivery log was lost, so its cause could not be told,
+   and its agents were left running, on that machine, under every later trial
+   of either arm. The runner now stops itself at the limit, keeps its record
+   and ends its agents; it journals every delivery as it happens; and the
+   scheduler clears and records leftovers before every trial.
+4. *Where agents start.* `agent`-arm agents started in a checkout of this
+   repository, `dsl`-arm agents in an empty folder. Both now start in the
+   same empty folder.
+5. *Causes.* A trial was a success or a failure, so a machine out of memory,
+   an agent that never answered and a broken rule were all "not finished".
+   Every trial is now filed under one of seven causes (Outcomes), in both
+   arms, by code.
+6. *The checker* now reads a message without its control lines, and counts a
+   'done' whose answer it cannot read as a 'done' with a wrong answer, as the
+   `dsl` arm's trace always has. Neither changes the score of any trial so far.
+7. *The scheduler* now also asks Codex whether it is refusing work, runs one
+   at a time per machine by a lock, and writes each tag's results in a folder
+   of its own.
+
+*What this did to the trials already run* (`run/audit.py`, over all 703
+Savina trials pulled at 2026-11-23 05:21 UTC; its table is published with the
+results). Each `agent`-arm trial's own delivery log was played back through
+the runner under the rules it ran with and under these. Seven killed trials
+had lost their logs; theirs were rebuilt from the mail the runner and the
+agents had left on the machines. Under its own rules every one of the 330
+logs retraced its trial exactly, which is what makes the replay evidence.
+Under these rules 328 are read identically from first reply to last; none
+takes a different course; and two end early, at a `DONE` the old rules read
+as a send: the trial above, and a Claude BoundedBuffer trial of `prereg-v5`
+that was already listed as not counted for a usage limit. Both had finished
+all 30 items with no rule broken. Of the seven killed trials, six were
+already listed as not counted for a usage limit; the seventh, a Codex
+BoundedBuffer trial, is an agent that never answered its second request. The
+checker's changes alter no score.
+
+The two machine faults cannot be undone from a record. All 330 `agent`-arm
+trials ran with the six idle agents. 215 trials, of either arm, started on a
+machine still running agents from an earlier killed run (53 on one Codex
+machine; 49, 64 and 49 on the three Claude machines, the first of which ran
+out of memory and failed `dsl`-arm trials in under 90 seconds). Neither
+fault touches what agents wrote to each other; both bear on how long trials
+took and on which failed for want of an answer.
+
+*What becomes of them.* Trials run before this tag are published as scored,
+under their tags, with the audit's row beside each, and are never pooled with
+trials run from this tag on. The trial above is reported both as recorded and
+as replayed. Because of the two machine faults, the durations of `agent`-arm
+trials before this tag, and runtime failures of either arm before it, are
+reported with that caveat and are not compared with later ones.
+
+*Validated* at commit `e8be16d`, which this tag differs from in this file
+only; some of the live trials below ran at the two commits before it
+(`3ff9e3d`, `61a7424`), which differ from it in the results table, in how
+Codex's usage is read and in which processes count as leftover agents. With
+no model, on a benchmark machine: the runner's 118 tests; the
+scorer, harness, probe-sweep and scheduler tests (scripted agents playing
+each protocol exactly, five harmless ways of writing a reply that must pass
+and nine mistakes that must each fail under its own cause, the trial above
+replayed under both rule sets, and what is retried, counted and run again);
+and the `dsl` arm of all four programs on OMAR's stub backend. With
+`claude-haiku-5-5`, as pilot trials kept in `results/pilot/`: Philosophers,
+Banking, BoundedBuffer and missing workers in both arms through the
+scheduler, every Savina trial that ran to its end a success and every stated
+missing-workers policy followed, the BoundedBuffer manager finishing with no
+`To:` line; a run stopped by its own time limit,
+which kept its whole record and left no agent behind; a runner killed from
+outside, whose six leftover agents the clearing removed; and, unplanned, two
+trials that a usage limit interrupted, which stopped at their time limit with
+the limit on the silent agent's screen in their record, were listed as not
+counted, and were run again once the limit lifted. With `gpt-6.1-sol`: a
+Banking pilot in both arms, both successes.
+
+*First run under this tag:* `claude-haiku-5-5` on the three `m7i-flex.large`
+machines of the second run, cleared of every earlier agent: Philosophers,
+Banking, BoundedBuffer, scatter-gather and missing workers, both arms, each
+machine taking every third pick of one shuffled schedule, stopping at
+2026-11-25 00:00 UTC.

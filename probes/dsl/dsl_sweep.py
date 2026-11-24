@@ -22,8 +22,8 @@ def flag(name, default):
 
 TIER = flag("--tier", "haiku")
 # tier -> (model id reported in the CSV, OMAR backend). The model itself is pinned
-# outside the program: Claude through the workdir's .claude/settings.json, Codex
-# through CODEX_HOME/config.toml (see infra/).
+# outside the program: Claude through Claude Code's user settings on the machine
+# (infra/claude-model.sh), Codex through CODEX_HOME/config.toml.
 TIERS = {"haiku": ("claude-haiku-4-5-20251001", "Claude"), "opus": ("claude-opus-5", "Claude"),
          "haiku55": ("claude-haiku-5-5", "Claude"), "sol": ("gpt-6.1-sol", "Codex"),
          "stub": ("stub", "Stub")}

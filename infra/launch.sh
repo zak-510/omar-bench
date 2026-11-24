@@ -46,8 +46,7 @@ aws ec2 wait instance-running --instance-ids "$ID"
 HOST=$(aws ec2 describe-instances --instance-ids "$ID" \
     --query 'Reservations[0].Instances[0].PublicDnsName' --output text)
 
-# Alert on gross spend: with credits on the account, net cost stays at $0 and
-# an alert that counted credits would never fire.
+# Alert on gross spend, so that a credit or a refund cannot hide it.
 if [ -n "$EMAIL" ]; then
     ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
     command aws --profile "$PROFILE" --region us-east-1 budgets create-budget --account-id "$ACCOUNT" \

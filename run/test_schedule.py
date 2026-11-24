@@ -178,7 +178,7 @@ ps = """   9000 claude          claude --dangerously-skip-permissions --model cl
    7000 codex           /opt/codex --model gpt-6.1-sol --remote unix:///home/ubuntu/.omar/codex-runtime/263d/app.sock
    7000 codex           /opt/codex app-server
      12 codex           /opt/codex app-server --listen unix:///home/ubuntu/.omar/codex-runtime/77aa/app.sock
-  99999 python3         python3 /home/ubuntu/redeem.py 97 1
+  99999 python3         python3 -m http.server 8000
 """
 real_out, S.machine._out = S.machine._out, lambda cmd, timeout=60: ps
 assert S.machine.stale_agents() == 3   # the old Claude agent and the old Codex agent's two processes

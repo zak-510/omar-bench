@@ -24,7 +24,7 @@ The same code as the original study; every change is listed in
 | `dsl/dsl41_sweep.py` | DSL-arm sweep of rings and missing workers |
 | `dsl/gen.py`, `dsl/sg_gen.py` | Generators for every `.omar` program |
 | `dsl/build_programs.sh` | Regenerates all 57 programs |
-| `original-results/` | The original study's results, unchanged |
+| `original-results/` | The original study's results, with home directory paths shortened to `~` |
 
 ## Usage
 

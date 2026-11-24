@@ -62,6 +62,8 @@ the original study of July–August 2026, with its results in
   share, and sessions that exit together overwrite each other's. The runner
   now ends its agents one at a time, each gone before the next
   (`wait_until_gone`).
+- **Original results:** in `original-results/`, the home directory in the log
+  column is shortened to `~`. Nothing else in those files is changed.
 - **Ring scoring:** see the correction in `PREREGISTRATION.md`.
 - **Layout:** the runner moved to `runner/` and the probes to `probes/`, with
   the installed OMAR tools in `local/`; no code changed in the move.

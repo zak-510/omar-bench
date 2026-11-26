@@ -22,6 +22,11 @@ of its own (nothing here is to be read as "100%"). Counted is every trial not
 listed as not counted, up to the planned number in start order. Runtime
 failures count: a run that did not finish did not finish, whichever part of
 the stack stopped it.
+
+Under each benchmark is a one-sided Fisher test of its two arms, and under a
+model's benchmarks one test of them all together, stratified by benchmark. That
+is the primary test of runs from prereg-v11 on. For earlier tags it was not
+named before the run, and is to be read as found afterwards.
 """
 import collections
 import csv
@@ -52,6 +57,25 @@ def fisher(fa, na, fd, nd):
     if not na or not nd:
         return float("nan")
     return sum(math.comb(F, x) * math.comb(N - F, na - x) for x in range(fa, min(F, na) + 1)) / math.comb(N, na)
+
+
+def stratified(strata):
+    """One-sided, over several benchmarks at once: the chance of at least as
+    many failures in the agent arm as there were, summed over the benchmarks,
+    if within each benchmark its failures fell on the two arms by chance. Each
+    stratum is (fa, na, fd, nd); with one stratum this is `fisher`."""
+    chance, seen = {0: 1.0}, 0
+    for fa, na, fd, nd in strata:
+        F, N = fa + fd, na + nd
+        seen += fa
+        step = {x: math.comb(F, x) * math.comb(N - F, na - x) / math.comb(N, na)
+                for x in range(max(0, F - nd), min(F, na) + 1)}
+        total = collections.defaultdict(float)
+        for a, p in chance.items():
+            for x, q in step.items():
+                total[a + x] += p * q
+        chance = total
+    return sum(p for x, p in chance.items() if x >= seen)
 
 
 def excluded(folder):
@@ -88,6 +112,7 @@ def savina(roots):
     print(f"{'model':18} {'benchmark':16} {'arm':6} {'plan':>4} {'run':>4} {'not':>4} {'cnt':>4} "
           + " ".join(f"{h:>10}" for h, _ in HEADINGS) + f"  {'ok/counted (95% CI)':22} {'mean s':>6}")
     for model in sorted({k[0] for k in list(cells) + list(void)}):
+        together = []
         for bench in sorted({k[1] for k in list(cells) + list(void) if k[0] == model}):
             fails = {}
             for arm in ("agent", "dsl"):
@@ -115,6 +140,14 @@ def savina(roots):
                 print(f"{'':18} {bench:16} failures, agent vs dsl: {fa}/{na} vs {fd}/{nd}, one-sided Fisher "
                       f"p = {fisher(fa, na, fd, nd):.3f}; leaving runtime failures out: {fa - ra}/{na - ra} vs "
                       f"{fd - rd}/{nd - rd}, p = {fisher(fa - ra, na - ra, fd - rd, nd - rd):.3f}")
+                together.append((fa, na, ra, fd, nd, rd))
+        if len(together) > 1:
+            fa, na, ra, fd, nd, rd = (sum(column) for column in zip(*together))
+            print(f"{'':18} {'all ' + str(len(together)) + ' together':16} failures, agent vs dsl: {fa}/{na} vs {fd}/{nd}, "
+                  f"one-sided exact test stratified by benchmark (primary from prereg-v11) p = "
+                  f"{stratified([(a, n, d, m) for a, n, _, d, m, _ in together]):.3f}; leaving runtime failures out: "
+                  f"{fa - ra}/{na - ra} vs {fd - rd}/{nd - rd}, p = "
+                  f"{stratified([(a - r, n - r, d - s, m - s) for a, n, r, d, m, s in together]):.3f}")
     reasons = collections.Counter((k[0], k[1], k[2], r.split(":")[0]) for k, rs in void.items() for r in rs)
     if reasons:
         print("\nnot counted, and run again:")

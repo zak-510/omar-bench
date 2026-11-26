@@ -6,6 +6,7 @@ import collections
 import contextlib
 import csv
 import io
+import itertools
 import json
 import os
 import shutil
@@ -15,6 +16,7 @@ import tempfile
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import report as R  # noqa: E402
 import schedule as S  # noqa: E402
 
 tmp = tempfile.mkdtemp()
@@ -23,6 +25,15 @@ os.makedirs(os.path.join(tmp, "infra"))
 open(os.path.join(tmp, "infra", "memlog.sh"), "w").write("")
 S.manifest = lambda results, tier: None
 S.version_drift = lambda: []
+os.environ["CODEX_HOME"] = os.path.join(tmp, "codex-home")   # where Codex's model on the machine is set
+os.makedirs(os.environ["CODEX_HOME"])
+
+
+def pin(model):
+    open(os.path.join(os.environ["CODEX_HOME"], "config.toml"), "w").write(f'# only the model is set\nmodel = "{model}"\n')
+
+
+pin("gpt-6.1-sol")
 
 
 class Quiet:  # stands in for the memory log and the Codex guard
@@ -67,11 +78,12 @@ S.time.sleep = lambda s: None
 S.LimitWatch.run = lambda self: None   # no background polling in the test
 
 
-def go(tier="haiku55", pilot="4", units="banking,philosophers", fresh=True):
+def go(tier="haiku55", pilot="4", units="banking,philosophers", fresh=True, until=""):
     if fresh:
         shutil.rmtree(os.path.join(tmp, "results"), ignore_errors=True)
     del ran[:]
-    sys.argv = ["schedule.py", "--tier", tier, "--units", units] + (["--pilot", pilot] if pilot else [])
+    sys.argv = (["schedule.py", "--tier", tier, "--units", units] + (["--pilot", pilot] if pilot else [])
+                + (["--until", until] if until else []))
     code = None
     try:
         with contextlib.redirect_stdout(io.StringIO()):
@@ -130,6 +142,34 @@ rows, excl, code = go(tier="sol", units="banking")
 assert len(rows) == 1
 del codex[:]
 print("codex: a refusal at a trial's end voids it; one before a trial is waited out; 98% stops the run")
+
+# A Codex tier runs only where Codex is set to its model: the dsl arm's agents take the machine's.
+rows, excl, code = go(tier="terra", units="banking")
+assert "set to gpt-6.1-sol, not gpt-6.1-terra" in str(code) and not ran, code
+pin("gpt-6.1-terra")
+rows, excl, code = go(tier="terra", units="banking")
+assert code is None and sum(cells(rows).values()) == 8, code
+assert "set to gpt-6.1-terra, not gpt-6.1-sol" in str(go(tier="sol", units="banking")[2]) and not ran
+os.remove(os.path.join(os.environ["CODEX_HOME"], "config.toml"))
+assert "set to no model" in str(go(tier="sol", units="banking")[2]) and not ran
+pin("gpt-6.1-sol")
+print("a codex tier: refused where the machine's Codex is set to another model, or to none")
+
+# A deadline that comes while a usage limit is being waited out: no trial starts past it.
+real_gmtime, clock = time.gmtime, [time.time()]
+S.time.gmtime = lambda t=None: real_gmtime(clock[0] if t is None else t)
+S.time.sleep = lambda s: clock.__setitem__(0, clock[0] + s)   # a wait moves the clock on
+at = lambda secs: time.strftime("%Y-%m-%dT%H:%M", real_gmtime(clock[0] + secs))
+limits[:] = [True] * 6
+rows, excl, code = go(units="banking", until=at(900))
+assert not ran and not rows and not excl, (ran, rows, excl)
+# One that comes between trials stops the run as before, and what ran counts.
+del limits[:]
+S.subprocess.run = lambda argv, *a, **k: (clock.__setitem__(0, clock[0] + 600), fake_run(argv, *a, **k))[1]  # ten-minute trials
+rows, excl, code = go(units="banking", until=at(900))
+assert len(rows) == 2 and not excl, rows
+S.subprocess.run, S.time.gmtime, S.time.sleep = fake_run, real_gmtime, lambda s: None
+print("a deadline: nothing starts past it, between trials or after a wait")
 
 # Agents left over from an earlier trial: cleared, and recorded. If they will
 # not stop, the trial is not started (and keeps its number); three in a row stop the run.
@@ -222,6 +262,48 @@ assert S.machine.usage(sessions=["calm-otter"], since=began, expect=5, settle=1)
 used, detail = S.machine.usage(folders, since=began + 3600, settle=1)
 assert used == {**{k: "" for k in S.machine.USAGE}, "metered": "0/3"} and detail["earlier_records"] == 2, (used, detail)
 print("token use: read per agent, per trial, with the model it ran on; earlier runs' records left out")
+
+# The report's test of all a model's benchmarks together, stratified by benchmark.
+# With one benchmark it is the Fisher test; with several, what counting every
+# way the failures could have fallen gives.
+for one in ((3, 32, 0, 30), (4, 20, 2, 25), (0, 9, 0, 9)):
+    assert abs(R.stratified([one]) - R.fisher(*one)) < 1e-12, one
+
+
+def by_counting(strata):
+    ways = collections.Counter({0: 1})   # failures in the agent arm -> ways of dealing the trials to the arms
+    for fa, na, fd, nd in strata:
+        failed = [True] * (fa + fd) + [False] * (na + nd - fa - fd)
+        deal = collections.Counter(sum(arm) for arm in itertools.combinations(failed, na))
+        both = collections.Counter()
+        for a, n in ways.items():
+            for x, m in deal.items():
+                both[a + x] += n * m
+        ways = both
+    seen = sum(s[0] for s in strata)
+    return sum(n for x, n in ways.items() if x >= seen) / sum(ways.values())
+
+
+for some in ([(2, 4, 1, 3), (1, 3, 1, 4)], [(1, 5, 0, 4), (0, 3, 2, 3), (2, 2, 0, 5)]):
+    assert abs(R.stratified(some) - by_counting(some)) < 1e-12, some
+# Three benchmarks with every failure in the agent arm, as the report prints them.
+out = os.path.join(tmp, "report")
+os.makedirs(out)
+with open(os.path.join(out, "savina-test.csv"), "w", newline="") as f:
+    w = csv.writer(f)
+    w.writerow(["model", "bench", "arm", "trial", "cause", "started_at", "secs"])
+    for bench, (failed, agent, dsl) in {"banking": (1, 20, 25), "boundedbuffer": (2, 20, 22), "philosophers": (3, 30, 30)}.items():
+        for arm, n in (("agent", agent), ("dsl", dsl)):
+            for k in range(n):
+                w.writerow(["m", bench, arm, k + 1, "safety" if arm == "agent" and k < failed else "success",
+                            f"2026-11-24T00:{k:02d}:00", 60])
+printed = io.StringIO()
+with contextlib.redirect_stdout(printed):
+    R.savina([out])
+assert ("all 3 together   failures, agent vs dsl: 6/70 vs 0/77, one-sided exact test stratified by benchmark "
+        "(primary from prereg-v11) p = 0.012") \
+    in printed.getvalue(), printed.getvalue()
+print("the report: one test over a model's benchmarks, stratified by benchmark")
 
 # The real lock: held by one, refused to the next, free again once released.
 a = real_lock("test-lock")

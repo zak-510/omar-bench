@@ -16,7 +16,7 @@ provider was limiting use during it (checked before every trial and every 5
 minutes during it on Claude, before and after it on Codex), or the sweep found
 the provider at fault or could not score the trial (savina/check.py, `cause`).
 
-  python3 run/schedule.py --tier sol [--max-agents N] [--units a,b] [--quota 98]
+  python3 run/schedule.py --tier sol|terra|luna|haiku55 [--max-agents N] [--units a,b] [--quota 98]
                           [--until 2026-11-25T18:00] [--shard 0/2] [--name NAME] [--pilot 3] [--dry-run]
 
 --max-agents keeps units this machine has memory for; both arms of a unit
@@ -46,7 +46,8 @@ import machine  # noqa: E402
 import plan  # noqa: E402
 
 SEED = 20261119
-TIERS = {"sol": ("gpt-6.1-sol", "codex"), "haiku55": ("claude-haiku-5-5", "claude")}
+TIERS = {"sol": ("gpt-6.1-sol", "codex"), "terra": ("gpt-6.1-terra", "codex"), "luna": ("gpt-6-luna", "codex"),
+         "haiku55": ("claude-haiku-5-5", "claude")}
 LEDGER = ["unit", "arm", "trial", "started_at", "secs", "rc", "used_before", "used_after",
           "cleared", "stale_agents", "mem_available_mib", "swap_used_mib", "load1"]
 # Stop instead of looping when the machine or the sweep keeps failing.
@@ -76,6 +77,17 @@ def version_drift():
         if pins.get(name, "") not in have:
             drift.append(f"{name}: want {pins.get(name)}, have {have.strip() or 'nothing'}")
     return drift
+
+
+def codex_model():
+    """The model Codex is set to on this machine (CODEX_HOME/config.toml). An
+    agent started with no model named runs on it, as every dsl-arm agent is."""
+    path = os.path.join(os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex"), "config.toml")
+    try:
+        found = re.search(r'(?m)^model\s*=\s*"([^"]+)"', open(path).read())
+    except OSError:
+        return ""
+    return found.group(1) if found else ""
 
 
 def claude_limited():
@@ -134,7 +146,7 @@ def manifest(results, tier):
     m = {"started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "tier": tier, "argv": sys.argv[1:],
          "revision": revision(), "seed": SEED, **meta,
          "versions": open(os.path.join(ROOT, "versions.env")).read(),
-         "omar": out(["omar", "--version"]), "codex": out(["codex", "--version"]),
+         "omar": out(["omar", "--version"]), "codex": out(["codex", "--version"]), "codex_model": codex_model(),
          "claude": out(["claude", "--version"]), "rustc": out(["rustc", "--version"]),
          "kernel": out(["uname", "-r"])}
     with open(os.path.join(results, f"manifest-{m['started']}.json"), "w") as f:
@@ -185,6 +197,9 @@ def main():
             print(f"{arm:6} {trials:4} trials, {steps:6} sequential steps, {calls:6} agent calls")
         print(f"{len(order)} picks; already finished: {sum(finished.values())}")
         return
+    if backend == "codex" and codex_model() != model:
+        sys.exit(f"Codex on this machine is set to {codex_model() or 'no model'}, not {model}: "
+                 f"sh infra/codex-model.sh {model}")
 
     held = machine.lock()
     if not held:
@@ -259,6 +274,9 @@ def main():
                 print(f"{time.strftime('%H:%M:%S')} Codex is refusing work; waiting", flush=True)
                 time.sleep(600)
                 codex = codex_quota.state() or codex
+            if past_deadline():  # it came during a wait: no trial starts past it
+                print(f"deadline {until} reached; stopping", flush=True)
+                break
             # The machine as the pre-registration describes it: nothing left
             # running from the trial before.
             cleared, left = machine.clear()

@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 ROOT=$(pwd)
 . ./versions.env
 OPT=$HOME/opt
-mkdir -p "$OPT" "$HOME/wd/sol" "$HOME/wd/stub" "$HOME/wd/haiku55/.claude" "$HOME/codex-home"
+mkdir -p "$OPT" "$HOME/wd/sol" "$HOME/wd/terra" "$HOME/wd/luna" "$HOME/wd/stub" "$HOME/wd/haiku55/.claude" "$HOME/codex-home"
 
 sudo apt-get update -q
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
@@ -50,7 +50,8 @@ rustup toolchain install "$RUST_VERSION" --profile minimal
 rustup default "$RUST_VERSION"   # OMAR builds code reactions with plain `cargo`
 (cd runner && cargo "+$RUST_VERSION" build --release --locked)
 
-# Codex reads its model from CODEX_HOME. Claude Code reads one from the
+# Codex reads its model from CODEX_HOME (infra/codex-model.sh sets another
+# than CODEX_MODEL, and the scheduler checks it). Claude Code reads one from the
 # folder it starts in, but OMAR starts each dsl-arm agent in a folder of its
 # own, where the workdir's setting is not seen: so the model is also pinned
 # for every Claude Code session on the machine. Every trial reads back the
@@ -58,7 +59,7 @@ rustup default "$RUST_VERSION"   # OMAR builds code reactions with plain `cargo`
 cp infra/codex-config.toml "$HOME/codex-home/config.toml"
 printf '{"model": "%s"}\n' "$CLAUDE_MODEL" > "$HOME/wd/haiku55/.claude/settings.json"
 sh infra/claude-model.sh
-for tier in sol stub haiku55; do
+for tier in sol terra luna stub haiku55; do
     printf '[dashboard]\nsession_prefix = "dslprobe-"\n\n[agent]\ndefault_workdir = "%s"\n' \
         "$HOME/wd/$tier" > "$LOCAL/config-$tier.toml"
 done

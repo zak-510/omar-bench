@@ -2,7 +2,7 @@
 """Run Savina trials in one arm and score each with check.py.
 
 Usage:
-  python3 savina/sweep.py --bench philosophers|philosophers-90|banking|boundedbuffer --arm agent|dsl --tier sol|haiku55|stub|mock
+  python3 savina/sweep.py --bench philosophers|philosophers-90|banking|boundedbuffer --arm agent|dsl --tier sol|terra|luna|haiku55|stub|mock
                           [--trials N] [--timeout SECS]
 
 Two tiers use no model, to try the harness itself: `stub` runs the dsl arm on
@@ -56,7 +56,8 @@ TIER = flag("--tier", "sol")
 TRIALS = int(flag("--trials", "3"))
 TIMEOUT = int(flag("--timeout", "3600"))
 assert BENCH in spec.FUSE and ARM in ("agent", "dsl"), (BENCH, ARM)
-TIERS = {"sol": ("gpt-6.1-sol", "Codex"), "haiku55": ("claude-haiku-5-5", "Claude"),
+TIERS = {"sol": ("gpt-6.1-sol", "Codex"), "terra": ("gpt-6.1-terra", "Codex"), "luna": ("gpt-6-luna", "Codex"),
+         "haiku55": ("claude-haiku-5-5", "Claude"),
          "opus55": ("claude-opus-5-5", "Claude"), "stub": ("stub", "Stub"), "mock": ("mock", "Mock")}
 MODEL, BACKEND = TIERS[TIER]
 FUSE = spec.FUSE[BENCH]  # agent arm only; see spec.py

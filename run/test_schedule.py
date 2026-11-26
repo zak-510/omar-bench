@@ -34,6 +34,15 @@ def pin(model):
 
 
 pin("gpt-6.1-sol")
+os.environ["CLAUDE_CONFIG_DIR"] = os.path.join(tmp, "claude-home")   # and Claude Code's
+os.makedirs(os.environ["CLAUDE_CONFIG_DIR"])
+
+
+def pin_claude(model):
+    json.dump({"theme": "auto", "model": model}, open(os.path.join(os.environ["CLAUDE_CONFIG_DIR"], "settings.json"), "w"))
+
+
+pin_claude("claude-haiku-5-5")
 
 
 class Quiet:  # stands in for the memory log and the Codex guard
@@ -154,6 +163,14 @@ os.remove(os.path.join(os.environ["CODEX_HOME"], "config.toml"))
 assert "set to no model" in str(go(tier="sol", units="banking")[2]) and not ran
 pin("gpt-6.1-sol")
 print("a codex tier: refused where the machine's Codex is set to another model, or to none")
+
+# The same for Claude: every dsl-arm agent runs on the model the machine is set to.
+pin_claude("claude-sonnet-5-5")
+assert "set to claude-sonnet-5-5, not claude-haiku-5-5" in str(go(units="banking")[2]) and not ran
+os.remove(os.path.join(os.environ["CLAUDE_CONFIG_DIR"], "settings.json"))
+assert "set to no model" in str(go(units="banking")[2]) and not ran
+pin_claude("claude-haiku-5-5")
+print("a claude tier: refused where the machine's Claude Code is set to another model")
 
 # A deadline that comes while a usage limit is being waited out: no trial starts past it.
 real_gmtime, clock = time.gmtime, [time.time()]

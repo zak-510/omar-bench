@@ -90,6 +90,16 @@ def codex_model():
     return found.group(1) if found else ""
 
 
+def claude_model():
+    """The model Claude Code is set to for every session on this machine (its
+    user settings), which every dsl-arm agent runs on."""
+    path = os.path.join(os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude"), "settings.json")
+    try:
+        return json.load(open(path)).get("model", "")
+    except (OSError, ValueError):
+        return ""
+
+
 def claude_limited():
     """True when Claude Code reports its usage limit, False when it answers, None if unclear."""
     wd = os.path.expanduser("~/wd/haiku55")  # where the model is pinned
@@ -146,7 +156,7 @@ def manifest(results, tier):
     m = {"started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "tier": tier, "argv": sys.argv[1:],
          "revision": revision(), "seed": SEED, **meta,
          "versions": open(os.path.join(ROOT, "versions.env")).read(),
-         "omar": out(["omar", "--version"]), "codex": out(["codex", "--version"]), "codex_model": codex_model(),
+         "omar": out(["omar", "--version"]), "codex": out(["codex", "--version"]), "codex_model": codex_model(), "claude_model": claude_model(),
          "claude": out(["claude", "--version"]), "rustc": out(["rustc", "--version"]),
          "kernel": out(["uname", "-r"])}
     with open(os.path.join(results, f"manifest-{m['started']}.json"), "w") as f:
@@ -200,6 +210,9 @@ def main():
     if backend == "codex" and codex_model() != model:
         sys.exit(f"Codex on this machine is set to {codex_model() or 'no model'}, not {model}: "
                  f"sh infra/codex-model.sh {model}")
+    if backend == "claude" and claude_model() != model:
+        sys.exit(f"Claude Code on this machine is set to {claude_model() or 'no model'}, not {model}: "
+                 f"sh infra/claude-model.sh {model}")
 
     held = machine.lock()
     if not held:

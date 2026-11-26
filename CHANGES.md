@@ -421,3 +421,15 @@ although its `dsl` arm keeps 10 agents alive, against the 6-agent rule (free
 memory never fell below 4.4 GiB). The reasoning effort agents used was to be
 read back from session logs and is not reported, because Codex kept almost
 none.
+
+*Validated* at commit `eebc78d`, which this tag differs from in this paragraph
+only. With no model, on the machine: the runner's 119 tests, the scorer,
+harness, probe-sweep and scheduler tests, and both arms of Philosophers-90
+with scripted agents and OMAR's stub backend. With `claude-haiku-5-5`, as
+pilots: Banking in both arms through the scheduler at that commit, and at an
+earlier commit (it differs in documentation, a test's numbers and the model
+check) the three 30-round benchmarks in both arms and Philosophers-90 once in
+the `dsl` arm and twice in the `agent` arm. All eleven were successes, with
+every agent metered on `claude-haiku-5-5`. A Philosophers-90 pilot took about
+30 minutes and $17 at list price in the `agent` arm, and 2 minutes and $0.14
+in the `dsl` arm.

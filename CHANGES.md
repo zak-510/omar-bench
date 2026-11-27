@@ -433,3 +433,16 @@ the `dsl` arm and twice in the `agent` arm. All eleven were successes, with
 every agent metered on `claude-haiku-5-5`. A Philosophers-90 pilot took about
 30 minutes and $17 at list price in the `agent` arm, and 2 minutes and $0.14
 in the `dsl` arm.
+
+*Second run under this tag* (added 2026-11-27, before it started):
+`claude-haiku-5-5` on the other two machines, Philosophers, Banking and
+BoundedBuffer at 30 rounds, both arms, 60 trials planned per arm and
+benchmark, each machine taking every second pick of one shuffled schedule,
+stopping at 2026-11-27 21:00 UTC. Its primary test, named now: the three
+benchmarks together, stratified by benchmark. It is the test `prereg-v10`
+could give only after the fact, on new trials. With it there are two tests
+at this tag, and each is reported with its own p.
+
+This was decided after the first twelve Philosophers-90 trials, all of them
+successes. Philosophers-90 is paused between trials so that this run has the
+usage first, and resumes after it under the same stop.

@@ -213,7 +213,9 @@ From `prereg-v11` the primary test is named before the run: the 90-round
 benchmarks that run by the stop (Philosophers-90, and Banking and
 BoundedBuffer at 90 rounds if they are added), together, one-sided and exact,
 stratified by benchmark, alpha = 0.05 (`stratified` in `run/report.py`). With
-one benchmark it is that benchmark's Fisher test. A failed trial is a counted trial under
+one benchmark it is that benchmark's Fisher test. The second run under
+`prereg-v11` has its own, tested the same way: its three 30-round benchmarks
+together. A failed trial is a counted trial under
 any cause but success. Tests of single benchmarks are secondary. For earlier
 tags no test over benchmarks was named in advance; where the report gives
 one, it was found afterwards.
@@ -235,6 +237,7 @@ Raw logs, CSVs and each run's command are published with the results.
 | `prereg-v10` | `claude-haiku-5-5` | Philosophers, Banking, BoundedBuffer, scatter-gather, missing workers | 3 x 8 GiB | 2026-11-25 00:00 UTC |
 | `prereg-v10` | `gpt-6.1-sol` | Philosophers, Banking, BoundedBuffer, Philosophers-90 | 4 x 8 GiB | the same, or 98% of the week's Codex use |
 | `prereg-v11` | `claude-haiku-5-5` | Philosophers-90 | 1 x 8 GiB | 2026-11-29 00:00 UTC |
+| `prereg-v11` | `claude-haiku-5-5` | Philosophers, Banking, BoundedBuffer | 2 x 8 GiB | 2026-11-27 21:00 UTC |
 
 Runs under earlier tags were stopped or replaced, for the reasons in
 CHANGES.md. Every tag's trials are kept and are published under

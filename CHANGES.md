@@ -446,3 +446,29 @@ at this tag, and each is reported with its own p.
 This was decided after the first twelve Philosophers-90 trials, all of them
 successes. Philosophers-90 is paused between trials so that this run has the
 usage first, and resumes after it under the same stop.
+
+*Third run under this tag* (added 2026-11-27, before it started):
+`gpt-6-luna`, Codex's small model, on the four Codex machines:
+Philosophers, Banking and BoundedBuffer at 30 rounds, both arms, 60 trials
+planned per arm and benchmark, each machine taking every fourth pick of one
+shuffled schedule, stopping at 2026-11-29 00:00 UTC or at 98% of the week's
+Codex use, whichever comes first. Its primary test, named now: the three
+benchmarks together, stratified by benchmark. With it there are three tests
+at this tag, and each is reported with its own p. Item 4 above said this
+tier would not be run at this tag; this entry changes that.
+
+`gpt-6.1-sol` failed in neither arm under `prereg-v10`. This run asks the
+same of a smaller model, as Haiku is on Claude. It was decided while the
+second run was under way, with its trials to that point read, and after the
+pilot below. As in every Codex run, the token and cost columns are empty.
+
+Before the run, at the tagged commit: the no-model tests on each of the
+four machines (the runner's 119 tests, the scorer, harness, probe-sweep and
+scheduler tests, and both arms with scripted agents and OMAR's stub
+backend), and on one of them a Codex thread started with no model named,
+which was given `gpt-6-luna`. As a pilot on `gpt-6-luna`, through the
+scheduler: one trial of each benchmark in each arm. The three `dsl`-arm
+trials were successes, one after a delivery that failed and was sent again.
+Of the three `agent`-arm trials, Philosophers was a success, Banking ended
+with wrong final balances, and BoundedBuffer overflowed its buffer and hit
+the message cap.
